@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffd400">
+<title>Microgame Test Stand</title>
+<!--
+  TEMPORARY test stand for microgames written to the contract in CLAUDE.md.
+  It is a bare-bones stand-in for the shared frame: instruction flash, timer,
+  lives, speed-up, YES/NOPE stamp. Replace it with the real frame later.
+  Options: ?game=wire-cut (or feed-me)  ?list=cvc-short-a
+-->
+<style>
+  :root {
+    --bg: #ffd400; --bg2: #ffb800; --ink: #111; --paper: #fff;
+    --good: #1fd65f; --bad: #ff3b3b; --warn: #ff8a00;
+    --font: "Arial Black", "Arial Rounded MT Bold", "Segoe UI Black", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font); font-weight: 900; color: var(--ink); background: var(--bg);
+    overflow: hidden; touch-action: manipulation;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  #burst {
+    position: fixed; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
+    background: repeating-conic-gradient(var(--bg) 0deg 12deg, var(--bg2) 12deg 24deg);
+    animation: spin 30s linear infinite; z-index: -1; transition: filter .15s;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.08); }
+
+  #app {
+    height: 100vh; height: 100dvh; max-width: 640px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 10px;
+    padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pill {
+    background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; padding: 6px 12px;
+    font-size: clamp(.95rem, 4.3vw, 1.3rem); box-shadow: 0 4px 0 var(--ink); white-space: nowrap;
+  }
+  #timer {
+    height: 24px; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px;
+    overflow: hidden; box-shadow: 0 4px 0 var(--ink);
+  }
+  #bar { height: 100%; width: 100%; background: var(--good); transform-origin: left center; }
+  #bar.mid { background: var(--warn); }
+  #bar.low { background: var(--bad); animation: blink .25s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .45; } }
+
+  #stage { flex: 1; min-height: 0; position: relative; }
+  #game { position: absolute; inset: 0; }
+  #game.locked { pointer-events: none; }
+
+  .shout {
+    font-size: clamp(2.4rem, 12vw, 5rem); line-height: .95; text-align: center; white-space: pre-line;
+    color: var(--paper); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill;
+    text-shadow: 0 6px 0 var(--ink); letter-spacing: 1px;
+  }
+  #instruction, #stamp {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 4;
+  }
+  #instruction .shout { animation: slam .5s cubic-bezier(.2, 1.6, .4, 1) both, wobble .3s .5s ease-in-out 2; }
+  #stamp .shout { animation: stamp .35s cubic-bezier(.2, 1.8, .4, 1) both; transform: rotate(-8deg); }
+  #stamp.good .shout { color: var(--good); }
+  #stamp.bad .shout  { color: var(--bad); }
+  #speedup .shout { color: #ffd400; animation: slam .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+  @keyframes slam { from { transform: scale(3.2) rotate(-12deg); opacity: 0; } to { transform: scale(1) rotate(-4deg); opacity: 1; } }
+  @keyframes wobble { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) scale(1.06); } }
+  @keyframes stamp { from { transform: scale(2.5) rotate(10deg); opacity: 0; } }
+
+  .overlay {
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 24px; padding: 24px 16px; text-align: center; z-index: 5;
+  }
+  .overlay h1 { font-size: clamp(3.2rem, 17vw, 6.5rem); transform: rotate(-5deg); animation: wobble 1.2s ease-in-out infinite; }
+  .overlay p {
+    font-size: clamp(1.1rem, 5vw, 1.5rem); background: var(--paper); border: 4px solid var(--ink);
+    border-radius: 20px; padding: 12px 20px; box-shadow: 0 6px 0 var(--ink); line-height: 1.5;
+  }
+  .big {
+    background: #ff2e88; color: var(--paper); border: 6px solid var(--ink); border-radius: 999px;
+    padding: 18px 36px; font-size: clamp(1.4rem, 7vw, 2.2rem); box-shadow: 0 9px 0 var(--ink);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  .big:active { transform: translateY(6px); box-shadow: 0 3px 0 var(--ink); }
+  @keyframes pulse { 50% { transform: scale(1.06); } }
+  #lists { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  #lists button { background: var(--paper); border: 4px solid var(--ink); border-radius: 16px; padding: 8px 14px; box-shadow: 0 4px 0 var(--ink); font-size: 1.1rem; }
+  #lists button[aria-pressed="true"] { background: #1e6bff; color: var(--paper); }
+
+  @media (prefers-reduced-motion: reduce) {
+    #burst, .overlay h1, .big, #bar.low { animation: none; }
+    #instruction .shout, #stamp .shout, #speedup .shout { animation-duration: .01s; }
+  }
+</style>
+</head>
+<body>
+<div id="burst"></div>
+
+<div id="app" aria-hidden="true">
+  <header>
+    <div class="pill" id="lives"></div>
+    <div class="pill">⭐ <span id="score">0</span></div>
+    <div class="pill" id="streak">🔥 0</div>
+  </header>
+  <div id="timer" role="progressbar" aria-label="Time left"><div id="bar"></div></div>
+  <main id="stage">
+    <div id="game"></div>
+    <div id="instruction" hidden><div class="shout"></div></div>
+    <div id="stamp" hidden><div class="shout"></div></div>
+    <div id="speedup" class="overlay" hidden><div class="shout"></div></div>
+  </main>
+</div>
+
+<div id="start" class="overlay">
+  <h1 class="shout" id="startTitle"></h1>
+  <div id="lists"></div>
+  <button class="big" id="startBtn"></button>
+</div>
+
+<div id="end" class="overlay" hidden>
+  <h1 class="shout" id="endTitle"></h1>
+  <p id="endStats"></p>
+  <button class="big" id="againBtn"></button>
+</div>
+
+<script>
+// ---------- Microgame registry (must exist before the game scripts load) ----------
+const MICROGAMES = [];
+function registerMicrogame(game) { MICROGAMES.push(game); }
+</script>
+<script src="data/lists.js"></script>
+<script src="games/wire-cut.js"></script>
+<script src="games/feed-me.js"></script>
+<script>
+const TEXT = {
+  title: "TEST\nSTAND",
+  start: "TAP TO START",
+  again: "PLAY AGAIN",
+  gameOver: "GAME\nOVER!",
+  correct: "YES!",
+  wrong: "NOPE!",
+  timeout: "TOO SLOW!",
+  speedUp: "SPEED UP!",
+  ready: "Let's go!",
+  stats: (score, best) => `⭐ ${score}<br>🔥 ${best}`,
+  listNames: { "letters-az": "A a", "cvc-short-a": "🐱 cat" },
+};
+const LIVES = 4;
+const BASE_MS = 5000;          // used when a game doesn't declare `duration`
+const INSTRUCTION_MS = 1000;
+const FEEDBACK_MS = 1500;
+const STAMP_DELAY_MS = 250;    // let the game's own win/lose effect land first
+const SPEEDUP_EVERY = 3;
+const SPEED_STEP = 0.25;
+const MAX_SPEED = 2;
+const THEMES = [
+  ["#ffd400", "#ffb800"], ["#00d4ff", "#00b4f0"], ["#ff6fb0", "#ff4f9a"],
+  ["#7cf04f", "#5fd932"], ["#ff9a1f", "#ff7f00"], ["#b388ff", "#9c6bff"],
+];
+
+const $ = (s) => document.querySelector(s);
+const els = {
+  app: $("#app"), game: $("#game"), bar: $("#bar"), lives: $("#lives"), score: $("#score"), streak: $("#streak"),
+  instruction: $("#instruction"), stamp: $("#stamp"), speedup: $("#speedup"),
+  start: $("#start"), lists: $("#lists"), end: $("#end"), endStats: $("#endStats"),
+};
+$("#startTitle").textContent = TEXT.title;
+$("#startBtn").textContent = TEXT.start;
+$("#againBtn").textContent = TEXT.again;
+$("#endTitle").textContent = TEXT.gameOver;
+
+const params = new URLSearchParams(location.search);
+const state = {
+  lives: LIVES, score: 0, streak: 0, best: 0, cleared: 0, speed: 1, theme: 0,
+  round: 0, reported: false, cleanup: null, timeouts: [], raf: 0,
+  listId: params.get("list") || WORD_LISTS[0].id, lastGame: null,
+};
+
+// ---------- Audio ----------
+let actx = null;
+function tone(freq, start, dur, type, vol) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, start);
+  g.gain.setValueAtTime(vol, start);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  o.connect(g).connect(actx.destination);
+  o.start(start);
+  o.stop(start + dur + 0.02);
+}
+function happySound() {
+  if (!actx) return;
+  const t = actx.currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.08, 0.2, "square", 0.1));
+  tone(1568, t + 0.32, 0.3, "triangle", 0.12);
+}
+function buzzSound() {
+  if (!actx) return;
+  const t = actx.currentTime;
+  tone(110, t, 0.5, "sawtooth", 0.18);
+  tone(117, t, 0.5, "sawtooth", 0.15);
+}
+function tickSound() { if (actx) tone(880, actx.currentTime, 0.05, "square", 0.05); }
+
+const canSpeak = "speechSynthesis" in window;
+let voice = null;
+function pickVoice() {
+  const voices = speechSynthesis.getVoices();
+  voice = voices.find((v) => /^en[-_](US|GB)/i.test(v.lang) && v.localService)
+       || voices.find((v) => /^en[-_](US|GB)/i.test(v.lang)) || null;
+}
+if (canSpeak) { pickVoice(); speechSynthesis.addEventListener?.("voiceschanged", pickVoice); }
+function say(text) {
+  if (!canSpeak) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = voice ? voice.lang : "en-US";
+    u.rate = 0.9;
+    u.onerror = (e) => {
+      if (e.error !== "interrupted" && e.error !== "canceled") console.error("speech:", e.error);
+    };
+    speechSynthesis.speak(u);
+  } catch (err) {
+    console.error("speech:", err);
+  }
+}
+
+// ---------- Helpers ----------
+function later(fn, ms) { state.timeouts.push(setTimeout(fn, ms)); }
+function clearTimers() {
+  state.timeouts.forEach(clearTimeout);
+  state.timeouts = [];
+  cancelAnimationFrame(state.raf);
+}
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function show(el, text) {
+  const inner = el.querySelector(".shout");
+  inner.textContent = text;
+  el.hidden = false;
+  inner.style.animation = "none";
+  void inner.offsetWidth;
+  inner.style.animation = "";
+}
+function setBar(f) {
+  els.bar.style.transform = `scaleX(${Math.max(0, f)})`;
+  els.bar.classList.toggle("mid", f <= 0.6 && f > 0.3);
+  els.bar.classList.toggle("low", f <= 0.3);
+}
+function setTheme() {
+  state.theme = (state.theme + 1) % THEMES.length;
+  const [a, b] = THEMES[state.theme];
+  document.documentElement.style.setProperty("--bg", a);
+  document.documentElement.style.setProperty("--bg2", b);
+  document.querySelector('meta[name="theme-color"]').content = a;
+}
+function renderHud() {
+  els.lives.textContent = "❤️".repeat(state.lives) + "🖤".repeat(LIVES - state.lives);
+  els.score.textContent = state.score;
+  els.streak.textContent = `🔥 ${state.streak}`;
+}
+function endGame() {
+  if (state.cleanup) { try { state.cleanup(); } catch (err) { console.error("cleanup:", err); } }
+  state.cleanup = null;
+  els.game.innerHTML = "";
+}
+
+// ---------- Choosing what to play ----------
+function nextGame() {
+  const wanted = params.get("game");
+  const pool = MICROGAMES.filter((g) => !wanted || g.id === wanted);
+  const fresh = pool.filter((g) => g.id !== state.lastGame);
+  const game = (fresh.length ? fresh : pool)[Math.floor(Math.random() * (fresh.length || pool.length))];
+  state.lastGame = game.id;
+  return game;
+}
+function listFor(game) {
+  const chosen = WORD_LISTS.find((l) => l.id === state.listId);
+  if (chosen && game.contentTypes.includes(chosen.type)) return chosen;
+  return WORD_LISTS.find((l) => game.contentTypes.includes(l.type));
+}
+
+// ---------- Round flow ----------
+function newRound() {
+  clearTimers();
+  endGame();
+  const round = ++state.round;
+  state.reported = false;
+  const game = nextGame();
+  const list = listFor(game);
+  const duration = (game.duration || BASE_MS) / state.speed;
+
+  setTheme();
+  setBar(1);
+  els.stamp.hidden = true;
+  els.game.classList.remove("locked");
+  show(els.instruction, game.instruction.en);
+  document.body.classList.add("flash");
+
+  later(() => {
+    document.body.classList.remove("flash");
+    els.instruction.hidden = true;
+    const ctx = {
+      root: els.game,
+      items: shuffle([...list.items]),
+      list: { id: list.id, type: list.type },
+      speed: state.speed,
+      audio: actx,
+      say,
+      win: () => report(round, true),
+      lose: () => report(round, false),
+    };
+    try {
+      state.cleanup = game.start(ctx) || null;
+    } catch (err) {
+      console.error(`${game.id} start:`, err);
+      later(newRound, 300); // skip a broken game rather than stopping the loop
+      return;
+    }
+    const t0 = performance.now();
+    let lastSec = Infinity;
+    const tick = () => {
+      if (round !== state.round || state.reported) return;
+      const elapsed = performance.now() - t0;
+      setBar(1 - elapsed / duration);
+      const secs = Math.ceil((duration - elapsed) / 1000);
+      if (secs < lastSec && secs <= 2 && secs > 0) tickSound();
+      lastSec = secs;
+      if (elapsed >= duration) { report(round, false, true); return; }
+      state.raf = requestAnimationFrame(tick);
+    };
+    state.raf = requestAnimationFrame(tick);
+  }, INSTRUCTION_MS);
+}
+
+function report(round, won, timedOut = false) {
+  if (round !== state.round || state.reported) return;
+  state.reported = true;
+  cancelAnimationFrame(state.raf);
+  els.game.classList.add("locked");
+
+  if (won) {
+    state.score++;
+    state.streak++;
+    state.cleared++;
+    state.best = Math.max(state.best, state.streak);
+    happySound();
+  } else {
+    state.lives--;
+    state.streak = 0;
+    buzzSound();
+  }
+  if (navigator.vibrate) navigator.vibrate(won ? 30 : [60, 40, 60]);
+  renderHud();
+  later(() => {
+    els.stamp.className = won ? "good" : "bad";
+    show(els.stamp, won ? TEXT.correct : timedOut ? TEXT.timeout : TEXT.wrong);
+  }, STAMP_DELAY_MS);
+
+  later(() => {
+    if (state.lives <= 0) return gameOver();
+    const speedUp = won && state.cleared % SPEEDUP_EVERY === 0 && state.speed < MAX_SPEED;
+    if (!speedUp) return newRound();
+    state.speed = Math.min(MAX_SPEED, state.speed + SPEED_STEP);
+    endGame();
+    els.stamp.hidden = true;
+    show(els.speedup, TEXT.speedUp);
+    later(() => { els.speedup.hidden = true; newRound(); }, 1000);
+  }, FEEDBACK_MS);
+}
+
+function gameOver() {
+  clearTimers();
+  endGame();
+  els.stamp.hidden = true;
+  els.endStats.innerHTML = TEXT.stats(state.score, state.best);
+  els.app.setAttribute("aria-hidden", "true");
+  els.end.hidden = false;
+}
+
+function startGame() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    actx.resume();
+  } catch (err) {
+    console.error("audio unlock:", err);
+  }
+  say(TEXT.ready); // unlocks speech on iOS (must happen inside a tap)
+  clearTimers();
+  Object.assign(state, { lives: LIVES, score: 0, streak: 0, best: 0, cleared: 0, speed: 1, lastGame: null });
+  renderHud();
+  setBar(1);
+  els.start.hidden = els.end.hidden = true;
+  els.app.removeAttribute("aria-hidden");
+  later(newRound, 500);
+}
+
+// List picker on the start screen.
+WORD_LISTS.forEach((l) => {
+  const b = document.createElement("button");
+  b.textContent = TEXT.listNames[l.id] || l.id;
+  b.setAttribute("aria-pressed", String(l.id === state.listId));
+  b.addEventListener("click", () => {
+    state.listId = l.id;
+    els.lists.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  });
+  els.lists.appendChild(b);
+});
+$("#startBtn").addEventListener("click", startGame);
+$("#againBtn").addEventListener("click", startGame);
+renderHud();
+</script>
+</body>
+</html>
