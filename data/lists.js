@@ -35,7 +35,7 @@ window.WORD_LISTS = [
       { text: "R", tricky: ["L", "N"],                 pics: pics("rabbit 🐰", "rainbow 🌈", "robot 🤖", "rocket 🚀") },
       { text: "S", tricky: ["Z"],                      pics: pics("sun ☀️", "snake 🐍", "sock 🧦", "spider 🕷️") },
       { text: "T", tricky: ["F", "L"],                 pics: pics("tiger 🐯", "tomato 🍅", "turtle 🐢", "tree 🌳") },
-      { text: "U", tricky: ["N", "V"],                 pics: pics("umbrella ☂️", "unicorn 🦄", "underwear 🩲") },
+      { text: "U", tricky: ["N", "V"],                 pics: pics("umbrella ☂️", "up ⬆️", "underwear 🩲") },
       { text: "V", tricky: ["U", "W", "B"],            pics: pics("van 🚐", "violin 🎻", "volcano 🌋") },
       { text: "W", tricky: ["M", "V"],                 pics: pics("window 🪟", "watermelon 🍉", "watch ⌚", "worm 🪱") },
       { text: "X", tricky: ["K"],                      pics: pics("fox 🦊", "box 📦", "six 6️⃣") },
