@@ -189,6 +189,7 @@
       const cols = isLetter ? 3 : 2, rows = 3;
 
       let done = false, hits = 0, strikes = 0, sinceTarget = 0;
+      const startedAt = performance.now();
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -300,7 +301,10 @@
       function chooseItem() {
         const targetUp = holes.some((h) => isUp(h) && h.item === target);
         const pool = distractors.filter((d) => !holes.some((h) => isUp(h) && h.item === d));
-        let wantTarget = !pool.length || sinceTarget >= 2 || Math.random() < (targetUp ? 0.2 : 0.5);
+        // Catch-up: running short of time with no target showing → always send one.
+        const msLeft = ctx.timeLimit - (performance.now() - startedAt);
+        const behind = !targetUp && msLeft < (NEED - hits) * (1500 / pace);
+        let wantTarget = !pool.length || sinceTarget >= 2 || behind || Math.random() < (targetUp ? 0.25 : 0.6);
         if (wantTarget && targetUp && pool.length && sinceTarget < 2) wantTarget = false; // one target at a time mostly
         if (wantTarget) { sinceTarget = 0; return target; }
         sinceTarget++;

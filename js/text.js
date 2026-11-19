@@ -51,6 +51,6 @@ window.TEXT = {
     ready: "Let's go!",
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
     done: "Well done!",
-    record: "New record!",
+    record: "New high score!", // not "record": TTS stresses it like the verb
   },
 };
