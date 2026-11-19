@@ -23,7 +23,7 @@ window.WORD_LISTS = [
       { text: "F", tricky: ["T", "H"],                 pics: pics("fish 🐟", "frog 🐸", "fire 🔥", "fork 🍴") },
       { text: "G", tricky: ["Q", "J"],                 pics: pics("goat 🐐", "grapes 🍇", "guitar 🎸", "gorilla 🦍") },
       { text: "H", tricky: ["N", "F"],                 pics: pics("hat 🎩", "horse 🐴", "house 🏠", "hippo 🦛") },
-      { text: "I", tricky: ["J", "T"], /* not L: "I" and "l" look identical */ pics: pics("insect 🐛", "ice cream 🍦", "island 🏝️") },
+      { text: "I", tricky: ["J", "T"], /* not L: "I" and "l" look identical */ pics: pics("insect 🐛", "iguana 🦎", "injection 💉") },
       { text: "J", tricky: ["I", "G"],                 pics: pics("juice 🧃", "jeans 👖", "jellyfish 🪼") },
       { text: "K", tricky: ["X", "H"],                 pics: pics("kite 🪁", "key 🔑", "kangaroo 🦘") },
       { text: "L", tricky: ["R", "T"],                 pics: pics("lion 🦁", "lemon 🍋", "leaf 🍃", "lollipop 🍭") },
