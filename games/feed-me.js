@@ -1,6 +1,7 @@
 // FEED ME! — a hungry picture (🍎 with crazy eyes and a big mouth) wants its
-// letter. The voice says "A for apple"; drag the A into the apple's mouth.
-// Word lists work the same way: 🐱 wants "cat".
+// letter. The voice only says the word ("apple"), so the player has to work
+// out the first letter and drag the A into the apple's mouth.
+// Word lists work the same way: 🐱 says "cat" and wants "cat".
 //
 // Drop the right tile in the mouth: CHOMP, yum. Drop a wrong one: it gets spat
 // out. Dropping anywhere else just springs the tile back (no penalty).
@@ -9,8 +10,24 @@
 // Faster speeds add a 4th tile, then the creature starts swaying side to side.
 (function () {
   const TEXT = {
+    name: { en: "Feed Me" },
+    icon: "😋",
+    // Practice mode's "How to play" card: steps (icon + sentence) and tips.
+    howTo: (list) => ({ en: {
+      steps: [
+        ["👂", "A hungry picture says its name, like \"apple\"."],
+        ["🔤", list.type === "letter" ? "Which letter does it start with? Apple starts with A!" : "Find the word that matches the picture."],
+        ["👆", "Drag that tile into its mouth. Yum!"],
+      ],
+      tips: [
+        "Tap the picture to hear it again.",
+        "Feed it the wrong tile and it spits it out, then the voice tells you the answer.",
+        "Dropping a tile somewhere else is OK. It just bounces back.",
+        "When the game speeds up, there are more tiles and the picture sways.",
+      ],
+    } }),
     instruction: { en: "FEED ME!" },
-    prompt: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
+    answer: (spoken, word) => (word ? `${spoken} for ${word}` : spoken), // said after a miss
     yum: "Yummy!",
     yuck: "Yuck!",
     creatureLabel: (word) => `Hungry ${word}. Tap to hear it again.`,
@@ -95,24 +112,11 @@
     document.head.appendChild(style);
   }
 
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  // The target plus distractors, `tricky` look-alikes first.
-  function pickOptions(pool, target, n) {
-    const byText = new Map(pool.map((it) => [it.text, it]));
-    const tricky = shuffle((target.tricky || []).map((t) => byText.get(t)).filter(Boolean));
-    const rest = shuffle(pool.filter((it) => it !== target && !tricky.includes(it)));
-    return shuffle([target, ...[...tricky, ...rest].slice(0, n - 1)]);
-  }
-
   registerMicrogame({
     id: "feed-me",
+    name: TEXT.name,
+    icon: TEXT.icon,
+    howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter", "cvc"], // needs a picture for every item
     duration: 6000,
@@ -121,17 +125,19 @@
       injectCss();
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const timers = [];
-      const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+      const later = ctx.later;
       let done = false;
       let drag = null;
 
-      const target = ctx.items.find((it) => it.emoji) || ctx.items[0];
-      const n = Math.min(speed >= 1.5 ? 4 : 3, ctx.items.length);
-      const options = pickOptions(ctx.items, target, n);
-      const spoken = (it) => it.say || it.text;
-      const prompt = TEXT.prompt(spoken(target), target.word);
       const isWord = ctx.list.type !== "letter";
+      // For letters, the word must start with that letter ("X for fox" can't be found from "fox").
+      const fits = (it) => it.emoji && (isWord || (it.word || "").charAt(0).toUpperCase() === it.text.toUpperCase());
+      const target = ctx.items.find(fits) || ctx.items.find((it) => it.emoji) || ctx.items[0];
+      const n = Math.min(speed >= 1.5 ? 4 : 3, ctx.items.length);
+      const options = ctx.pickOptions(target, n);
+      const spoken = (it) => it.say || it.text;
+      const prompt = isWord ? spoken(target) : target.word || spoken(target); // just the word: "zebra"
+      const answer = isWord ? spoken(target) : TEXT.answer(spoken(target), target.word);
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -211,7 +217,7 @@
       // ---------- Dragging ----------
       function grab(e, tile) {
         e.preventDefault();
-        if (done || drag) return;
+        if (done || drag || ctx.ended) return;
         try { tile.setPointerCapture(e.pointerId); } catch (err) { /* capture is a nicety */ }
         drag = { tile, id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, moved: false };
         tile.getAnimations().forEach((a) => a.cancel());
@@ -271,7 +277,7 @@
 
       // ---------- Eating ----------
       function feed(tile, dx, dy) {
-        if (done) return;
+        if (done || ctx.ended) return;
         done = true;
         tiles.forEach((t) => { t.disabled = true; });
         lookReset();
@@ -310,10 +316,26 @@
             }
             const answer = tiles.find((x) => x.fmItem === target);
             answer.classList.add("answer");
-            ctx.say(`${TEXT.yuck} ${spoken(target)}!`);
+            ctx.say(`${TEXT.yuck} ${answer}!`);
           }, 450);
         }
       }
+
+      // Out of time: drop whatever is held and show the tile it wanted.
+      ctx.onTimeout(() => {
+        done = true;
+        if (drag) {
+          const d = drag;
+          drag = null;
+          wrap.classList.remove("near");
+          springBack(d.tile, d.dx, d.dy);
+        }
+        tiles.forEach((t) => { t.disabled = true; });
+        lookReset();
+        wrap.classList.add("sick");
+        tiles.find((x) => x.fmItem === target).classList.add("answer");
+        ctx.say(answer);
+      });
 
       function crumbs(at, color) {
         if (reduceMotion) return;
@@ -335,47 +357,7 @@
       }
 
       // ---------- Sound effects (Web Audio; silent when there is no audio context) ----------
-      const ac = ctx.audio;
-      function noise(dur, filterType, from, to, vol, delay = 0) {
-        if (!ac) return;
-        try {
-          const t = ac.currentTime + delay;
-          const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
-          const data = buf.getChannelData(0);
-          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-          const src = ac.createBufferSource();
-          src.buffer = buf;
-          const f = ac.createBiquadFilter();
-          f.type = filterType;
-          f.frequency.setValueAtTime(from, t);
-          f.frequency.exponentialRampToValueAtTime(to, t + dur);
-          const g = ac.createGain();
-          g.gain.setValueAtTime(vol, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-          src.connect(f).connect(g).connect(ac.destination);
-          src.start(t);
-        } catch (err) {
-          console.error("feed-me sound:", err);
-        }
-      }
-      function sweep(from, to, dur, type, vol, delay = 0) {
-        if (!ac) return;
-        try {
-          const t = ac.currentTime + delay;
-          const o = ac.createOscillator();
-          const g = ac.createGain();
-          o.type = type;
-          o.frequency.setValueAtTime(from, t);
-          o.frequency.exponentialRampToValueAtTime(to, t + dur);
-          g.gain.setValueAtTime(vol, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-          o.connect(g).connect(ac.destination);
-          o.start(t);
-          o.stop(t + dur + 0.02);
-        } catch (err) {
-          console.error("feed-me sound:", err);
-        }
-      }
+      const { noise, sweep } = ctx.sfx;
       const crunchSound = () => [0, 0.1, 0.2, 0.3].forEach((d) => noise(0.07, "bandpass", 2600, 700, 0.6, d));
       const yumSound = () => { sweep(330, 440, 0.18, "sine", 0.25); sweep(440, 660, 0.25, "sine", 0.25, 0.2); };
       const blehSound = () => { sweep(280, 70, 0.5, "sawtooth", 0.18); noise(0.25, "highpass", 1500, 5000, 0.4, 0.15); };
@@ -383,7 +365,6 @@
       return function cleanup() {
         done = true;
         drag = null;
-        timers.forEach(clearTimeout);
       };
     },
   });

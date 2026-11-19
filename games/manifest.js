@@ -1,0 +1,14 @@
+// The list of microgames. To add one, put `games/<name>.js` next to this file
+// and add "<name>" here. The frame loads them in this order.
+window.GAME_FILES = [
+  "balloon-pop",
+  "wire-cut",
+  "feed-me",
+  "train-builder",
+  "trace-monster",
+  "whack-a-mole",
+  "find-my-baby",
+  "shuriken-toss",
+  "claw-catch",
+  "fishing",
+];

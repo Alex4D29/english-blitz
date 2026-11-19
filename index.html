@@ -4,560 +4,103 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffd400">
-<title>Letter Dash!</title>
-<style>
-  :root {
-    --bg: #ffd400;
-    --bg2: #ffb800;
-    --ink: #111;
-    --paper: #fff;
-    --good: #1fd65f;
-    --bad: #ff3b3b;
-    --warn: #ff8a00;
-    --font: "Arial Black", "Arial Rounded MT Bold", "Segoe UI Black", system-ui, sans-serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  [hidden] { display: none !important; }
-  html, body { height: 100%; }
-  body {
-    font-family: var(--font);
-    font-weight: 900;
-    color: var(--ink);
-    background: var(--bg);
-    overflow: hidden;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  button { font: inherit; color: inherit; cursor: pointer; }
-
-  /* Spinning sunburst background */
-  #burst {
-    position: fixed;
-    left: 50%; top: 50%;
-    width: 220vmax; height: 220vmax;
-    margin: -110vmax 0 0 -110vmax;
-    background: repeating-conic-gradient(var(--bg) 0deg 12deg, var(--bg2) 12deg 24deg);
-    animation: spin 30s linear infinite;
-    z-index: -1;
-    transition: filter .15s;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.08); }
-
-  #app {
-    height: 100vh;
-    height: 100dvh;
-    max-width: 640px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .pill {
-    background: var(--paper);
-    border: 4px solid var(--ink);
-    border-radius: 999px;
-    padding: 6px 14px;
-    font-size: clamp(1rem, 4.5vw, 1.4rem);
-    box-shadow: 0 4px 0 var(--ink);
-    white-space: nowrap;
-  }
-  #replay {
-    width: 52px; height: 52px;
-    padding: 0;
-    font-size: 1.5rem;
-    line-height: 1;
-  }
-  #replay:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-
-  #timer {
-    height: 26px;
-    background: var(--paper);
-    border: 4px solid var(--ink);
-    border-radius: 999px;
-    overflow: hidden;
-    box-shadow: 0 4px 0 var(--ink);
-  }
-  #bar {
-    height: 100%;
-    width: 100%;
-    background: var(--good);
-    transform-origin: left center;
-    transform: scaleX(1);
-  }
-  #bar.mid { background: var(--warn); }
-  #bar.low { background: var(--bad); animation: blink .25s steps(2) infinite; }
-  @keyframes blink { 50% { opacity: .45; } }
-
-  #stage {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .shout {
-    font-size: clamp(2.6rem, 13vw, 5.5rem);
-    line-height: .95;
-    text-align: center;
-    color: var(--paper);
-    -webkit-text-stroke: 3px var(--ink);
-    paint-order: stroke fill;
-    text-shadow: 0 6px 0 var(--ink);
-    letter-spacing: 1px;
-  }
-  #instruction { animation: slam .5s cubic-bezier(.2, 1.6, .4, 1) both, wobble .3s .5s ease-in-out 2; }
-  @keyframes slam {
-    from { transform: scale(3.2) rotate(-12deg); opacity: 0; }
-    to   { transform: scale(1) rotate(-4deg); opacity: 1; }
-  }
-  @keyframes wobble {
-    0%, 100% { transform: rotate(-4deg); }
-    50%      { transform: rotate(4deg) scale(1.06); }
-  }
-
-  #grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(10px, 3vw, 18px);
-    width: min(100%, 60vh);
-    width: min(100%, 60dvh);
-    animation: popIn .25s cubic-bezier(.2, 1.5, .4, 1) both;
-  }
-  @keyframes popIn { from { transform: scale(.6); opacity: 0; } }
-
-  .letter {
-    aspect-ratio: 1;
-    background: var(--paper);
-    border: 6px solid var(--ink);
-    border-radius: 26px;
-    box-shadow: 0 9px 0 var(--ink);
-    font-size: clamp(3.5rem, 20vw, 8rem);
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform .08s, box-shadow .08s, background .12s;
-  }
-  .letter:nth-child(1) { color: #ff2e88; }
-  .letter:nth-child(2) { color: #1e6bff; }
-  .letter:nth-child(3) { color: #8a2be2; }
-  .letter:nth-child(4) { color: #e65c00; }
-  .letter:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 3px 0 var(--ink); }
-  .letter:disabled { cursor: default; }
-  .letter.right { background: var(--good); color: var(--paper); animation: bounce .45s ease; }
-  .letter.wrong { background: var(--bad);  color: var(--paper); animation: shake .4s ease; }
-  .letter.dim   { opacity: .35; }
-  @keyframes bounce { 40% { transform: scale(1.15) rotate(-4deg); } 70% { transform: scale(.95); } }
-  @keyframes shake {
-    20%, 60% { transform: translateX(-12px) rotate(-3deg); }
-    40%, 80% { transform: translateX(12px) rotate(3deg); }
-  }
-
-  #stamp {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 2;
-  }
-  #stamp span { animation: stamp .35s cubic-bezier(.2, 1.8, .4, 1) both; transform: rotate(-8deg); }
-  #stamp.good span { color: var(--good); }
-  #stamp.bad span  { color: var(--bad); }
-  @keyframes stamp { from { transform: scale(2.5) rotate(10deg); opacity: 0; } }
-
-  #hint {
-    text-align: center;
-    font-size: clamp(1rem, 4.5vw, 1.3rem);
-    min-height: 1.4em;
-  }
-
-  /* Start screen */
-  #start, #end {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 28px;
-    padding: 24px 16px;
-    text-align: center;
-    z-index: 5;
-  }
-  #start h1, #end h1 { font-size: clamp(3.4rem, 18vw, 7rem); transform: rotate(-5deg); animation: wobble 1.2s ease-in-out infinite; }
-  #start p, #end p { font-size: clamp(1.1rem, 5vw, 1.6rem); max-width: 22ch; }
-  #end p { background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; padding: 12px 20px; box-shadow: 0 6px 0 var(--ink); line-height: 1.5; }
-  #startBtn, #againBtn {
-    background: #ff2e88;
-    color: var(--paper);
-    border: 6px solid var(--ink);
-    border-radius: 999px;
-    padding: 18px 36px;
-    font-size: clamp(1.4rem, 7vw, 2.2rem);
-    box-shadow: 0 9px 0 var(--ink);
-    animation: pulse 1s ease-in-out infinite;
-  }
-  #startBtn:active, #againBtn:active { transform: translateY(6px); box-shadow: 0 3px 0 var(--ink); }
-  @keyframes pulse { 50% { transform: scale(1.06); } }
-
-  @media (prefers-reduced-motion: reduce) {
-    #burst, #start h1, #end h1, #startBtn, #againBtn { animation: none; }
-  }
-</style>
+<title>English Blitz!</title>
+<link rel="stylesheet" href="css/frame.css">
 </head>
 <body>
 <div id="burst"></div>
 
-<div id="app" aria-hidden="true">
+<!-- Title -->
+<section id="title" class="screen scroll">
+  <h1 class="shout logo" data-text="title"></h1>
+  <div class="menu">
+    <button class="mode-btn fun" id="funBtn" disabled><span class="ico" aria-hidden="true">🎈</span><span data-text="fun"></span></button>
+    <button class="mode-btn challenge" id="challengeBtn" disabled><span class="ico" aria-hidden="true">🔥</span><span data-text="challenge"></span></button>
+    <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span data-text="practice"></span></button>
+    <button class="chunky" id="settingsBtn">⚙️ <span data-text="settings"></span></button>
+  </div>
+  <p id="loading" data-text="loading"></p>
+</section>
+
+<!-- What to play: letters, CVC words and/or sight words (shown after a mode button) -->
+<section id="content" class="screen scroll" hidden>
+  <h1 class="shout" data-text="whatToPlay"></h1>
+  <p class="card" data-text="pickContent"></p>
+  <div id="contentGrid" role="group"></div>
+  <div class="buttons">
+    <button class="chunky hot" id="contentGoBtn">▶️ <span data-text="play"></span></button>
+    <button class="chunky" id="contentBackBtn">⬅️ <span data-text="back"></span></button>
+  </div>
+</section>
+
+<!-- Practice: pick one game -->
+<section id="practice" class="screen scroll" hidden>
+  <h1 class="shout" data-text="practice"></h1>
+  <p class="card" data-text="pickGame"></p>
+  <div id="practiceGrid"></div>
+  <button class="chunky" id="practiceBackBtn">⬅️ <span data-text="back"></span></button>
+</section>
+
+<!-- Practice: how to play the chosen game -->
+<section id="howto" class="screen scroll" hidden>
+  <div id="howtoIcon" aria-hidden="true"></div>
+  <h1 class="shout" id="howtoName"></h1>
+  <div class="card" id="howtoCard">
+    <h2 data-text="howToPlay"></h2>
+    <ol id="howtoSteps"></ol>
+    <div id="howtoTipsBox">
+      <h3>💡 <span data-text="tips"></span></h3>
+      <ul id="howtoTips"></ul>
+    </div>
+  </div>
+  <div class="buttons">
+    <button class="chunky hot" id="howtoPlayBtn">▶️ <span data-text="play"></span></button>
+    <button class="chunky" id="howtoBackBtn">⬅️ <span data-text="back"></span></button>
+  </div>
+</section>
+
+<!-- Settings (placeholder) -->
+<section id="settings" class="screen" hidden>
+  <h1 class="shout" data-text="settings"></h1>
+  <p class="card" data-text="settingsSoon"></p>
+  <button class="chunky" id="backBtn">⬅️ <span data-text="back"></span></button>
+</section>
+
+<!-- Play -->
+<div id="play" hidden>
   <header>
-    <div class="pill">⭐ <span id="score">0</span>/<span id="goal">10</span></div>
-    <div class="pill" id="streak">🔥 0</div>
-    <button class="pill" id="replay" aria-label="Hear it again">🔊</button>
+    <button class="pill" id="quitBtn" data-label="quit">✕</button>
+    <div class="pill" id="status" role="status"></div>
+    <div class="pill" id="roundPill"></div>
+    <button class="pill" id="helpBtn" data-label="helpLabel" hidden>❓</button>
   </header>
-  <div id="timer" role="progressbar" aria-label="Time left"><div id="bar"></div></div>
+  <div id="timer" role="progressbar" aria-hidden="true"><div id="bar"></div></div>
   <main id="stage">
-    <div id="instruction" class="shout" hidden></div>
-    <div id="grid" hidden></div>
-    <div id="stamp" hidden><span class="shout"></span></div>
+    <div id="game"></div>
+    <div id="banner" hidden><div class="shout"></div></div>
+    <div id="stamp" hidden><div class="shout"></div></div>
   </main>
-  <div id="hint"></div>
 </div>
 
-<div id="start">
-  <h1 class="shout">LETTER<br>DASH!</h1>
-  <p>Listen to the letter. Tap it. FAST!</p>
-  <button id="startBtn">TAP TO START</button>
-</div>
+<!-- Results -->
+<section id="results" class="screen" hidden>
+  <h1 class="shout" id="resTitle"></h1>
+  <div id="stars" role="img" hidden></div>
+  <div class="card" id="resStats"></div>
+  <p class="shout" id="record" hidden></p>
+  <div class="buttons">
+    <button class="chunky hot" id="againBtn">🔁 <span data-text="again"></span></button>
+    <button class="chunky" id="menuBtn">🏠 <span data-text="menu"></span></button>
+  </div>
+</section>
 
-<div id="end" hidden>
-  <h1 class="shout">GAME<br>OVER!</h1>
-  <p id="endStats"></p>
-  <button id="againBtn">PLAY AGAIN</button>
-</div>
-
-<script>
-// All player-facing text lives here so another language can be added later.
-const TEXT = {
-  instruction: "TAP THE<br>LETTER!",
-  correct: "YES!",
-  wrong: "NOPE!",
-  timeout: "TOO SLOW!",
-  listen: "Listen… 👂",
-  noSpeech: "Sound like: ",
-  say: (letter, word) => `${letter} for ${word}`,
-  ready: "Let's go!",
-  win: "Ten points! Great job!",
-  stats: (goal, secs, misses) =>
-    `⭐ ${goal} points<br>⏱️ ${secs} seconds<br>❌ ${misses} ${misses === 1 ? "miss" : "misses"}`,
-  voiceLang: "en",
-};
-const WORDS = {
-  A: "apple", B: "ball", C: "cat", D: "dog", E: "egg", F: "fish", G: "goat",
-  H: "hat", I: "igloo", J: "jam", K: "kite", L: "lion", M: "moon", N: "nest",
-  O: "octopus", P: "pig", Q: "queen", R: "rabbit", S: "sun", T: "tiger",
-  U: "umbrella", V: "van", W: "window", X: "fox", Y: "yo-yo", Z: "zebra",
-};
-// How some letters should be spelled for the voice, so it doesn't misread them
-// (e.g. a lone "A" can be read as the word "uh"). Screen text still shows the real letter.
-const SPOKEN = { A: "Ay" };
-const LETTERS = Object.keys(WORDS);
-const GOAL = 10;
-const ROUND_MS = 5000;
-const INSTRUCTION_MS = 1000;
-const FEEDBACK_MS = 1300;
-const THEMES = [
-  ["#ffd400", "#ffb800"], ["#00d4ff", "#00b4f0"], ["#ff6fb0", "#ff4f9a"],
-  ["#7cf04f", "#5fd932"], ["#ff9a1f", "#ff7f00"], ["#b388ff", "#9c6bff"],
-];
-
-const $ = (s) => document.querySelector(s);
-const els = {
-  app: $("#app"), start: $("#start"), startBtn: $("#startBtn"),
-  score: $("#score"), streak: $("#streak"), replay: $("#replay"),
-  bar: $("#bar"), instruction: $("#instruction"), grid: $("#grid"),
-  stamp: $("#stamp"), hint: $("#hint"),
-  end: $("#end"), endStats: $("#endStats"), againBtn: $("#againBtn"),
-};
-$("#goal").textContent = GOAL;
-
-const state = {
-  round: 0, score: 0, streak: 0, misses: 0, startTime: 0, theme: 0,
-  target: null, lastTarget: null,
-  accepting: false, timerStart: 0, raf: 0, timeouts: [],
-};
-
-// ---------- Sound effects (Web Audio, no files needed) ----------
-let actx = null;
-function tone(freq, start, dur, type, vol) {
-  const o = actx.createOscillator();
-  const g = actx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, start);
-  g.gain.setValueAtTime(vol, start);
-  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
-  o.connect(g).connect(actx.destination);
-  o.start(start);
-  o.stop(start + dur + 0.02);
-}
-function happySound() {
-  if (!actx) return;
-  const t = actx.currentTime;
-  [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.08, 0.2, "square", 0.12));
-  tone(1568, t + 0.32, 0.3, "triangle", 0.15);
-}
-function buzzSound() {
-  if (!actx) return;
-  const t = actx.currentTime;
-  tone(110, t, 0.5, "sawtooth", 0.22);
-  tone(117, t, 0.5, "sawtooth", 0.18);
-}
-function tickSound() {
-  if (!actx) return;
-  tone(880, actx.currentTime, 0.05, "square", 0.05);
-}
-
-// ---------- Speech ----------
-const canSpeak = "speechSynthesis" in window;
-let voice = null;
-function pickVoice() {
-  const voices = speechSynthesis.getVoices();
-  voice = voices.find((v) => /^en[-_](US|GB)/i.test(v.lang) && v.localService)
-       || voices.find((v) => /^en[-_](US|GB)/i.test(v.lang))
-       || voices.find((v) => v.lang.toLowerCase().startsWith(TEXT.voiceLang))
-       || null;
-}
-if (canSpeak) {
-  pickVoice();
-  speechSynthesis.addEventListener?.("voiceschanged", pickVoice);
-}
-
-function speak(text, onStart) {
-  let fired = false;
-  const go = () => { if (!fired) { fired = true; onStart && onStart(); } };
-  if (!canSpeak) { go(); return; }
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  if (voice) u.voice = voice;
-  u.lang = voice ? voice.lang : "en-US";
-  u.rate = 0.9;
-  u.pitch = 1.1;
-  u.onstart = go;
-  u.onerror = (e) => {
-    if (e.error !== "interrupted" && e.error !== "canceled") console.error("Speech failed:", e.error);
-    go();
-  };
-  speechSynthesis.speak(u);
-  setTimeout(go, 800); // don't wait forever if the browser never fires onstart
-}
-
-function sayTarget(onStart) {
-  speak(TEXT.say(SPOKEN[state.target] || state.target, WORDS[state.target]), onStart);
-}
-
-// ---------- Game flow ----------
-function later(fn, ms) { state.timeouts.push(setTimeout(fn, ms)); }
-function clearTimers() {
-  state.timeouts.forEach(clearTimeout);
-  state.timeouts = [];
-  cancelAnimationFrame(state.raf);
-}
-
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function setTheme() {
-  state.theme = (state.theme + 1) % THEMES.length;
-  const [a, b] = THEMES[state.theme];
-  document.documentElement.style.setProperty("--bg", a);
-  document.documentElement.style.setProperty("--bg2", b);
-  document.querySelector('meta[name="theme-color"]').content = a;
-}
-
-function setBar(fraction) {
-  els.bar.style.transform = `scaleX(${Math.max(0, fraction)})`;
-  els.bar.classList.toggle("mid", fraction <= 0.6 && fraction > 0.3);
-  els.bar.classList.toggle("low", fraction <= 0.3);
-}
-
-function newRound() {
-  clearTimers();
-  state.round++;
-  state.accepting = false;
-  state.timerStart = 0;
-
-  // Pick a target (never the same twice in a row) plus 3 different decoys.
-  let target;
-  do { target = LETTERS[Math.floor(Math.random() * LETTERS.length)]; } while (target === state.lastTarget);
-  state.target = state.lastTarget = target;
-  const choices = shuffle([target, ...shuffle(LETTERS.filter((l) => l !== target)).slice(0, 3)]);
-
-  setTheme();
-  setBar(1);
-  els.grid.hidden = true;
-  els.stamp.hidden = true;
-  els.hint.textContent = "";
-
-  // Flash the instruction (re-trigger its animation).
-  els.instruction.innerHTML = TEXT.instruction;
-  els.instruction.hidden = false;
-  els.instruction.style.animation = "none";
-  void els.instruction.offsetWidth;
-  els.instruction.style.animation = "";
-  document.body.classList.add("flash");
-
-  const round = state.round;
-  later(() => {
-    document.body.classList.remove("flash");
-    els.instruction.hidden = true;
-    els.grid.innerHTML = "";
-    choices.forEach((letter) => {
-      const b = document.createElement("button");
-      b.className = "letter";
-      b.textContent = letter;
-      b.dataset.letter = letter;
-      b.setAttribute("aria-label", `Letter ${letter}`);
-      b.addEventListener("pointerdown", (e) => { e.preventDefault(); choose(letter); });
-      b.addEventListener("click", () => choose(letter)); // keyboard / assistive fallback
-      els.grid.appendChild(b);
-    });
-    els.grid.hidden = false;
-    els.grid.style.animation = "none";
-    void els.grid.offsetWidth;
-    els.grid.style.animation = "";
-    state.accepting = true;
-    els.hint.textContent = canSpeak ? TEXT.listen : TEXT.noSpeech + WORDS[target];
-    sayTarget(() => startTimer(round));
-  }, INSTRUCTION_MS);
-}
-
-function startTimer(round) {
-  if (round !== state.round || !state.accepting || state.timerStart) return;
-  state.timerStart = performance.now();
-  let lastSecond = Math.ceil(ROUND_MS / 1000);
-  const tick = () => {
-    const elapsed = performance.now() - state.timerStart;
-    const left = 1 - elapsed / ROUND_MS;
-    setBar(left);
-    const secs = Math.ceil((ROUND_MS - elapsed) / 1000);
-    if (secs < lastSecond && secs <= 2 && secs > 0) tickSound();
-    lastSecond = secs;
-    if (left <= 0) { finish(null); return; }
-    state.raf = requestAnimationFrame(tick);
-  };
-  state.raf = requestAnimationFrame(tick);
-}
-
-function choose(letter) {
-  if (!state.accepting) return;
-  finish(letter);
-}
-
-function finish(choice) {
-  state.accepting = false;
-  cancelAnimationFrame(state.raf);
-  const correct = choice === state.target;
-
-  els.grid.querySelectorAll(".letter").forEach((b) => {
-    b.disabled = true;
-    const l = b.dataset.letter;
-    if (l === state.target) b.classList.add("right");
-    else if (l === choice) b.classList.add("wrong");
-    else b.classList.add("dim");
-  });
-
-  const label = els.stamp.querySelector("span");
-  label.textContent = correct ? TEXT.correct : choice ? TEXT.wrong : TEXT.timeout;
-  els.stamp.className = correct ? "good" : "bad";
-  els.stamp.hidden = false;
-  label.style.animation = "none";
-  void label.offsetWidth;
-  label.style.animation = "";
-
-  if (correct) {
-    state.score++;
-    state.streak++;
-    happySound();
-  } else {
-    state.streak = 0;
-    state.misses++;
-    buzzSound();
-  }
-  if (navigator.vibrate) navigator.vibrate(correct ? 30 : [60, 40, 60]);
-  els.score.textContent = state.score;
-  els.streak.textContent = `🔥 ${state.streak}`;
-  els.hint.textContent = TEXT.say(state.target, WORDS[state.target]);
-
-  later(state.score >= GOAL ? gameOver : newRound, FEEDBACK_MS);
-}
-
-function gameOver() {
-  clearTimers();
-  state.accepting = false;
-  const secs = Math.round((performance.now() - state.startTime) / 1000);
-  els.endStats.innerHTML = TEXT.stats(GOAL, secs, state.misses);
-  els.app.setAttribute("aria-hidden", "true");
-  els.end.hidden = false;
-  happySound();
-  later(happySound, 450);
-  speak(TEXT.win);
-}
-
-// ---------- Controls ----------
-function startGame() {
-  try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    actx.resume();
-  } catch (err) {
-    console.error("Could not start audio:", err);
-  }
-  speak(TEXT.ready); // unlocks speech on iOS (must happen inside a tap)
-  clearTimers();
-  Object.assign(state, { score: 0, streak: 0, misses: 0, lastTarget: null, startTime: performance.now() });
-  els.score.textContent = "0";
-  els.streak.textContent = "🔥 0";
-  els.grid.hidden = true;
-  els.stamp.hidden = true;
-  els.hint.textContent = "";
-  setBar(1);
-  els.start.hidden = true;
-  els.end.hidden = true;
-  els.app.removeAttribute("aria-hidden");
-  later(newRound, 600);
-}
-els.startBtn.addEventListener("click", startGame);
-els.againBtn.addEventListener("click", startGame);
-
-els.replay.addEventListener("click", () => {
-  if (state.accepting) sayTarget(() => startTimer(state.round));
-});
-
-document.addEventListener("keydown", (e) => {
-  const overlayOpen = !els.start.hidden || !els.end.hidden;
-  if (overlayOpen && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); startGame(); return; }
-  const key = e.key.toUpperCase();
-  if (state.accepting && els.grid.querySelector(`[data-letter="${key}"]`)) choose(key);
-  else if (state.accepting && e.key === " ") els.replay.click();
-});
-</script>
+<!-- Order matters: text and core (which defines registerMicrogame) come first.
+     The frame then loads every game listed in games/manifest.js. -->
+<script src="js/text.js"></script>
+<script src="js/core.js"></script>
+<script src="data/lists.js"></script>
+<script src="js/modes.js"></script>
+<script src="games/manifest.js"></script>
+<script src="js/frame.js"></script>
 </body>
 </html>

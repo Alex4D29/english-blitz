@@ -6,13 +6,30 @@
 // cross the wires so they have to be traced (colors help).
 (function () {
   const TEXT = {
+    name: { en: "Wire Cut" },
+    icon: "💣",
+    // Practice mode's "How to play" card: steps (icon + sentence) and tips.
+    howTo: (list) => ({ en: {
+      steps: [
+        ["🔗", list.type === "letter" ? "Each wire joins two things that should match, like A and a."
+          : list.type === "hfw" ? "Each wire joins a big word to its small word, like THE and the."
+          : "Each wire joins two things that should match, like 🐱 and cat."],
+        ["🔍", "But one pair is wrong! Find the pair that doesn't match."],
+        ["✂️", "Tap that wire, or either end of it, to cut it."],
+      ],
+      tips: [
+        "Cut a good wire and the bomb goes BOOM!",
+        "Follow the colors to see which ends go together.",
+        "When the game speeds up, the wires cross and there are more of them.",
+      ],
+    } }),
     instruction: { en: "CUT THE\nWRONG WIRE!" },
     cutLabel: (a, b) => `Cut the wire from ${a} to ${b}`,
     bombLabel: "Bomb",
   };
 
-  const WIRE_COLORS = ["#ff2e3b", "#1e6bff", "#1fd65f", "#b04dff", "#ff8a00"];
-  const CONFETTI_COLORS = ["#ff2e88", "#1e6bff", "#ffd400", "#1fd65f", "#ff8a00", "#b04dff", "#00d4ff"];
+  const MAX_WORD = 5; // longest word that stays readable on a tile
+  const WIRE_COLORS =["#ff2e3b", "#1e6bff", "#1fd65f", "#b04dff", "#ff8a00"];
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   const CSS = `
@@ -46,7 +63,6 @@
     display:flex; align-items:center; justify-content:center; font-size:24px; background:#fff;
     border:4px solid #111; border-radius:50%; box-shadow:0 3px 0 #111; animation:wc-wiggle .6s ease-in-out infinite; }
   .wc-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:3; }
-  .wc-confetti { position:absolute; width:12px; height:18px; border:2px solid #111; border-radius:3px; }
   .wc-flash { position:absolute; inset:-50vmax; background:radial-gradient(circle,#fff 0 20%,#ffd400 35%,#ff5a00 60%,transparent 75%);
     animation:wc-flash .6s ease-out forwards; }
   .wc.shake { animation:wc-shake .45s linear; }
@@ -73,31 +89,40 @@
     document.head.appendChild(style);
   }
 
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
   const mid = (p, q, t) => ({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t });
   const cubic = (a, b, c, d) => `M${a.x},${a.y} C${b.x},${b.y} ${c.x},${c.y} ${d.x},${d.y}`;
 
   // What each side of a pair shows, and how the voice says it.
-  function faces(item, type) {
+  // Letters: A—a. Words with pictures: 🐱—cat. Words without (sight words): THE—the.
+  // `pics` is decided once per round, so a board never mixes pictures and capitals.
+  function faces(item, type, pics) {
     const spoken = item.say || item.text;
-    if (type === "letter") return { left: item.text.toUpperCase(), right: item.text.toLowerCase(), spoken, word: false };
-    // Word lists: picture on the left, word on the right (falls back to text when there's no emoji).
-    return { left: item.emoji || item.text, right: item.text, spoken, word: !item.emoji };
+    const word = type !== "letter";
+    if (pics) return { left: item.emoji, right: item.text, spoken, word, pic: true };
+    return { left: item.text.toUpperCase(), right: item.text.toLowerCase(), spoken, word, pic: false };
   }
 
-  // Build the pairs: one item gets a decoy on its right side, ideally one of its `tricky` look-alikes.
-  function buildPairs(pool, count) {
-    const byText = new Map(pool.map((it) => [it.text, it]));
+  // Shrink a word until it fits its tile. Call after layout: a tile without a size yet is left alone.
+  function fitWord(el) {
+    if (!el.clientWidth) return;
+    el.style.fontSize = "";
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const tooWide = () => range.getBoundingClientRect().width > el.clientWidth * 0.86;
+    let px = parseFloat(getComputedStyle(el).fontSize);
+    for (let i = 0; i < 12 && tooWide() && px > 10; i++) {
+      px *= 0.9;
+      el.style.fontSize = `${px}px`;
+    }
+  }
+
+  // Build the pairs from `pool`: one item gets a decoy on its right side, ideally a look-alike (B—d, 🐱—cot, WAS—saw).
+  function buildPairs(ctx, pool, count) {
+    const { pick, shuffle } = ctx;
     const odd = pick(pool);
-    const trickies = (odd.tricky || []).map((t) => byText.get(t)).filter(Boolean);
-    const decoy = trickies.length ? pick(trickies) : pick(pool.filter((it) => it !== odd));
+    // The decoy only shows as a word on the right, so it may come from the whole list (no picture needed).
+    const decoy = ctx.pickOptions(odd, 2).find((it) => it !== odd && it.text.length <= MAX_WORD)
+      || pick(pool.filter((it) => it !== odd));
     // Leave the decoy out of the other pairs so its real match isn't on screen too.
     const others = shuffle(pool.filter((it) => it !== odd && it !== decoy)).slice(0, count - 1);
     return shuffle([{ left: odd, right: decoy, odd: true }, ...others.map((it) => ({ left: it, right: it, odd: false }))]);
@@ -105,6 +130,9 @@
 
   registerMicrogame({
     id: "wire-cut",
+    name: TEXT.name,
+    icon: TEXT.icon,
+    howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter", "cvc", "hfw"],
     duration: 7000,
@@ -113,15 +141,18 @@
       injectCss();
       const type = ctx.list.type;
       const speed = ctx.speed || 1;
-      const count = Math.min(speed >= 1.5 ? 4 : 3, ctx.items.length - 1);
       const crossed = speed >= 1.25;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      const timers = [];
-      const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+      const { shuffle, later } = ctx;
       let done = false;
 
-      const pairs = buildPairs(ctx.items, count);
+      // Words longer than MAX_WORD get too small to read on a tile. Use pictures when there are enough.
+      const fits = ctx.items.filter((it) => type === "letter" || it.text.length <= MAX_WORD);
+      const withPics = fits.filter((it) => it.emoji);
+      const pics = type !== "letter" && withPics.length >= 5;
+      const pool = pics ? withPics : fits;
+      const count = Math.min(speed >= 1.5 ? 4 : 3, pool.length - 1);
+      const pairs = buildPairs(ctx, pool, count);
       // Right-hand row for each pair. When crossed, make sure at least one wire actually crosses.
       let rows = pairs.map((_, i) => i);
       if (crossed) do shuffle(rows); while (rows.every((r, i) => r === i));
@@ -147,8 +178,8 @@
 
       const wires = pairs.map((pair, i) => {
         const color = WIRE_COLORS[i % WIRE_COLORS.length];
-        const L = faces(pair.left, type);
-        const R = faces(pair.right, type);
+        const L = faces(pair.left, type, pics);
+        const R = faces(pair.right, type, pics);
         const tile = (text, isWord, isEmoji, col, row) => {
           const b = document.createElement("button");
           b.className = "wc-tile" + (isWord ? " word" : "") + (isEmoji ? "" : " ink");
@@ -161,12 +192,13 @@
           b.addEventListener("pointerdown", (e) => { e.preventDefault(); cut(wire); });
           b.addEventListener("click", () => cut(wire)); // keyboard / assistive fallback
           board.appendChild(b);
+          if (isWord) ctx.raf(() => fitWord(b)); // after layout, once the tile has its size
           return b;
         };
         const wire = {
           pair, color, cut: false, sayLeft: L.spoken, sayRight: R.spoken,
-          leftEl: tile(L.left, type !== "letter" && L.word, type !== "letter" && !L.word, 1, i),
-          rightEl: tile(R.right, type !== "letter", false, 3, rows[i]),
+          leftEl: tile(L.left, L.word && !L.pic, L.pic, 1, i),
+          rightEl: tile(R.right, R.word, false, 3, rows[i]),
           sag: 14 + Math.random() * 16,
           g: document.createElementNS(SVG_NS, "g"),
           snip: null,
@@ -212,7 +244,7 @@
         const [ha, hb] = w.g.querySelectorAll(".half");
         if (w.cut) {
           const fall = () => { ha.style.transform = drop(1); hb.style.transform = drop(-1); };
-          if (animateCut) { void ha.getBoundingClientRect(); requestAnimationFrame(fall); } else fall();
+          if (animateCut) { void ha.getBoundingClientRect(); ctx.raf(fall); } else fall();
         } else {
           w.g.querySelector(".hit").addEventListener("pointerdown", (e) => { e.preventDefault(); cut(w); });
         }
@@ -228,18 +260,22 @@
       ro.observe(board);
 
       // ---------- Cutting ----------
-      function cut(w) {
-        if (done || w.cut) return;
-        done = true;
-        w.cut = true;
-        const g = drawWire(w, !reduceMotion);
-        sparks(g.m);
-        snipSound();
+      function lockBoard() {
         wires.forEach((x) => {
           x.leftEl.disabled = x.rightEl.disabled = true;
           if (x.snip) x.snip.hidden = true;
         });
         bomb.querySelector(".wc-spark").hidden = true;
+      }
+
+      function cut(w) {
+        if (done || ctx.ended || w.cut) return;
+        done = true;
+        w.cut = true;
+        const g = drawWire(w, !reduceMotion);
+        sparks(g.m);
+        snipSound();
+        lockBoard();
         ctx.say(`${w.sayLeft}... ${w.sayRight}`);
 
         if (w.pair.odd) {
@@ -257,6 +293,17 @@
           later(explode, 220);
         }
       }
+
+      // Out of time: show which pair was wrong, then boom.
+      ctx.onTimeout(() => {
+        done = true;
+        lockBoard();
+        const odd = wires.find((x) => x.pair.odd);
+        odd.leftEl.classList.add("bad");
+        odd.rightEl.classList.add("bad");
+        ctx.say(`${odd.sayLeft}... ${odd.sayRight}`);
+        later(explode, 300);
+      });
 
       // ---------- Effects ----------
       function sparks(at) {
@@ -276,27 +323,7 @@
       }
 
       function confetti() {
-        const box = wrap.getBoundingClientRect();
-        const ox = box.width / 2, oy = bomb.offsetHeight / 2;
-        const n = reduceMotion ? 0 : 70;
-        for (let i = 0; i < n; i++) {
-          const c = document.createElement("div");
-          c.className = "wc-confetti";
-          c.style.left = ox + "px";
-          c.style.top = oy + "px";
-          c.style.background = pick(CONFETTI_COLORS);
-          if (Math.random() < 0.3) c.style.borderRadius = "50%";
-          fx.appendChild(c);
-          const dx = (Math.random() - 0.5) * box.width * 1.3;
-          const up = -(80 + Math.random() * 160);
-          const fall = box.height * (0.6 + Math.random() * 0.6);
-          const spin = (Math.random() - 0.5) * 1440;
-          c.animate(
-            [{ transform: "translate(0,0) rotate(0) scale(.4)" },
-             { transform: `translate(${dx * 0.6}px,${up}px) rotate(${spin * 0.4}deg) scale(1)`, offset: 0.3 },
-             { transform: `translate(${dx}px,${fall}px) rotate(${spin}deg) scale(1)` }],
-            { duration: 1100 + Math.random() * 500, easing: "cubic-bezier(.2,.6,.4,1)", fill: "forwards" });
-        }
+        ctx.confetti(fx, wrap.getBoundingClientRect().width / 2, bomb.offsetHeight / 2);
         popSound();
       }
 
@@ -327,54 +354,13 @@
       }
 
       // ---------- Sound effects (Web Audio; silent when there is no audio context) ----------
-      const ac = ctx.audio;
-      function noise(dur, filterType, from, to, vol, delay = 0) {
-        if (!ac) return;
-        try {
-          const t = ac.currentTime + delay;
-          const buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
-          const data = buf.getChannelData(0);
-          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-          const src = ac.createBufferSource();
-          src.buffer = buf;
-          const f = ac.createBiquadFilter();
-          f.type = filterType;
-          f.frequency.setValueAtTime(from, t);
-          f.frequency.exponentialRampToValueAtTime(to, t + dur);
-          const g = ac.createGain();
-          g.gain.setValueAtTime(vol, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-          src.connect(f).connect(g).connect(ac.destination);
-          src.start(t);
-        } catch (err) {
-          console.error("wire-cut sound:", err);
-        }
-      }
-      function sweep(from, to, dur, type, vol) {
-        if (!ac) return;
-        try {
-          const t = ac.currentTime;
-          const o = ac.createOscillator();
-          const g = ac.createGain();
-          o.type = type;
-          o.frequency.setValueAtTime(from, t);
-          o.frequency.exponentialRampToValueAtTime(to, t + dur);
-          g.gain.setValueAtTime(vol, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-          o.connect(g).connect(ac.destination);
-          o.start(t);
-          o.stop(t + dur + 0.02);
-        } catch (err) {
-          console.error("wire-cut sound:", err);
-        }
-      }
+      const { noise, sweep } = ctx.sfx;
       const snipSound = () => { noise(0.05, "highpass", 3000, 6000, 0.5); noise(0.05, "highpass", 2500, 5000, 0.4, 0.07); };
       const popSound = () => { [0, 0.06, 0.13].forEach((d) => noise(0.08, "bandpass", 1800, 600, 0.35, d)); };
       const boomSound = () => { noise(0.9, "lowpass", 1500, 60, 0.9); sweep(120, 35, 0.7, "sine", 0.6); };
 
       return function cleanup() {
         done = true;
-        timers.forEach(clearTimeout);
         ro.disconnect();
       };
     },
