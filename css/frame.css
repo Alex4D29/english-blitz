@@ -209,7 +209,7 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 .stat .lbl { text-align: left; }
 .stat .val { font-size: 1.25em; }
 .stat.best { border-top: 3px dashed var(--ink); padding-top: 8px; }
-#record { font-size: clamp(1.8rem, 9vw, 3rem); color: #ffd400; transform: rotate(-6deg); animation: stamp .4s .3s cubic-bezier(.2, 1.8, .4, 1) both, wobble .6s 1s ease-in-out infinite; }
+#record { font-size: clamp(1.5rem, 7.5vw, 3rem); color: #ffd400; transform: rotate(-6deg); animation: stamp .4s .3s cubic-bezier(.2, 1.8, .4, 1) both, wobble .6s 1s ease-in-out infinite; }
 .buttons { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
 
 @media (prefers-reduced-motion: reduce) {

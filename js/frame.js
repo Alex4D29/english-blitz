@@ -15,6 +15,7 @@
   const INSTRUCTION_MS = 1000;
   const STAMP_DELAY_MS = 250;   // let the game's own win/lose effect land first
   const FEEDBACK_MS = 1400;
+  const SPEECH_WAIT_MS = 2500;  // max extra wait for speech to finish after feedback
   const END_MS = 1500;
   const CONTENT_TYPES = ["letter", "cvc", "hfw"];   // content picker order
   const DEFAULT_TYPES = ["letter"];
@@ -377,7 +378,15 @@
     renderHud(loseLife);
 
     later(() => shout(els.stamp, won ? T.correct : timedOut ? T.timeout : T.wrong, won ? "good" : "bad"), STAMP_DELAY_MS);
-    later(nextRound, FEEDBACK_MS);
+    later(() => whenQuiet(nextRound), FEEDBACK_MS);
+  }
+
+  // Let the game's last line ("A for apple") finish before the next round cuts it off.
+  // Capped, because some browsers leave `speaking` stuck on true.
+  function whenQuiet(fn) {
+    const until = performance.now() + SPEECH_WAIT_MS;
+    const check = () => (C.isSpeaking() && performance.now() < until ? later(check, 100) : fn());
+    check();
   }
 
   function finishRun() {

@@ -186,6 +186,11 @@
       console.error("speech:", err);
     }
   }
+  function isSpeaking() {
+    if (!canSpeak) return false;
+    try { return speechSynthesis.speaking || speechSynthesis.pending; } catch (err) { return false; }
+  }
+
   function stopSpeech() {
     if (!canSpeak) return;
     try { speechSynthesis.cancel(); } catch (err) { console.error("speech cancel:", err); }
@@ -246,7 +251,7 @@
     MICROGAMES,
     shuffle, pick, pickOptions,
     unlock, audioCtx: () => actx, sfx,
-    canSpeak, say, stopSpeech,
+    canSpeak, say, stopSpeech, isSpeaking,
     confetti,
     storage,
   };

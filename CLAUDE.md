@@ -55,7 +55,7 @@ Test URLs: `index.html?game=wire-cut` plays only that game (the content picker s
 - **The transition:** "SPEED UP!" when the speed changes, then "ROUND n", then the game's instruction slams in with a background flash. A new color theme each round.
 - **The timer bar:** green → orange → red, with ticks in the last 2 s. Running out of time counts as a loss.
 - **Lives and progress:** hearts in Challenge, 10 progress pips in Fun.
-- **Feedback between games:** happy sound or buzz, vibration, and a YES! / NOPE! / TOO SLOW! stamp.
+- **Feedback between games:** happy sound or buzz, vibration, and a YES! / NOPE! / TOO SLOW! stamp. After the 1.4 s feedback, the next round waits for any speech still playing ("A for apple") to finish, up to 2.5 s more (`whenQuiet`).
 - **Audio unlock:** tapping a mode button or a content toggle creates the `AudioContext`, and PLAY calls `speechSynthesis`. iOS blocks sound until the first tap.
 - **Results, high score, PLAY AGAIN and MENU.**
 - **Clearing every timer** a game started, through `ctx.later` / `ctx.raf`, between games.

@@ -43,7 +43,7 @@ window.TEXT = {
   menu: "MENU",
   funTitle: { 1: "GOOD\nTRY!", 2: "GREAT!", 3: "AMAZING!" },
   challengeTitle: "WELL\nDONE!",
-  newRecord: "NEW RECORD!",
+  newRecord: "NEW HIGH SCORE!",
   starsLabel: (n) => `${n} of 3 stars`,
   stats: { cleared: "Cleared", accuracy: "Accuracy", speed: "Speed", best: "Best" },
 
@@ -51,6 +51,6 @@ window.TEXT = {
     ready: "Let's go!",
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
     done: "Well done!",
-    record: "New high score!", // not "record": TTS stresses it like the verb
+    record: "New high score!", // not "new record": TTS stresses "record" like the verb
   },
 };
