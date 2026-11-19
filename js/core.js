@@ -173,7 +173,9 @@
     if (!canSpeak || !text) return;
     try {
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      // Some voices (iOS especially) read a lone capital as "capital E", so send single
+      // letters in lowercase. Not "A": a lone "a" is read as "uh" (letters spell it "Ay").
+      const u = new SpeechSynthesisUtterance(String(text).replace(/\b[B-Z]\b/g, (c) => c.toLowerCase()));
       if (voice) u.voice = voice;
       u.lang = voice ? voice.lang : "en-US";
       u.rate = 0.9;

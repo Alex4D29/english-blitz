@@ -37,7 +37,7 @@
 
   const MONSTER_COLORS = ["#9b3dff", "#1fd65f", "#ff2e88", "#ff8a00", "#1e9bff", "#e8173c"];
   const SPACING = 6;       // checkpoint spacing along each stroke (letter box is 100×100)
-  const STROKE_DONE = 0.8; // share of a stroke's dots to light before it counts
+  const STROKE_DONE = 0.9; // share of a stroke's dots to light before it counts
 
   // ---------- Letter shapes ----------
   // Each letter is a list of strokes; each stroke is a polyline.
@@ -235,7 +235,9 @@
       const spoken = item.say || item.text.toUpperCase();
       const strokes = LETTERS[letter] || LETTERS[item.text.toUpperCase()];
       const color = pickColor();
-      const hitR = speed >= 1.75 ? 13 : 15; // how close the finger must pass a dot (body is ~22–26 wide)
+      // How close the finger must pass a dot (body is ~22–26 wide). Kept under the body's
+      // half-width so tracing one stroke doesn't light the far end of it or its neighbours.
+      const hitR = speed >= 1.75 ? 10 : 11;
       const bodyW = lower ? 22 : 26;        // lowercase bowls are smaller, so a slimmer body keeps the holes open
 
       const dots = strokes.map((s, si) => sample(s).map(([x, y]) => ({ x, y, si, lit: false, el: null })));
