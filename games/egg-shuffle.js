@@ -1,7 +1,7 @@
 // EGG SHUFFLE — letters (or words) stand in a row on little legs. Giant eggs
-// drop down over them, then the eggs shuffle around. Only THEN does the card at
-// the top show the target and the voice say it ("B for ball" / "cat"). The
-// player taps the egg they think it's hiding in, and it cracks open.
+// drop down over them, then the eggs shuffle around. The card at the top shows
+// the target from the start and the voice says it ("B for ball" / "cat"), so the
+// player follows its egg, then taps it when the eggs stop, and it cracks open.
 //
 // Right egg: the top half flies off, the letter hops out, confetti, cheep cheep,
 // then the other eggs crack too so the player sees what was where.
@@ -20,10 +20,10 @@
       const thing = list.type === "letter" ? "letter" : "word";
       return { en: {
         steps: [
-          ["👀", `Look at the ${thing}s standing in a row.`],
-          ["🥚", "Eggs drop down and hide them. Watch the eggs move around!"],
-          ["👂", `Now look at the card at the top and listen. Which egg is that ${thing} in?`],
-          ["👆", "Tap that egg to crack it open!"],
+          ["👂", `Look at the card at the top and listen. Find that ${thing} in the row!`],
+          ["🥚", `Eggs drop down and hide them. Keep your eyes on the egg with your ${thing}!`],
+          ["👀", "Follow that egg while the eggs move around."],
+          ["👆", "When they stop, tap it to crack it open!"],
         ],
         tips: [
           "You can't tap the eggs while they're moving. Wait until they stop.",
@@ -33,9 +33,8 @@
         ],
       } };
     },
-    instruction: { en: "WATCH THE\nEGGS!" },
+    instruction: { en: "FOLLOW THE\nEGG!" },
     prompt: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
-    watchCue: "👀",
     targetLabel: (spoken) => `Find ${spoken}. Tap to hear it again`,
     eggLabel: (i) => `Egg ${i + 1}`,
   };
@@ -78,7 +77,6 @@
     justify-content:center; gap:8px; background:#fff; border:5px solid #111; border-radius:18px; box-shadow:0 6px 0 #111;
     font:inherit; color:#111; touch-action:manipulation; animation:es-in .35s cubic-bezier(.2,1.8,.4,1) both; }
   .es-card:active { transform:translateY(4px); box-shadow:0 2px 0 #111; }
-  .es-card.watch .es-tt { animation:es-blink 1s ease-in-out infinite; }
   .es-card.show { animation:es-slam .35s cubic-bezier(.2,1.8,.4,1) both; }
   .es-tt { font-size:3rem; line-height:1; white-space:nowrap; }
   .es-card.word .es-tt { font-size:2.2rem; }
@@ -139,7 +137,6 @@
 
   @keyframes es-in     { from { transform:scale(.6); opacity:0; } }
   @keyframes es-slam   { 0% { transform:scale(2.2) rotate(-8deg); opacity:0; } 60% { transform:scale(.92); opacity:1; } }
-  @keyframes es-blink  { 50% { transform:scale(1.15); } }
   @keyframes es-sway   { from { transform:rotate(-5deg); } to { transform:rotate(5deg) translateY(-3%); } }
   @keyframes es-wobble { 0%, 70%, 100% { transform:rotate(0); } 78% { transform:rotate(-5deg); } 86% { transform:rotate(4deg); } 93% { transform:rotate(-2deg); } }
   @keyframes es-shiver { 25% { transform:translateX(-4px) rotate(-3deg); } 75% { transform:translateX(4px) rotate(3deg); } }
@@ -149,7 +146,7 @@
   @keyframes es-stink  { 0% { transform:translate(0,0) scale(.3); opacity:0; } 20% { opacity:1; } 100% { transform:translate(var(--sx), -120%) scale(1.3); opacity:0; } }
   @keyframes es-rise   { 0% { transform:translateY(20%) scaleY(.4); opacity:0; } 25% { opacity:1; } 100% { transform:translateY(-60%) scaleY(1); opacity:0; } }
   @media (prefers-reduced-motion: reduce) {
-    .es-card, .es-card.show, .es-card.watch .es-tt, .es-sway, .es-pod.ready .es-egg, .es-pod.crack .es-egg,
+    .es-card, .es-card.show, .es-sway, .es-pod.ready .es-egg, .es-pod.crack .es-egg,
     .es-pod.open.hop .es-kid, .es-pod.answer .es-sway, .es-stink, .es-wave { animation:none; }
     .es-pod.open .es-top { animation:none; opacity:0; }
     .es-stink, .es-wave { display:none; }
@@ -209,12 +206,18 @@
       const wrap = document.createElement("div");
       wrap.className = "es";
       const card = document.createElement("button");
-      card.className = "es-card watch" + (isLetter ? "" : " word");
-      card.setAttribute("aria-label", TEXT.targetLabel("?"));
+      // The target is on the card from the start: spot it in the row, then follow its egg.
+      card.className = "es-card show" + (isLetter ? "" : " word");
+      card.setAttribute("aria-label", TEXT.targetLabel(spoken(target)));
       const tt = document.createElement("span");
       tt.className = "es-tt";
-      tt.textContent = TEXT.watchCue;
+      tt.textContent = target.text;
       card.appendChild(tt);
+      const spk = document.createElement("span");
+      spk.className = "es-spk";
+      spk.setAttribute("aria-hidden", "true");
+      spk.textContent = ctx.canSpeak ? "🔊" : target.emoji || "";
+      if (spk.textContent) card.appendChild(spk);
       card.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       card.addEventListener("click", (e) => { if (e.detail === 0) replay(); });
       const stage = document.createElement("div");
@@ -275,6 +278,7 @@
       ro.observe(stage);
 
       // ---------- Watch phase: stand, drop, shuffle ----------
+      ctx.say(prompt);
       ctx.later(dropEggs, showMs);
 
       function dropEggs() {
@@ -333,21 +337,15 @@
       function startChoosing() {
         if (ctx.ended) return;
         phase = "choose";
-        card.classList.remove("watch");
-        card.classList.add("show");
-        card.setAttribute("aria-label", TEXT.targetLabel(spoken(target)));
-        tt.textContent = target.text;
-        const spk = document.createElement("span");
-        spk.className = "es-spk";
-        spk.setAttribute("aria-hidden", "true");
-        spk.textContent = ctx.canSpeak ? "🔊" : target.emoji || "";
-        if (spk.textContent) card.appendChild(spk);
+        card.classList.remove("show");
+        void card.offsetWidth;
+        card.classList.add("show"); // slam the card again: "now find it!"
         pods.forEach((p) => { p.el.disabled = false; p.el.classList.add("ready"); p.el.setAttribute("aria-label", TEXT.eggLabel(p.slot)); });
         tone(1047, 0.12, "triangle", 0.15);
         ctx.say(prompt);
       }
 
-      function replay() { if (phase === "choose") ctx.say(prompt); }
+      function replay() { if (phase !== "done") ctx.say(prompt); }
 
       // ---------- Choosing + cracking ----------
       function lockAll() {
@@ -403,7 +401,7 @@
         crack(right, { hop: true });
         right.el.classList.add("answer");
         ctx.later(() => pods.forEach((x) => { if (x !== right) crack(x, { dim: true }); }), 300);
-        if (card.classList.contains("show")) ctx.say(prompt);
+        ctx.say(prompt);
       });
 
       function centerOf(p) {
