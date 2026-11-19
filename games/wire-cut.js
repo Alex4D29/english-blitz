@@ -2,6 +2,8 @@
 // 🐱—cat…). One pair is wrong (B—d). Cut that wire to defuse the bomb;
 // cut a good wire and it blows up.
 //
+// Phonics list: letter—picture pairs (B—⚽). The wrong one has a picture from a look-alike
+// letter (B—🦆), and that letter stays off the board.
 // Tap a tile or the wire itself to cut. Faster speeds add a 4th pair and
 // cross the wires so they have to be traced (colors help).
 (function () {
@@ -12,6 +14,7 @@
     howTo: (list) => ({ en: {
       steps: [
         ["🔗", list.type === "letter" ? "Each wire joins two things that should match, like A and a."
+          : list.type === "phonics" ? "Each wire joins a letter to a picture that starts with it, like B and ⚽ ball."
           : list.type === "hfw" ? "Each wire joins a big word to its small word, like THE and the."
           : "Each wire joins two things that should match, like 🐱 and cat."],
         ["🔍", "But one pair is wrong! Find the pair that doesn't match."],
@@ -134,7 +137,7 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc", "hfw"],
+    contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000,
 
     start(ctx) {
@@ -147,12 +150,29 @@
       let done = false;
 
       // Words longer than MAX_WORD get too small to read on a tile. Use pictures when there are enough.
-      const fits = ctx.items.filter((it) => type === "letter" || it.text.length <= MAX_WORD);
+      const fits = ctx.items.filter((it) => type === "letter" || type === "phonics" || it.text.length <= MAX_WORD);
       const withPics = fits.filter((it) => it.emoji);
-      const pics = type !== "letter" && withPics.length >= 5;
-      const pool = pics ? withPics : fits;
-      const count = Math.min(speed >= 1.5 ? 4 : 3, pool.length - 1);
-      const pairs = buildPairs(ctx, pool, count);
+      const pics = type !== "letter" && type !== "phonics" && withPics.length >= 5;
+      let pool = pics ? withPics : fits;
+      let pairs;
+      if (type === "phonics") {
+        // Letter—picture pairs (B—⚽). The odd one gets a picture from another letter, a look-alike
+        // when there is one (B—🦆 duck). That letter stays off the board, so 🦆 has no D to match.
+        pool = ctx.items.filter((it) => ctx.phonics.pics(it).length);
+        const n = Math.min(speed >= 1.5 ? 4 : 3, pool.length - 1);
+        const odd = pool[0];
+        const decoy = ctx.phonics.set(odd, 0, 1).wrong[0];
+        const others = shuffle(pool.filter((it) => it !== odd && it.text !== decoy.letter)).slice(0, n - 1);
+        const letterFace = (it) => ({ left: it.text.toUpperCase(), spoken: it.say || it.text, word: false, pic: false });
+        const picFace = (p) => ({ right: p.emoji, spoken: p.word, word: false, pic: true, picRight: true });
+        pairs = shuffle([
+          { odd: true, L: letterFace(odd), R: picFace(decoy) },
+          ...others.map((it) => ({ odd: false, L: letterFace(it), R: picFace(ctx.pick(ctx.phonics.pics(it))) })),
+        ]);
+      } else {
+        pairs = buildPairs(ctx, pool, Math.min(speed >= 1.5 ? 4 : 3, pool.length - 1));
+      }
+      const count = pairs.length;
       // Right-hand row for each pair. When crossed, make sure at least one wire actually crosses.
       let rows = pairs.map((_, i) => i);
       if (crossed) do shuffle(rows); while (rows.every((r, i) => r === i));
@@ -178,8 +198,8 @@
 
       const wires = pairs.map((pair, i) => {
         const color = WIRE_COLORS[i % WIRE_COLORS.length];
-        const L = faces(pair.left, type, pics);
-        const R = faces(pair.right, type, pics);
+        const L = pair.L || faces(pair.left, type, pics);
+        const R = pair.R || faces(pair.right, type, pics);
         const tile = (text, isWord, isEmoji, col, row) => {
           const b = document.createElement("button");
           b.className = "wc-tile" + (isWord ? " word" : "") + (isEmoji ? "" : " ink");
@@ -198,7 +218,7 @@
         const wire = {
           pair, color, cut: false, sayLeft: L.spoken, sayRight: R.spoken,
           leftEl: tile(L.left, L.word && !L.pic, L.pic, 1, i),
-          rightEl: tile(R.right, R.word, false, 3, rows[i]),
+          rightEl: tile(R.right, R.word, !!R.picRight, 3, rows[i]),
           sag: 14 + Math.random() * 16,
           g: document.createElementNS(SVG_NS, "g"),
           snip: null,

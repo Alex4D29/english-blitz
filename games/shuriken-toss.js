@@ -7,6 +7,8 @@
 // Wrong ball: the shuriken clinks off, the ball turns red and drops. Three wrong
 // hits and the ninja is knocked out: you lose. Tapping empty sky is a free miss.
 // Balls that fly off the right edge cost nothing.
+// Phonics list: the card shows a letter (B), and the balls carry pictures. Hit 3 that start
+// with B. Each hit says the picture's word.
 // The first shot is always a target, so there's something to hit straight away.
 // Faster speeds: balls fly faster and are fired more often, 4 in the air from 1.5×,
 // and from 1.75× a target is fired at least every other shot.
@@ -17,6 +19,19 @@
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
     howTo: (list) => {
       const thing = list.type === "letter" ? "letter" : "word";
+      if (list.type === "phonics") return { en: {
+        steps: [
+          ["👂", "Look at the letter on the card at the top and listen, like \"B\"."],
+          ["💥", "A cannon shoots pictures across the sky."],
+          ["👆", "Tap a picture that starts with B (ball, bee, bear…) and the ninja throws a shuriken at it. Hit 3 to win! ⭐⭐⭐"],
+        ],
+        tips: [
+          "Only hit pictures that start with the letter! Three wrong hits and the ninja gets knocked out.",
+          "Missing is OK. Tapping the empty sky costs nothing.",
+          "Tap the card at the top to hear the letter again.",
+          "When the game speeds up, the cannon shoots faster.",
+        ],
+      } };
       return { en: {
         steps: [
           ["👂", `Look at the card at the top and listen. That's your ${thing}.`],
@@ -31,7 +46,7 @@
         ],
       } };
     },
-    instruction: (list) => ({ en: list.type === "letter" ? "HIT THE\nLETTER!" : "HIT THE\nWORD!" }),
+    instruction: (list) => ({ en: list.type === "letter" ? "HIT THE\nLETTER!" : list.type === "phonics" ? "HIT THE\nPICTURES!" : "HIT THE\nWORD!" }),
     prompt: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
     targetLabel: (spoken) => `Target: ${spoken}. Hear it again`,
     fieldLabel: "Sky. Tap a flying letter to throw a shuriken at it.",
@@ -111,6 +126,8 @@
     border:5px solid #111; box-shadow:inset 0 0 0 5px var(--ring), 0 5px 0 rgba(0,0,0,.35);
     font-size:calc(var(--d) * .56); line-height:1; pointer-events:none; will-change:transform; }
   .st-fly.word { width:auto; height:calc(var(--d) * .8); padding:0 .45em; border-radius:999px; font-size:calc(var(--d) * .44); white-space:nowrap; }
+  .st-fly.pic { font-size:calc(var(--d) * .6); }
+  .st-fly.pic.wrong { -webkit-text-stroke:0; }
   .st-fly.wrong { background:#ff5a6e; color:#fff; -webkit-text-stroke:2px #111; paint-order:stroke fill; }
   .st-fly.glow { box-shadow:inset 0 0 0 5px var(--ring), 0 0 0 6px #ffd400, 0 0 26px 12px #ffd400; }
 
@@ -160,18 +177,37 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc", "hfw"],
+    contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 13000, // needs 3 hits, and targets have to be fired first
 
     start(ctx) {
       injectCss();
       const isLetter = ctx.list.type === "letter";
+      const isPhonics = ctx.list.type === "phonics";
+      const round = isLetter || isPhonics; // a letter or a picture fits a round ball
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const target = ctx.items[0];
-      const distractors = ctx.pickOptions(target, Math.min(7, ctx.items.length)).filter((it) => it !== target);
       const spoken = (it) => it.say || it.text;
-      const prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
+      // `target` is what the card shows. Balls carry `rights` (hit these) and `distractors`.
+      // Phonics: the card is a letter (B), rights are all its pictures (⚽ 🐝 🍌 🐻, taking turns),
+      // distractors are pictures that start with other letters. Pictures are { text: emoji, say: word }.
+      let target, rights, distractors, prompt;
+      if (isPhonics) {
+        target = ctx.items.find((it) => ctx.phonics.pics(it).length >= 2) || ctx.items[0];
+        const set = ctx.phonics.set(target, 4, 6);
+        const asItem = (p) => ({ text: p.emoji, say: p.word });
+        rights = set.right.map(asItem);
+        distractors = set.wrong.map(asItem);
+        prompt = spoken(target);
+      } else {
+        target = ctx.items[0];
+        rights = [target];
+        distractors = ctx.pickOptions(target, Math.min(7, ctx.items.length)).filter((it) => it !== target);
+        prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
+      }
+      const isTarget = (it) => rights.includes(it);
+      let rightTurn = 0;
+      const nextRight = () => rights[rightTurn++ % rights.length];
       const { tone, sweep, noise } = ctx.sfx;
 
       // Pace: slow, lazy arcs at 1×, quicker at higher speeds.
@@ -209,7 +245,7 @@
       const bad = side("st-bad", TEXT.badIcon);
 
       const card = document.createElement("button");
-      card.className = "st-target" + (isLetter ? "" : " word");
+      card.className = "st-target" + (round ? "" : " word");
       card.setAttribute("aria-label", TEXT.targetLabel(spoken(target)));
       const tt = document.createElement("span");
       tt.className = "st-tt";
@@ -218,7 +254,7 @@
       const spk = document.createElement("span");
       spk.className = "st-spk";
       spk.setAttribute("aria-hidden", "true");
-      spk.textContent = ctx.canSpeak ? "🔊" : target.emoji || "";
+      spk.textContent = ctx.canSpeak ? "🔊" : (!isPhonics && target.emoji) || "";
       if (spk.textContent) card.appendChild(spk);
       card.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       card.addEventListener("click", (e) => { if (e.detail === 0) replay(); });
@@ -262,7 +298,7 @@
       function chooseItem() {
         const pool = distractors.filter((it) => it !== lastItem);
         const want = !pool.length || lastItem === null || sinceTarget >= forceAfter || Math.random() < 0.5;
-        const it = want ? target : ctx.pick(pool);
+        const it = want ? nextRight() : ctx.pick(pool);
         sinceTarget = want ? 0 : sinceTarget + 1;
         lastItem = it;
         return it;
@@ -277,7 +313,7 @@
       function launch(item) {
         const m = centre(muzzle);
         const el = document.createElement("div");
-        el.className = "st-fly" + (isLetter ? "" : " word");
+        el.className = "st-fly" + (isPhonics ? " pic" : isLetter ? "" : " word");
         el.textContent = item.text;
         el.style.setProperty("--ring", ctx.pick(RINGS));
         field.insertBefore(el, cannon); // starts behind the barrel
@@ -384,7 +420,8 @@
           ctx.later(() => s.el.remove(), 320);
           return;
         }
-        if (f.item === target) {
+        if (isTarget(f.item)) {
+          if (isPhonics) ctx.say(spoken(f.item)); // "bee!"
           hits++;
           fill(good.pips[hits - 1], TEXT.goodMark);
           s.el.remove();
@@ -399,6 +436,7 @@
           }
         } else {
           strikes++;
+          if (isPhonics) ctx.say(spoken(f.item)); // "duck" — not a B word
           fill(bad.pips[strikes - 1], TEXT.badMark);
           bad.el.dataset.s = String(strikes);
           f.el.classList.add("wrong");
@@ -497,7 +535,7 @@
 
       ctx.onTimeout(() => {
         done = true;
-        flyers.forEach((f) => { if (!f.gone && f.item === target) f.el.classList.add("glow"); });
+        flyers.forEach((f) => { if (!f.gone && isTarget(f.item)) f.el.classList.add("glow"); });
       });
 
       // ---------- Input ----------

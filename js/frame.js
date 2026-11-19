@@ -17,9 +17,10 @@
   const FEEDBACK_MS = 1400;
   const SPEECH_WAIT_MS = 2500;  // max extra wait for speech to finish after feedback
   const END_MS = 1500;
-  const CONTENT_TYPES = ["letter", "cvc", "hfw"];   // content picker order
-  const DEFAULT_TYPES = ["letter"];
-  const TYPES_KEY = "wwe.content";                   // localStorage: the last ticked types
+  const CONTENT_TYPES = ["letter", "phonics", "cvc", "hfw"];   // content picker order
+  const DEFAULT_TYPES = ["letter", "phonics"];
+  const TYPES_KEY = "wwe.content.v2";                // localStorage: the last ticked types
+  const OLD_TYPES_KEY = "wwe.content";               // before PHONICS split off from ABC
   const THEMES = [
     ["#ffd400", "#ffb800"], ["#00d4ff", "#00b4f0"], ["#ff6fb0", "#ff4f9a"],
     ["#7cf04f", "#5fd932"], ["#ff9a1f", "#ff7f00"], ["#b388ff", "#9c6bff"],
@@ -30,7 +31,12 @@
   const listParam = params.get("list"); // skips the content picker
 
   function loadTypes() {
-    const saved = C.storage.get(TYPES_KEY, null);
+    let saved = C.storage.get(TYPES_KEY, null);
+    if (!Array.isArray(saved)) {
+      // ABC used to include the picture games, so anyone who had it ticked gets PHONICS too.
+      const old = C.storage.get(OLD_TYPES_KEY, null);
+      if (Array.isArray(old)) saved = old.includes("letter") ? [...old, "phonics"] : old;
+    }
     const ok = Array.isArray(saved) ? saved.filter((t) => CONTENT_TYPES.includes(t)) : [];
     return ok.length ? ok : [...DEFAULT_TYPES];
   }
@@ -57,7 +63,7 @@
     screen: "title",
     mode: null,
     practiceGame: null,         // the game Practice mode is playing
-    types: loadTypes(),         // content types ticked on the picker: "letter", "cvc", "hfw"
+    types: loadTypes(),         // content types ticked on the picker: "letter", "phonics", "cvc", "hfw"
     pendingMode: null,          // the mode button pressed before the content picker
     phase: "idle",              // idle | transition | playing | feedback | over | paused
     round: 0,
@@ -328,6 +334,11 @@
       shuffle: C.shuffle,
       pick: C.pick,
       pickOptions: (target, n) => C.pickOptions(items, target, n),
+      // Phonics: pictures that start with a letter, and wrong pictures from other letters.
+      phonics: {
+        pics: C.startPics,                                     // (item) => [{ word, emoji }] starting with item.text
+        set: (target, nRight, nWrong) => C.phonicsSet(items, target, nRight, nWrong), // => { right, wrong }
+      },
     };
 
     try {
@@ -471,7 +482,7 @@
     showScreen("title");
   }
 
-  // ---------- What to play: tick letters, CVC words and/or sight words ----------
+  // ---------- What to play: tick letters, phonics, CVC words and/or sight words ----------
   // Shown after a mode button. ?list= skips it and plays just that list.
   function chooseContent(modeId) {
     state.pendingMode = modeId;
@@ -489,7 +500,7 @@
     CONTENT_TYPES.filter((t) => lists.some((l) => l.type === t)).forEach((type) => {
       const info = T.content[type];
       const b = document.createElement("button");
-      b.className = `content-btn ${type}`;
+      b.className = `content-btn ${type}${info.name.length > 4 ? " long" : ""}`;
       b.setAttribute("aria-pressed", String(state.types.includes(type)));
       b.setAttribute("aria-label", `${info.name}: ${info.label}`);
       b.innerHTML = `<span class="tick" aria-hidden="true">✔</span>

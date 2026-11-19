@@ -22,7 +22,7 @@
     icon: "🎣",
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
     howTo: (list) => {
-      const first = list.type === "letter"
+      const first = list.type === "phonics"
         ? ["👂", "The monster says its letter, like \"A\". It wants a fish with something that starts with A! 🍎"]
         : list.type === "cvc"
           ? ["👂", "The monster holds a word, like \"cat\", and says it. It wants the fish with that picture! 🐱"]
@@ -191,13 +191,13 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc", "hfw"],
+    contentTypes: ["phonics", "cvc", "hfw"],
     duration: 12000, // cast, wait for a bite, maybe a wrong fish and a second cast
 
     start(ctx) {
       injectCss();
       const type = ctx.list.type;
-      const isLetter = type === "letter";
+      const isLetter = type === "phonics"; // a letter with first-sound pictures
       const isHfw = type === "hfw";
       const speed = ctx.speed || 1;
       const pace = 0.6 + 0.4 * speed;               // 1 at 1×, 1.6 at 2.5×

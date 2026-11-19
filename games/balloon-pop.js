@@ -5,6 +5,9 @@
 // Right pop: confetti, and the other balloons float away.
 // Wrong pop: that balloon was full of green slime — SPLAT, drips — then the
 // right balloon wiggles so the player sees the answer.
+// Phonics list: the button at the top shows the letter (B) and the voice says it. One balloon
+// carries a picture that starts with B, the rest carry pictures from other letters (look-alikes
+// first). After the pop the voice says "B for ball".
 // Faster speeds make the balloons drift faster; 2× and up has six balloons.
 (function () {
   const TEXT = {
@@ -13,6 +16,18 @@
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
     howTo: (list) => {
       const letter = list.type === "letter";
+      if (list.type === "phonics") return { en: {
+        steps: [
+          ["👀", "Look at the letter at the top and listen, like \"B\"."],
+          ["🎈", "Find the balloon with a picture that starts with B. Ball… bee… banana!"],
+          ["👆", "Tap it to pop it!"],
+        ],
+        tips: [
+          "Tap the letter at the top to hear it again.",
+          "Only one picture starts with the letter. A wrong balloon bursts into slime, then the right one wiggles.",
+          "When the game speeds up, the balloons move faster and there are more of them.",
+        ],
+      } };
       return { en: {
         steps: [
           ["👂", letter ? "Listen. The voice says a letter, like \"B for ball\"." : "Listen. The voice says a word, like \"cat\"."],
@@ -26,7 +41,7 @@
         ],
       } };
     },
-    instruction: (list) => ({ en: list.type === "letter" ? "POP THE\nLETTER!" : "POP THE\nWORD!" }),
+    instruction: (list) => ({ en: list.type === "letter" ? "POP THE\nLETTER!" : list.type === "phonics" ? "POP THE\nPICTURE!" : "POP THE\nWORD!" }),
     prompt: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
     replayLabel: "Hear it again",
     balloonLabel: (spoken) => `Pop ${spoken}`,
@@ -62,6 +77,7 @@
   .bp-text { position:absolute; inset:0 0 6% 0; display:flex; align-items:center; justify-content:center; color:#fff;
     font-size:calc(var(--bw) * .56); line-height:1; -webkit-text-stroke:3px #111; paint-order:stroke fill; text-shadow:0 4px 0 #111; }
   .bp-balloon.word .bp-text { font-size:calc(var(--bw) * .3); }
+  .bp-balloon.pic .bp-text { font-size:calc(var(--bw) * .5); -webkit-text-stroke:0; text-shadow:none; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
 
   .bp-balloon::after { content:""; position:absolute; left:50%; top:50%; width:140%; aspect-ratio:1; margin:-70% 0 0 -70%;
     border:6px dashed #fff; border-radius:50%; opacity:0; pointer-events:none; }
@@ -103,19 +119,34 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc", "hfw"],
+    contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 6000,
 
     start(ctx) {
       injectCss();
       const isLetter = ctx.list.type === "letter";
+      const isPhonics = ctx.list.type === "phonics";
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const n = Math.min(speed >= 2 ? 6 : 4, ctx.items.length);
-      const target = ctx.items[0];
-      const options = ctx.pickOptions(target, n);
       const spoken = (it) => it.say || it.text;
-      const prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
+      let target, options, prompt, answerLine, letterItem = null;
+      if (isPhonics) {
+        // One balloon carries a picture that starts with the letter, the rest carry pictures that don't.
+        // The balloons hold picture "items" ({ text: emoji, say: word }), so the popping code is the same.
+        const letter = letterItem = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        const set = ctx.phonics.set(letter, 1, n - 1);
+        const asItem = (p) => ({ text: p.emoji, say: p.word });
+        target = asItem(set.right[0]);
+        options = ctx.shuffle([target, ...set.wrong.map(asItem)]);
+        prompt = spoken(letter);
+        answerLine = TEXT.prompt(spoken(letter), target.say); // "B for ball"
+      } else {
+        target = ctx.items[0];
+        options = ctx.pickOptions(target, n);
+        prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
+        answerLine = prompt;
+      }
       const { noise, sweep } = ctx.sfx;
       let done = false;
       let moving = !reduceMotion;
@@ -126,7 +157,7 @@
       wrap.className = "bp";
       const speaker = document.createElement("button");
       speaker.className = "bp-speaker" + (ctx.canSpeak ? "" : " cue");
-      speaker.textContent = ctx.canSpeak ? "🔊" : target.emoji || target.text;
+      speaker.textContent = isPhonics ? (ctx.canSpeak ? `${letterItem.text} 🔊` : letterItem.text) : ctx.canSpeak ? "🔊" : target.emoji || target.text;
       speaker.setAttribute("aria-label", TEXT.replayLabel);
       speaker.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       speaker.addEventListener("click", (e) => { if (e.detail === 0) replay(); });
@@ -139,7 +170,7 @@
 
       const balloons = options.map((item, i) => {
         const el = document.createElement("button");
-        el.className = "bp-balloon" + (isLetter ? "" : " word");
+        el.className = "bp-balloon" + (isPhonics ? " pic" : isLetter ? "" : " word");
         el.style.setProperty("--c", COLORS[i % COLORS.length]);
         el.style.setProperty("--bob", `${(2 + Math.random() * 1.2).toFixed(2)}s`);
         el.setAttribute("aria-label", TEXT.balloonLabel(spoken(item)));
@@ -151,7 +182,7 @@
         const txt = el.querySelector(".bp-text");
         txt.textContent = item.text;
         // Long sight words ("because") shrink so they stay inside the balloon. 3–4 letters keep the CSS size.
-        if (!isLetter && item.text.length > 4) txt.style.fontSize = `calc(var(--bw) * ${(1.2 / item.text.length).toFixed(3)})`;
+        if (!isLetter && !isPhonics && item.text.length > 4) txt.style.fontSize = `calc(var(--bw) * ${(1.2 / item.text.length).toFixed(3)})`;
         el.querySelector(".bp-bob").style.animationDelay = `${(-Math.random() * 2).toFixed(2)}s`;
         const b = { el, item, x: 0, y: 0, vx: 0, vy: 0, popped: false };
         el.addEventListener("pointerdown", (e) => { e.preventDefault(); pop(b); });
@@ -279,6 +310,7 @@
 
         if (b.item === target) {
           ctx.win();
+          if (isPhonics) ctx.say(answerLine); // "B for ball"
           ctx.confetti(fx, at.x, at.y);
           // Everyone else floats off into the sky.
           flyAway = true;
@@ -294,7 +326,7 @@
           splat(at);
           ctx.later(() => {
             revealAnswer();
-            ctx.say(prompt);
+            ctx.say(answerLine);
           }, 500);
         }
       }
@@ -303,7 +335,7 @@
         done = true;
         lockAll();
         revealAnswer();
-        ctx.say(prompt);
+        ctx.say(answerLine);
       });
 
       // Green slime: one blobby splat (union of circles with a shared ink outline) plus drips.

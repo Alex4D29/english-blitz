@@ -22,7 +22,7 @@
     name: { en: "Claw Catch" },
     icon: "🧸",
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
-    howTo: (list) => (list.type === "letter"
+    howTo: (list) => (list.type === "phonics"
       ? { en: {
           steps: [
             ["👂", "The monster says its letter, like \"B\". It wants something that starts with B!"],
@@ -172,12 +172,12 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc"], // needs a picture for every item
+    contentTypes: ["phonics", "cvc"], // needs a picture for every item
     duration: 9000, // two timed stops
 
     start(ctx) {
       injectCss();
-      const isWord = ctx.list.type !== "letter";
+      const isWord = ctx.list.type !== "phonics";
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const later = ctx.later;

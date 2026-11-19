@@ -6,6 +6,8 @@
 // Word lists: the engine shows the picture (🐱), the voice says "cat", and the
 // player spells it c-a-t. Words with no picture show the word on the engine.
 //
+// Phonics list: the engine shows a letter (C). Tap the 3 carriages with pictures that start
+// with C, in any order. There is 1 wrong picture in the tray (2 from 1.5×).
 // Right carriage: it rolls up and couples on with a clunk, and the voice names
 // it. Train complete: toot toot, and it steams off the screen.
 // Wrong carriage: it shakes and flashes grey, the empty slot bumps, and play
@@ -17,7 +19,7 @@
     name: { en: "Train Builder" },
     icon: "🚂",
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
-    howTo: (list) => (list.type === "letter"
+    howTo: (list) => (list.type === "phonics" ? TEXT.phonicsHowTo : list.type === "letter"
       ? { en: {
           steps: [
             ["🚂", "The engine shows a letter, like M."],
@@ -44,7 +46,20 @@
             "When the game speeds up, extra carriages try to trick you.",
           ],
         } }),
-    instruction: (list) => ({ en: list.type === "letter" ? "BUILD THE\nTRAIN!" : "SPELL THE\nTRAIN!" }),
+    phonicsHowTo: { en: {
+      steps: [
+        ["🚂", "The engine shows a letter, like C."],
+        ["🔍", "Find the pictures that start with C. Cat… cake… cow!"],
+        ["👆", "Tap them to hook them onto the train. Fill all 3 carriages!"],
+      ],
+      tips: [
+        "Any order is fine.",
+        "A picture that doesn't start with the letter just shakes. Try another one!",
+        "Tap the engine to hear the letter again.",
+        "When the game speeds up, there are more wrong pictures.",
+      ],
+    } },
+    instruction: (list) => ({ en: list.type === "letter" || list.type === "phonics" ? "BUILD THE\nTRAIN!" : "SPELL THE\nTRAIN!" }),
     next: "?",
     engineLabel: (what) => `Engine ${what}. Tap to hear it again.`,
     carLabel: (spoken) => `Add ${spoken}`,
@@ -77,6 +92,8 @@
     font-size:calc(var(--u) * .58); color:#111; }
   .tb-face.pic { font-size:calc(var(--u) * .56); }
   .tb-face.word { font-size:calc(var(--u) * .28); }
+  .tb.pics .tb-box { font-size:calc(var(--u) * .5); -webkit-text-stroke:0; text-shadow:none; } /* emoji carriages (phonics) */
+  .tb.pics .tb-car.next .tb-box { -webkit-text-stroke:3px #111; }
   .tb-boiler { position:absolute; left:calc(var(--u) * .14); bottom:calc(var(--u) * .2); width:calc(var(--u) * .62); height:calc(var(--u) * .58);
     background:#e8173c; border:4px solid #111; border-right:0; border-radius:calc(var(--u) * .3) 0 0 calc(var(--u) * .3);
     box-shadow:inset 0 -6px 0 rgba(0,0,0,.2); }
@@ -160,7 +177,7 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc", "hfw"],
+    contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000, // three or more taps, so a little longer than the others
 
     start(ctx) {
@@ -169,15 +186,27 @@
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const later = ctx.later;
       const isLetter = ctx.list.type === "letter";
+      const isPhonics = ctx.list.type === "phonics";
       const spoken = (it) => it.say || it.text;
       let done = false;
 
       // ---------- Content ----------
       // engine: what the engine shows; needed: [{ text, say }] in order; extras: distractor carriages.
+      // Phonics: any order — a right picture fills the next slot (see tap()).
       let engine, needed, extras, prompt, finale;
       const extraCount = speed >= 2.25 ? 2 : speed >= 1.5 ? 1 : 0;
 
-      if (isLetter) {
+      if (isPhonics) {
+        // The engine shows a letter (C); the tray has 3 pictures that start with it, plus 1 wrong
+        // picture (2 from 1.5×). Letters with fewer than 3 such pictures (X) are skipped.
+        const head = ctx.items.find((it) => ctx.phonics.pics(it).length >= RUN) || ctx.items[0];
+        const set = ctx.phonics.set(head, RUN, speed >= 1.5 ? 2 : 1);
+        engine = { text: head.text, kind: "letter" };
+        needed = set.right.map((p) => ({ text: p.emoji, say: p.word }));
+        extras = set.wrong.map((p) => ({ text: p.emoji, say: p.word }));
+        prompt = spoken(head);
+        finale = `${prompt}! ${needed.map((c) => c.say).join(", ")}`;
+      } else if (isLetter) {
         const abc = [...ctx.items].sort((a, b) => a.text.localeCompare(b.text));
         const run = Math.min(RUN, abc.length - 1);
         const at = Math.floor(Math.random() * (abc.length - run)); // A..W for a full alphabet
@@ -212,7 +241,7 @@
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
-      wrap.className = "tb";
+      wrap.className = "tb" + (isPhonics ? " pics" : "");
       wrap.innerHTML = `
         <div class="tb-scene">
           <div class="tb-train" style="--n:${needed.length}">
@@ -296,6 +325,13 @@
 
       function tap(tile) {
         if (done || ctx.ended || tile.disabled) return;
+        if (isPhonics) {
+          // Any right picture goes next: move it to this slot's place in `needed`, so the
+          // pictures still to come (and the timeout reveal) are the ones left in the tray.
+          const at = needed.findIndex((c, i) => i >= pos && c.text === tile.tbCard.text);
+          if (at < 0) return miss(tile);
+          [needed[pos], needed[at]] = [needed[at], needed[pos]];
+        }
         const want = needed[pos];
         if (!same(tile.tbCard.text, want.text)) return miss(tile);
 

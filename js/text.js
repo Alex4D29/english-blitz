@@ -12,6 +12,7 @@ window.TEXT = {
   // Content picker: one toggle per list type, in this order.
   content: {
     letter: { name: "ABC", sample: "A b C", label: "Letters" },
+    phonics: { name: "PHONICS", sample: "a 🍎", label: "First sounds" },
     cvc: { name: "CVC", sample: "cat 🐱", label: "CVC words" },
     hfw: { name: "HFW", sample: "the", label: "Sight words" },
   },

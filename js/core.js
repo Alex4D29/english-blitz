@@ -56,6 +56,35 @@
     return shuffle([target, ...close, ...others].slice(0, n));
   }
 
+  // ---------- Phonics (first sounds) ----------
+  // A picture "starts with" a letter when its word does: B → ball, bee. X → none (fox, box, six).
+  const firstLetter = (word) => String(word || "").charAt(0).toUpperCase();
+  function startPics(item) {
+    const all = item.pics || (item.emoji ? [{ word: item.word, emoji: item.emoji }] : []);
+    return all.filter((p) => p.emoji && firstLetter(p.word) === item.text.toUpperCase());
+  }
+  // For a target letter: up to nRight pictures that start with it, and nWrong pictures that
+  // don't, one per other letter, from its `tricky` letters first (B → D, P, Q, V pictures).
+  // Every picture is { word, emoji, letter } and no emoji appears twice.
+  function phonicsSet(pool, target, nRight, nWrong) {
+    const L = target.text.toUpperCase();
+    const right = shuffle(startPics(target)).slice(0, nRight).map((p) => ({ ...p, letter: target.text }));
+    const byText = new Map(pool.map((it) => [it.text, it]));
+    const tricky = shuffle((target.tricky || []).map((t) => byText.get(t)).filter((it) => it && it !== target));
+    const rest = shuffle(pool.filter((it) => it !== target && !tricky.includes(it)));
+    const seen = new Set(right.map((p) => p.emoji));
+    const wrong = [];
+    for (const it of [...tricky, ...rest]) {
+      if (wrong.length >= nWrong) break;
+      const all = it.pics || (it.emoji ? [{ word: it.word, emoji: it.emoji }] : []);
+      const p = shuffle(all.filter((q) => q.emoji && firstLetter(q.word) !== L && !seen.has(q.emoji)))[0];
+      if (!p) continue;
+      seen.add(p.emoji);
+      wrong.push({ ...p, letter: it.text });
+    }
+    return { right, wrong };
+  }
+
   // ---------- Audio ----------
   // The AudioContext can only be created/resumed inside a user tap (iOS), so
   // the frame calls unlock() from the mode buttons.
@@ -252,6 +281,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
+    startPics, phonicsSet,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,

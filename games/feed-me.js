@@ -16,7 +16,7 @@
     howTo: (list) => ({ en: {
       steps: [
         ["👂", "A hungry picture says its name, like \"apple\"."],
-        ["🔤", list.type === "letter" ? "Which letter does it start with? Apple starts with A!" : "Find the word that matches the picture."],
+        ["🔤", list.type === "phonics" ? "Which letter does it start with? Apple starts with A!" : "Find the word that matches the picture."],
         ["👆", "Drag that tile into its mouth. Yum!"],
       ],
       tips: [
@@ -118,7 +118,7 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc"], // needs a picture for every item
+    contentTypes: ["phonics", "cvc"], // needs a picture for every item
     duration: 6000,
 
     start(ctx) {
@@ -129,7 +129,7 @@
       let done = false;
       let drag = null;
 
-      const isWord = ctx.list.type !== "letter";
+      const isWord = ctx.list.type !== "phonics";
       // For letters, the word must start with that letter ("X for fox" can't be found from "fox").
       const fits = (it) => it.emoji && (isWord || (it.word || "").charAt(0).toUpperCase() === it.text.toUpperCase());
       const target = ctx.items.find(fits) || ctx.items.find((it) => it.emoji) || ctx.items[0];

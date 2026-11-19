@@ -132,3 +132,9 @@ function letterItems(items) {
 function hfwWords(...words) {
   return words.map((text) => ({ text }));
 }
+
+// Phonics (first sounds): the same 26 letters and pictures as `letters-az`, but its
+// own type, so the content picker can split letter recognition (ABC: A/a, A-B-C order,
+// tracing) from first sounds (PHONICS: A for 🍎, which picture starts with B?).
+// Picture games take "phonics"; letter-shape games take "letter".
+window.WORD_LISTS.splice(1, 0, { id: "phonics-az", type: "phonics", items: window.WORD_LISTS[0].items });

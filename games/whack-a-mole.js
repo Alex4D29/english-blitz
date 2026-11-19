@@ -3,6 +3,8 @@
 // holding a sign on its belly. Whack 3 moles with the target to win.
 // Whack 3 wrong moles and the bomb's fuse burns down: BOOM, you lose.
 //
+// Phonics list: the card shows a letter (B), and the moles hold pictures. Whack 3 that start
+// with B (all its pictures take turns). Each whack says the picture's word.
 // Tapping an empty hole just whiffs the mallet (no penalty).
 // Faster speeds: moles stay up for less time, pop up more often, and more of
 // them can be up at once. Letter lists use a 3×3 field; word lists use 2×3 so
@@ -14,6 +16,18 @@
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
     howTo: (list) => {
       const thing = list.type === "letter" ? "letter" : "word";
+      if (list.type === "phonics") return { en: {
+        steps: [
+          ["👂", "Look at the letter on the card at the top and listen, like \"B\"."],
+          ["🐹", "Moles pop up holding pictures."],
+          ["🔨", "Whack the moles with a picture that starts with B: ball, bee, bear… Whack 3 to win! ⭐⭐⭐"],
+        ],
+        tips: [
+          "Don't whack the wrong moles! Three wrong whacks and the 💣 explodes.",
+          "Tap the card at the top to hear the letter again.",
+          "When the game speeds up, the moles hide faster and more pop up at once.",
+        ],
+      } };
       return { en: {
         steps: [
           ["👂", `Look at the card at the top and listen. That's your ${thing}.`],
@@ -27,7 +41,7 @@
         ],
       } };
     },
-    instruction: (list) => ({ en: list.type === "letter" ? "WHACK THE\nLETTER!" : "WHACK THE\nWORD!" }),
+    instruction: (list) => ({ en: list.type === "letter" ? "WHACK THE\nLETTER!" : list.type === "phonics" ? "WHACK THE\nPICTURES!" : "WHACK THE\nWORD!" }),
     prompt: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
     targetLabel: (spoken) => `Target: ${spoken}. Hear it again`,
     holeLabel: (spoken) => (spoken ? `Whack ${spoken}` : "Empty hole"),
@@ -116,6 +130,7 @@
   .wm.charred .wm-field { filter:brightness(.55) saturate(.4); transition:filter .3s; }
   .wm-hole.soot .wm-mole { background:#3a3a3a; }
   .wm-hole.soot .wm-belly { background:#777; color:transparent; }
+  .wm-hole.soot .wm-word { opacity:0; } /* emoji ignore color:transparent */
   .wm-hole.soot .wm-paw { background:#3a3a3a; }
   .wm-hole.soot .wm-nose { background:#666; }
   .wm-hole.soot .wm-eye { animation:wm-blink 1.2s steps(1) infinite; }
@@ -167,18 +182,35 @@
     icon: TEXT.icon,
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
-    contentTypes: ["letter", "cvc", "hfw"],
+    contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 11000,
 
     start(ctx) {
       injectCss();
       const isLetter = ctx.list.type === "letter";
+      const isPhonics = ctx.list.type === "phonics";
+      const square = isLetter || isPhonics; // one letter or one picture per sign: 3×3 field
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const target = ctx.items[0];
-      const distractors = ctx.pickOptions(target, Math.min(7, ctx.items.length)).filter((it) => it !== target);
       const spoken = (it) => it.say || it.text;
-      const prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
+      // `target` is what the card shows. Moles hold `rights` (whack these) and `distractors`.
+      // Phonics: the card is a letter (B), rights are all its pictures (⚽ 🐝 🍌 🐻, taking turns),
+      // distractors are pictures that start with other letters. Pictures are { text: emoji, say: word }.
+      let target, rights, distractors, prompt;
+      if (isPhonics) {
+        target = ctx.items.find((it) => ctx.phonics.pics(it).length >= 2) || ctx.items[0];
+        const set = ctx.phonics.set(target, 4, 6);
+        const asItem = (p) => ({ text: p.emoji, say: p.word });
+        rights = set.right.map(asItem);
+        distractors = set.wrong.map(asItem);
+        prompt = spoken(target);
+      } else {
+        target = ctx.items[0];
+        rights = [target];
+        distractors = ctx.pickOptions(target, Math.min(7, ctx.items.length)).filter((it) => it !== target);
+        prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
+      }
+      const isTarget = (it) => rights.includes(it);
       const { tone, sweep, noise } = ctx.sfx;
 
       // Pace: "a couple of seconds" up at 1×, quicker at higher speeds.
@@ -186,7 +218,7 @@
       const upMs = 2000 / pace;
       const gapMs = 850 / pace;
       const maxUp = speed >= 1.5 ? 3 : 2;
-      const cols = isLetter ? 3 : 2, rows = 3;
+      const cols = square ? 3 : 2, rows = 3;
 
       let done = false, hits = 0, strikes = 0, sinceTarget = 0;
       const startedAt = performance.now();
@@ -215,7 +247,7 @@
       const bad = side("wm-bad", TEXT.badIcon);
 
       const card = document.createElement("button");
-      card.className = "wm-target" + (isLetter ? "" : " word");
+      card.className = "wm-target" + (square ? "" : " word");
       card.setAttribute("aria-label", TEXT.targetLabel(spoken(target)));
       const tt = document.createElement("span");
       tt.className = "wm-tt";
@@ -224,7 +256,7 @@
       const spk = document.createElement("span");
       spk.className = "wm-spk";
       spk.setAttribute("aria-hidden", "true");
-      spk.textContent = ctx.canSpeak ? "🔊" : target.emoji || "";
+      spk.textContent = ctx.canSpeak ? "🔊" : (!isPhonics && target.emoji) || "";
       if (spk.textContent) card.appendChild(spk);
       card.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       card.addEventListener("click", (e) => { if (e.detail === 0) replay(); });
@@ -274,7 +306,7 @@
       field.appendChild(probe);
       function textRatio() {
         let widest = 0;
-        [target, ...distractors].forEach((it) => {
+        [...rights, ...distractors].forEach((it) => {
           probe.textContent = it.text;
           widest = Math.max(widest, probe.getBoundingClientRect().width);
         });
@@ -283,7 +315,7 @@
       function measure() {
         const r = holes[0].el.getBoundingClientRect();
         cw = r.width; ch = r.height;
-        mw = Math.max(40, Math.min(cw * 0.86, ch * (isLetter ? 0.95 : 1.25)));
+        mw = Math.max(40, Math.min(cw * 0.86, ch * (square ? 0.95 : 1.25)));
         const bellyW = mw * 0.82 - 18, bellyH = ch * 0.85 * 0.46 - 8;
         const fs = Math.max(12, Math.min(bellyH * 0.82, bellyW / textRatio()));
         field.style.setProperty("--ch", `${ch}px`);
@@ -298,15 +330,25 @@
       // ---------- Moles ----------
       const isUp = (h) => h.state === "up";
 
+      // The next right picture: one that isn't already up, taking turns through them.
+      let rightTurn = 0;
+      function nextRight() {
+        for (let k = 0; k < rights.length; k++) {
+          const it = rights[(rightTurn + k) % rights.length];
+          if (!holes.some((h) => isUp(h) && h.item === it)) { rightTurn += k + 1; return it; }
+        }
+        return rights[rightTurn++ % rights.length];
+      }
+
       function chooseItem() {
-        const targetUp = holes.some((h) => isUp(h) && h.item === target);
+        const targetUp = holes.some((h) => isUp(h) && isTarget(h.item));
         const pool = distractors.filter((d) => !holes.some((h) => isUp(h) && h.item === d));
         // Catch-up: running short of time with no target showing → always send one.
         const msLeft = ctx.timeLimit - (performance.now() - startedAt);
         const behind = !targetUp && msLeft < (NEED - hits) * (1500 / pace);
         let wantTarget = !pool.length || sinceTarget >= 2 || behind || Math.random() < (targetUp ? 0.25 : 0.6);
         if (wantTarget && targetUp && pool.length && sinceTarget < 2) wantTarget = false; // one target at a time mostly
-        if (wantTarget) { sinceTarget = 0; return target; }
+        if (wantTarget) { sinceTarget = 0; return nextRight(); }
         sinceTarget++;
         return ctx.pick(pool);
       }
@@ -388,7 +430,8 @@
         mallet(at);
         if (!h || !isUp(h)) { whiffSound(); return; }
 
-        if (h.item === target) {
+        if (isTarget(h.item)) {
+          if (isPhonics) ctx.say(spoken(h.item)); // "bee!"
           hits++;
           fill(good.pips[hits - 1], TEXT.goodMark);
           h.el.classList.add("bonk");
@@ -403,6 +446,7 @@
           }
         } else {
           strikes++;
+          if (isPhonics) ctx.say(spoken(h.item)); // "duck" — not a B word
           fill(bad.pips[strikes - 1], TEXT.badMark);
           bad.el.dataset.s = String(strikes);
           h.el.classList.add("laugh");

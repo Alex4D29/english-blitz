@@ -11,4 +11,6 @@ window.GAME_FILES = [
   "shuriken-toss",
   "claw-catch",
   "fishing",
+  "egg-shuffle",
+  "clean-room",
 ];
