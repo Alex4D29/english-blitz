@@ -135,59 +135,8 @@
       const letterName = (it) => it.say || it.text.toUpperCase();
       const { tone, sweep, noise } = ctx.sfx;
 
-      // ---------- Content: rows[r] = [{ text, kind, right, spoken }] ----------
-      let cardText, prompt, answer;
-      const rows = [];
-      if (type === "phonics") {
-        const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
-        const set = ctx.phonics.set(letter, R, (N - 1) * R);
-        cardText = letter.text.toUpperCase();
-        prompt = letterName(letter);
-        const rights = [...Array(R)].map((_, i) => set.right[i % set.right.length]);
-        answer = TEXT.answer(letterName(letter), rights[0].word);
-        for (let r = 0; r < R; r++) {
-          const wrong = set.wrong.slice(r * (N - 1), (r + 1) * (N - 1));
-          const extra = wrong.length < N - 1 ? ctx.shuffle(set.wrong.slice()).slice(0, N - 1 - wrong.length) : [];
-          rows.push(ctx.shuffle([rights[r], ...wrong, ...extra].map((p) => ({ text: p.emoji, kind: "pic", right: p === rights[r], spoken: p.word }))));
-        }
-      } else if (type === "cvc") {
-        const pool = ctx.items.filter((it) => it.emoji);
-        const target = pool[0];
-        cardText = target.text;
-        prompt = answer = target.say || target.text;
-        const others = ctx.shuffle(pool.filter((o) => o !== target && o.emoji !== target.emoji));
-        const close = ctx.pickOptions(target, 12).filter((o) => o !== target && o.emoji && o.emoji !== target.emoji);
-        for (let r = 0; r < R; r++) {
-          const wrong = [];
-          for (const o of [...ctx.shuffle(close.slice()), ...others]) { if (wrong.length >= N - 1) break; if (!wrong.includes(o)) wrong.push(o); }
-          rows.push(ctx.shuffle([target, ...wrong].map((o) => ({ text: o.emoji, kind: "pic", right: o === target, spoken: o.say || o.text }))));
-        }
-      } else if (type === "letter" && Math.random() < 0.5) {
-        // Capital → lowercase: the card is B, the pads are b, among lowercase look-alikes (d, p, h…).
-        const target = ctx.items[0];
-        cardText = target.text.toUpperCase();
-        prompt = letterName(target);
-        answer = target.word ? TEXT.answer(letterName(target), target.word) : prompt;
-        const notIL = (o) => [o.text, target.text].map((x) => x.toUpperCase()).sort().join("") !== "IL";
-        for (let r = 0; r < R; r++) {
-          const wrong = [];
-          for (const o of [...ctx.lowerLookalikes(target), ...ctx.pickOptions(target, N + 4)]) {
-            if (wrong.length >= N - 1) break;
-            if (o !== target && notIL(o) && o.text.toLowerCase() !== target.text.toLowerCase() && !wrong.includes(o)) wrong.push(o);
-          }
-          rows.push(ctx.shuffle([target, ...wrong].map((o) => ({ text: o.text.toLowerCase(), kind: "letter", right: o === target, spoken: letterName(o) }))));
-        }
-      } else {
-        const target = ctx.items[0];
-        const isHfw = type === "hfw";
-        cardText = isHfw ? (ctx.canSpeak ? TEXT.listen : target.text) : target.text;
-        prompt = isHfw ? target.say || target.text : letterName(target);
-        answer = !isHfw && target.word ? TEXT.answer(letterName(target), target.word) : prompt;
-        for (let r = 0; r < R; r++) {
-          const wrong = ctx.pickOptions(target, N + 3).filter((o) => o !== target && o.text !== target.text).slice(0, N - 1);
-          rows.push(ctx.shuffle([target, ...wrong].map((o) => ({ text: o.text, kind: isHfw ? "word" : "letter", right: o === target, spoken: isHfw ? o.say || o.text : letterName(o) }))));
-        }
-      }
+      // ---------- Content: rows[r] = [{ text, kind, right, spoken }] (ABC: half the rounds are capital → lowercase) ----------
+      const { cardText, prompt, answer, rows } = ctx.choiceRows(R, N, { lowercase: true });
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");

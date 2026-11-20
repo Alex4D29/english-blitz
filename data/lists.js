@@ -19,7 +19,7 @@ window.WORD_LISTS = [
       { text: "B", tricky: ["D", "P", "Q", "V"],       pics: pics("ball ⚽", "bee 🐝", "banana 🍌", "bear 🐻") },
       { text: "C", tricky: ["O", "E"],                 pics: pics("cat 🐱", "cake 🎂", "cow 🐮", "carrot 🥕") },
       { text: "D", tricky: ["B", "P", "Q"],            pics: pics("dog 🐶", "duck 🦆", "door 🚪", "dinosaur 🦕") },
-      { text: "E", tricky: ["A", "C"],                 pics: pics("egg 🥚", "elephant 🐘", "envelope ✉️") },
+      { text: "E", say: "Ee", tricky: ["A", "C"],                 pics: pics("egg 🥚", "elephant 🐘", "envelope ✉️") },
       { text: "F", tricky: ["T", "H"],                 pics: pics("fish 🐟", "frog 🐸", "fire 🔥", "fork 🍴") },
       { text: "G", tricky: ["Q", "J"],                 pics: pics("goat 🐐", "grapes 🍇", "guitar 🎸", "gorilla 🦍") },
       { text: "H", tricky: ["N", "F"],                 pics: pics("hat 🎩", "horse 🐴", "house 🏠", "hippo 🦛") },

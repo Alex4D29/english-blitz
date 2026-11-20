@@ -452,6 +452,8 @@
       pick: C.pick,
       pickOptions: (target, n) => C.pickOptions(items, target, n),
       lowerLookalikes: (target) => C.lowerLookalikes(items, target), // letters whose lowercase looks like target's (b → d, p, h)
+      // R rows of N options, one right per row (sequence games). See Core.choiceRows.
+      choiceRows: (R, N, opts = {}) => C.choiceRows(items, list.type, R, N, { canSpeak: C.canSpeak, ...opts }),
       // Phonics: pictures that start with a letter, and wrong pictures from other letters.
       phonics: {
         pics: C.startPics,                                     // (item) => [{ word, emoji }] starting with item.text

@@ -23,4 +23,9 @@ window.GAME_FILES = [
   "pachinko",
   "mouse-trap",
   "froggy-hop",
+  "monkey-swing",
+  "snowman",
+  "track-switch",
+  "bunny-burrow",
+  "pizza-chef",
 ];

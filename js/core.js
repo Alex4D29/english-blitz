@@ -99,6 +99,72 @@
     return shuffle(pool.filter((o) => o !== target && shapes.includes(o.text.toLowerCase()) && notIL(o)));
   }
 
+  // ---------- Choice rows (sequence games: Froggy Hop, Monkey Swing, Snowman…) ----------
+  // R rows of N options, each row with exactly one right option, for a target from the pool.
+  // Returns { cardText, listen, prompt, answer, rows }, where rows[r] is a shuffled array of
+  // { text, kind: "letter" | "pic" | "word", right, spoken }.
+  //   letter:  same-case look-alikes, or (when opts.lowercase and a coin flip) capital card → lowercase options
+  //   phonics: the card is a letter; each row has a different picture that starts with it
+  //   cvc:     the card is the word; the options are pictures
+  //   hfw:     the card is 🔊 (`listen` true) when there's speech, else the word; the options are words
+  function choiceRows(pool, type, R, N, opts = {}) {
+    const letterName = (it) => it.say || it.text.toUpperCase();
+    const forWord = (l, w) => `${l} for ${w}`;
+    const rows = [];
+    const out = { listen: false, rows };
+    if (type === "phonics") {
+      const letter = pool.find((it) => startPics(it).length) || pool[0];
+      const set = phonicsSet(pool, letter, R, (N - 1) * R);
+      const rights = [...Array(R)].map((_, i) => set.right[i % set.right.length]);
+      out.cardText = letter.text.toUpperCase();
+      out.prompt = letterName(letter);
+      out.answer = forWord(letterName(letter), rights[0].word);
+      for (let r = 0; r < R; r++) {
+        const wrong = set.wrong.slice(r * (N - 1), (r + 1) * (N - 1));
+        const extra = wrong.length < N - 1 ? shuffle(set.wrong.slice()).slice(0, N - 1 - wrong.length) : [];
+        rows.push(shuffle([rights[r], ...wrong, ...extra].map((p) => ({ text: p.emoji, kind: "pic", right: p === rights[r], spoken: p.word }))));
+      }
+    } else if (type === "cvc") {
+      const pics = pool.filter((it) => it.emoji);
+      const target = pics[0] || pool[0];
+      out.cardText = target.text;
+      out.prompt = out.answer = target.say || target.text;
+      const others = shuffle(pics.filter((o) => o !== target && o.emoji !== target.emoji));
+      const close = pickOptions(pool, target, 12).filter((o) => o !== target && o.emoji && o.emoji !== target.emoji);
+      for (let r = 0; r < R; r++) {
+        const wrong = [];
+        for (const o of [...shuffle(close.slice()), ...others]) { if (wrong.length >= N - 1) break; if (!wrong.includes(o)) wrong.push(o); }
+        rows.push(shuffle([target, ...wrong].map((o) => ({ text: o.emoji, kind: "pic", right: o === target, spoken: o.say || o.text }))));
+      }
+    } else if (type === "letter" && opts.lowercase && Math.random() < 0.5) {
+      const target = pool[0];
+      out.cardText = target.text.toUpperCase();
+      out.prompt = letterName(target);
+      out.answer = target.word ? forWord(letterName(target), target.word) : out.prompt;
+      const notIL = (o) => [o.text, target.text].map((x) => x.toUpperCase()).sort().join("") !== "IL";
+      for (let r = 0; r < R; r++) {
+        const wrong = [];
+        for (const o of [...lowerLookalikes(pool, target), ...pickOptions(pool, target, N + 4)]) {
+          if (wrong.length >= N - 1) break;
+          if (o !== target && notIL(o) && o.text.toLowerCase() !== target.text.toLowerCase() && !wrong.includes(o)) wrong.push(o);
+        }
+        rows.push(shuffle([target, ...wrong].map((o) => ({ text: o.text.toLowerCase(), kind: "letter", right: o === target, spoken: letterName(o) }))));
+      }
+    } else {
+      const target = pool[0];
+      const isHfw = type === "hfw";
+      out.listen = isHfw && !!opts.canSpeak;
+      out.cardText = out.listen ? "🔊" : target.text;
+      out.prompt = isHfw ? target.say || target.text : letterName(target);
+      out.answer = !isHfw && target.word ? forWord(letterName(target), target.word) : out.prompt;
+      for (let r = 0; r < R; r++) {
+        const wrong = pickOptions(pool, target, N + 3).filter((o) => o !== target && o.text !== target.text).slice(0, N - 1);
+        rows.push(shuffle([target, ...wrong].map((o) => ({ text: o.text, kind: isHfw ? "word" : "letter", right: o === target, spoken: isHfw ? o.say || o.text : letterName(o) }))));
+      }
+    }
+    return out;
+  }
+
   // ---------- Audio ----------
   // The AudioContext can only be created/resumed inside a user tap (iOS), so
   // the frame calls unlock() from the mode buttons.
@@ -295,7 +361,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet, lowerLookalikes,
+    startPics, phonicsSet, lowerLookalikes, choiceRows,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,
