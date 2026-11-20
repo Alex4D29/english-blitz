@@ -21,4 +21,5 @@ window.GAME_FILES = [
   "window-wiper",
   "sack-man",
   "pachinko",
+  "mouse-trap",
 ];
