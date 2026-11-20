@@ -428,6 +428,13 @@
       win: () => report(token, true),
       lose: () => report(token, false),
       onTimeout: (fn) => { if (alive() && state.current) state.current.onTimeout = fn; },
+      // Stop the clock: the player's choice is made and the game is only animating the outcome
+      // (Pachinko's falling ball). The game must still call win() or lose() itself.
+      freezeTimer: () => {
+        if (!alive() || state.reported || !state.current || state.current.frozenAt) return;
+        state.current.frozenAt = performance.now();
+        cancelAnimationFrame(state.timerRaf);
+      },
       later: (fn, ms) => {
         if (!alive()) return 0;
         const id = setTimeout(() => { if (alive()) guard(game.id, fn); }, ms);
@@ -466,7 +473,7 @@
 
     let lastSec = Infinity;
     const tick = () => {
-      if (!alive() || state.reported) return;
+      if (!alive() || state.reported || state.current.frozenAt) return;
       const elapsed = performance.now() - state.current.t0;
       setBar(1 - elapsed / timeLimit);
       const secs = Math.ceil((timeLimit - elapsed) / 1000);
@@ -485,7 +492,7 @@
     cancelAnimationFrame(state.timerRaf);
     hideCoach();
     const { game, timeLimit, t0, onTimeout } = state.current;
-    const timeMs = Math.round(Math.min(performance.now() - t0, timeLimit));
+    const timeMs = Math.round(Math.min((state.current.frozenAt || performance.now()) - t0, timeLimit));
     els.game.classList.add("locked");
     state.results.push({ gameId: game.id, won, timedOut, timeMs, timeLimit, speed: state.speed });
     if (timedOut) {

@@ -18,4 +18,7 @@ window.GAME_FILES = [
   "puzzle-reveal",
   "stop-sneeze",
   "spot-imposter",
+  "window-wiper",
+  "sack-man",
+  "pachinko",
 ];
