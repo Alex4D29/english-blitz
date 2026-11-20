@@ -24,7 +24,7 @@
       return { en: {
         steps: [
           what,
-          ["👆", "Swipe up, down, left or right to move the sack."],
+          ["👆", "Tap where you want the sack to go, and it walks there. (Swiping works too!)"],
           ["✂️", "Watch out for the scissors!"],
         ],
         tips: [
@@ -105,6 +105,9 @@
   .sk-item.left b { box-shadow:0 0 0 4px #fff, 0 0 0 7px #00b86b; }
   .sk-item.left { animation:sk-wiggle .4s ease-in-out infinite; }
 
+  .sk-goal { position:absolute; width:var(--ts); height:var(--ts); pointer-events:none; z-index:2; }
+  .sk-goal::before { content:""; position:absolute; inset:12%; border:4px dashed #ff2e88; border-radius:50%; animation:sk-goal .6s ease-in-out infinite alternate; }
+  @keyframes sk-goal { from { transform:scale(.8); } to { transform:scale(1.05); } }
   .sk-sack, .sk-snip { position:absolute; left:0; top:0; width:var(--ts); height:var(--ts); will-change:transform; z-index:3; }
   .sk-half { position:absolute; inset:0; transition:transform .5s cubic-bezier(.3,1.4,.5,1); }
   .sk-half.l { clip-path:polygon(0 0, 54% 0, 46% 100%, 0 100%); }
@@ -168,7 +171,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 12000,
-    input: "drag",
+    input: "tap",
 
     start(ctx) {
       injectCss();
@@ -176,7 +179,7 @@
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const K = speed >= 1.5 ? 3 : 2;           // targets to eat
-      const ND = speed >= 1.5 ? 4 : 3;          // decoys
+      const ND = speed >= 1.5 ? 3 : 2;          // decoys
       const letterName = (it) => it.say || it.text.toUpperCase();
       const { tone, sweep, noise } = ctx.sfx;
 
@@ -226,7 +229,8 @@
       const ROWS = maze.length, COLS = maze[0].length;
       const open = (c, r) => r >= 0 && r < ROWS && c >= 0 && c < COLS && maze[r][c] !== "#";
       const key = (c, r) => r * COLS + c;
-      function bfs(c0, r0) {
+      // Shortest-path distances from (c0, r0). `blocked` (a Set of keys) are tiles to route around.
+      function bfs(c0, r0, blocked) {
         const dist = new Array(ROWS * COLS).fill(-1);
         const q = [[c0, r0]];
         dist[key(c0, r0)] = 0;
@@ -234,7 +238,9 @@
           const [c, r] = q.shift();
           for (const [dc, dr] of Object.values(DIRS)) {
             const nc = c + dc, nr = r + dr;
-            if (open(nc, nr) && dist[key(nc, nr)] < 0) { dist[key(nc, nr)] = dist[key(c, r)] + 1; q.push([nc, nr]); }
+            if (open(nc, nr) && dist[key(nc, nr)] < 0 && !(blocked && blocked.has(key(nc, nr)))) {
+              dist[key(nc, nr)] = dist[key(c, r)] + 1; q.push([nc, nr]);
+            }
           }
         }
         return dist;
@@ -320,6 +326,10 @@
         board.appendChild(el);
         t.el = el;
       });
+      const goalEl = document.createElement("div"); // where a tap sent the sack
+      goalEl.className = "sk-goal";
+      goalEl.style.display = "none";
+      board.appendChild(goalEl);
       const sackEl = document.createElement("div");
       sackEl.className = "sk-sack";
       sackEl.innerHTML = `<div class="sk-half l">${SACK_HTML}</div><div class="sk-half r">${SACK_HTML}</div>`;
@@ -350,7 +360,7 @@
       // A mover goes from tile `from` to tile `to`; t is 0 → 1 along the way.
       const mover = (c, r) => ({ from: [c, r], to: [c, r], t: 1, dir: null });
       const sack = mover(...start), snip = mover(...snipStart);
-      let want = null, stunUntil = 0, done = false, eaten = 0;
+      let want = null, goal = null, stunUntil = 0, done = false, eaten = 0;
       const pos = (m) => [m.from[0] + (m.to[0] - m.from[0]) * m.t, m.from[1] + (m.to[1] - m.from[1]) * m.t];
       const canGo = (tile, d) => d && open(tile[0] + DIRS[d][0], tile[1] + DIRS[d][1]);
       function step(m, v, dt, choose) {
@@ -370,11 +380,51 @@
           left -= take;
         }
       }
-      // The sack: the swiped direction when it's open, otherwise carry on, otherwise stop.
+      // The sack: walking to a tapped tile (shortest path, around wrong items when it can), or the
+      // swiped direction when it's open, otherwise carry on, otherwise stop.
       function sackChoose(tile) {
+        if (goal) {
+          if (tile[0] === goal[0] && tile[1] === goal[1]) { setGoal(null); return null; }
+          return stepToward(tile, goal);
+        }
         if (canGo(tile, want)) return want;
         if (canGo(tile, sack.dir)) return sack.dir;
         return null;
+      }
+      // Distances to the goal, avoiding uneaten wrong items (unless the goal is one, or there's no other way).
+      function goalDist(g) {
+        const avoid = new Set(tiles.filter((x) => !x.good && !x.gone && !(x.c === g[0] && x.r === g[1])).map((x) => key(x.c, x.r)));
+        const d = bfs(g[0], g[1], avoid);
+        const [fc, fr] = sack.t >= 1 ? sack.to : sack.from;
+        return d[key(fc, fr)] >= 0 || d[key(...sack.to)] >= 0 ? d : bfs(g[0], g[1]);
+      }
+      function stepToward(tile, g) {
+        const dist = goalDist(g);
+        let best = null, bd = Infinity;
+        for (const d of Object.keys(DIRS)) {
+          if (!canGo(tile, d)) continue;
+          const nd = dist[key(tile[0] + DIRS[d][0], tile[1] + DIRS[d][1])];
+          if (nd >= 0 && nd < bd) { bd = nd; best = d; }
+        }
+        return best;
+      }
+      function setGoal(g) {
+        goal = g;
+        goalEl.style.display = g ? "" : "none";
+        if (!g || done) return;
+        goalEl.style.left = `calc(var(--ts) * ${g[0] - 1})`;
+        goalEl.style.top = `calc(var(--ts) * ${g[1] - 1})`;
+        want = null;
+        // Mid-tile and the goal is behind us? Turn round at once.
+        if (sack.dir && sack.t < 1) {
+          const dist = goalDist(g);
+          const df = dist[key(...sack.from)], dt = dist[key(...sack.to)];
+          if (df >= 0 && (dt < 0 || df < dt)) {
+            [sack.from, sack.to] = [sack.to, sack.from];
+            sack.t = 1 - sack.t;
+            sack.dir = OPP[sack.dir];
+          }
+        }
       }
       // The scissors: the next step on the shortest path to the sack, sometimes a random turn.
       function snipChoose(tile) {
@@ -394,6 +444,7 @@
 
       function setWant(d) {
         if (done) return;
+        setGoal(null);
         want = d;
         // Reverse at once, mid-tile, so the sack feels responsive.
         if (sack.dir && d === OPP[sack.dir] && sack.t < 1) {
@@ -432,7 +483,7 @@
       }
 
       function win() {
-        done = true;
+        done = true; goalEl.style.display = "none";
         ctx.win();
         sackEl.classList.remove("moving");
         snipEl.classList.add("wait");
@@ -441,7 +492,7 @@
         ctx.confetti(fx, (x - 0.5) * TS, (y - 0.5) * TS);
       }
       function caught() {
-        done = true;
+        done = true; goalEl.style.display = "none";
         ctx.lose();
         sackEl.classList.remove("moving", "happy");
         sackEl.classList.add("cut");
@@ -498,22 +549,38 @@
       ro.observe(stage);
       ctx.raf(frame);
 
-      // ---------- Input: swipes anywhere (a new direction every 22 px of travel), arrow keys ----------
+      // ---------- Input: tap a spot and the sack walks there; or swipe (a new direction every 22 px of
+      // travel, so you can steer without lifting); arrow keys too ----------
       let swipe = null;
       wrap.addEventListener("pointerdown", (e) => {
         if (done) return;
         e.preventDefault();
-        swipe = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, swiped: false };
         try { wrap.setPointerCapture(e.pointerId); } catch (err) { /* capture is a nicety */ }
       });
       wrap.addEventListener("pointermove", (e) => {
         if (!swipe || e.pointerId !== swipe.id) return;
         const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
         if (Math.hypot(dx, dy) < 22) return;
+        swipe.swiped = true;
         setWant(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
-        swipe.x = e.clientX; swipe.y = e.clientY; // keep steering without lifting the finger
+        swipe.x = e.clientX; swipe.y = e.clientY;
       });
-      const endSwipe = (e) => { if (swipe && e.pointerId === swipe.id) swipe = null; };
+      const endSwipe = (e) => {
+        if (!swipe || e.pointerId !== swipe.id) return;
+        const s = swipe;
+        swipe = null;
+        if (s.swiped || done || e.type === "pointercancel") return;
+        // A tap: walk to the open tile nearest the finger.
+        const b = board.getBoundingClientRect();
+        const fx = (s.x0 - b.left - 5) / TS + 1, fy = (s.y0 - b.top - 5) / TS + 1;
+        let best = null, bd = Infinity;
+        for (const [c, r] of floor) {
+          const d = Math.hypot(c + 0.5 - fx, r + 0.5 - fy);
+          if (d < bd) { bd = d; best = [c, r]; }
+        }
+        if (best) { setGoal(best); tone(880, 0.04, "triangle", 0.06); }
+      };
       wrap.addEventListener("pointerup", endSwipe);
       wrap.addEventListener("pointercancel", endSwipe);
       function onKey(e) {
@@ -523,19 +590,10 @@
       }
       document.addEventListener("keydown", onKey);
 
-      // A small finger-only hint: a swipe from the sack along its first open direction.
-      ctx.later(() => {
-        const d = ["up", "left", "right", "down"].find((x) => canGo(start, x));
-        if (!d) return;
-        const g = ctx.root.getBoundingClientRect(), b = board.getBoundingClientRect();
-        const ax = b.left - g.left + 5 + (start[0] - 0.5) * TS, ay = b.top - g.top + 5 + (start[1] - 0.5) * TS;
-        ctx.hint({ x: ax, y: ay }, { x: ax + DIRS[d][0] * TS * 2, y: ay + DIRS[d][1] * TS * 2 }, { noWord: true, scale: 0.6 });
-      }, 80);
-
       function replay() { if (!done) ctx.say(prompt); }
 
       ctx.onTimeout(() => {
-        done = true;
+        done = true; goalEl.style.display = "none";
         sackEl.classList.remove("moving");
         sackEl.classList.add("sad");
         snipEl.classList.add("wait");

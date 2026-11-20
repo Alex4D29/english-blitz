@@ -69,7 +69,13 @@
   .pk-bulb { position:absolute; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%; background:#5a4a2a; border:2px solid #111; z-index:2; }
   .pk-machine.lit .pk-bulb { animation:pk-blink .35s steps(1) infinite; animation-delay:var(--d); }
   .pk-machine.jackpot .pk-bulb { animation:pk-blink .12s steps(1) infinite; animation-delay:var(--d); }
-  .pk-funnel { position:absolute; top:0; height:58px; padding:0; border:0; background:none; cursor:pointer; touch-action:manipulation; z-index:3; }
+  .pk-arrow { position:absolute; top:4px; width:0; height:0; z-index:3; pointer-events:none; }
+  .pk-arrow::before { content:""; position:absolute; left:-14px; top:0; width:28px; height:26px; background:var(--c);
+    clip-path:polygon(30% 0, 70% 0, 70% 45%, 100% 45%, 50% 100%, 0 45%, 30% 45%); animation:pk-bob .5s ease-in-out infinite alternate;
+    filter:drop-shadow(0 0 0 #111) drop-shadow(2px 0 0 #111) drop-shadow(-2px 0 0 #111) drop-shadow(0 2px 0 #111) drop-shadow(0 -2px 0 #111); }
+  .pk-machine.dropped .pk-arrow { display:none; }
+  .pk-tube-pick { filter:brightness(1.35) drop-shadow(0 0 6px #fff); }
+  .pk-funnel { position:absolute; top:30px; height:58px; padding:0; border:0; background:none; cursor:pointer; touch-action:manipulation; z-index:3; }
   .pk-funnel i { position:absolute; left:50%; top:6px; width:68%; height:40px; transform:translateX(-50%); background:var(--c); border:4px solid #111;
     clip-path:polygon(0 0, 100% 0, 66% 100%, 34% 100%); }
   .pk-funnel::after { content:""; position:absolute; left:50%; top:6px; width:68%; height:40px; transform:translateX(-50%);
@@ -92,6 +98,7 @@
 
   @keyframes pk-blink { 0% { background:#ffe14d; box-shadow:0 0 10px 3px #ffe14d; } 50% { background:#ff2e88; box-shadow:0 0 10px 3px #ff2e88; } }
   @keyframes pk-hop { 50% { transform:translateY(-18%); } }
+  @keyframes pk-bob { from { transform:translateY(-3px); } to { transform:translateY(4px); } }
   @keyframes pk-sob { from { transform:scaleY(1); } to { transform:scaleY(.94) translateY(3%); } }
   @keyframes pk-tear { from { transform:translateY(0); opacity:1; } to { transform:translateY(160%); opacity:0; } }
   @keyframes pk-wiggle { 25% { transform:rotate(-5deg) scale(1.05); } 75% { transform:rotate(5deg) scale(1.05); } }
@@ -231,6 +238,31 @@
         machine.appendChild(b);
         return b;
       });
+      // A bobbing arrow above each funnel, in its tube's colour: "drop it in here".
+      const arrows = funnels.map((_, i) => {
+        const a = document.createElement("div");
+        a.className = "pk-arrow";
+        a.style.setProperty("--c", TUBE_COLORS[i]);
+        machine.appendChild(a);
+        return a;
+      });
+      // The whole tube is a target too: a tap anywhere in the machine picks the nearest tube.
+      machine.addEventListener("pointerdown", (e) => {
+        if (dropped || done || e.target.closest(".pk-funnel")) return;
+        const r = machine.getBoundingClientRect();
+        const x = e.clientX - r.left - 6, y = e.clientY - r.top - 6;
+        if (y > yBot) return; // the answer slots aren't tubes
+        let best = -1, bd = Infinity;
+        pathEls.forEach((p, i) => {
+          const len = p.getTotalLength();
+          for (let k = 0; k <= 60; k++) {
+            const pt = p.getPointAtLength((len * k) / 60);
+            const dd = Math.hypot(pt.x - x, pt.y - y);
+            if (dd < bd) { bd = dd; best = i; }
+          }
+        });
+        if (best >= 0 && bd < laneW * 0.5) { e.preventDefault(); drop(best); }
+      });
       const slotEls = slots.map((s, i) => {
         const el = document.createElement("div");
         el.className = "pk-slot";
@@ -251,11 +283,12 @@
         laneW = MW / n;
         const sh = Math.max(58, Math.min(84, MH * 0.17));
         machine.style.setProperty("--sh", `${sh}px`);
-        yTop = 46; yBot = MH - sh - 4;
+        yTop = 76; yBot = MH - sh - 4;
         const bs = Math.max(34, Math.min(58, laneW * 0.5));
         wrap.style.setProperty("--bs", `${bs}px`);
         machine.style.setProperty("--bs", `${bs}px`);
         funnels.forEach((f, i) => { f.style.left = `${laneW * i}px`; f.style.width = `${laneW}px`; });
+        arrows.forEach((a, i) => { a.style.left = `${laneX(i)}px`; });
         slotEls.forEach((el, i) => {
           el.style.left = `${laneW * i + 5}px`;
           el.style.width = `${laneW - 10}px`;
@@ -264,7 +297,7 @@
         // Tubes: a dark outline under a coloured core, level by level, with S-bends where lanes swap.
         const dy = (yBot - yTop) / LEVELS;
         const d = paths.map((lanes) => {
-          let s = `M${laneX(lanes[0]).toFixed(1)} ${yTop}`;
+          let s = `M${laneX(lanes[0]).toFixed(1)} ${yTop - 30} L${laneX(lanes[0]).toFixed(1)} ${yTop}`; // starts inside the funnel
           lanes.slice(1).forEach((ln, k) => {
             const y0 = yTop + dy * k, y1 = y0 + dy, x0 = laneX(lanes[k]), x1 = laneX(ln);
             s += ` C${x0.toFixed(1)} ${(y0 + dy * 0.5).toFixed(1)} ${x1.toFixed(1)} ${(y0 + dy * 0.5).toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
@@ -306,13 +339,15 @@
         ctx.freezeTimer();
         funnels.forEach((f) => { f.disabled = true; });
         funnels[i].classList.add("pick");
+        machine.classList.add("dropped");
+        pathEls[i].classList.add("pk-tube-pick");
         const w = wrap.getBoundingClientRect(), mr = machine.getBoundingClientRect(), m = mon.getBoundingClientRect();
         const ox = mr.left - w.left + 6, oy = mr.top - w.top + 6; // machine content box inside the wrap
         // The monster leans over and tosses the ball into the funnel.
         const tx = ox + laneX(i);
         mon.style.transform = `translateX(${(tx - (m.left - w.left + m.width / 2)) * 0.5}px) rotate(${tx > m.left - w.left + m.width / 2 ? 10 : -10}deg)`;
         sweep(300, 900, 0.18, "square", 0.08); // boing
-        const from = handPos(), to = { x: tx, y: oy + 18 };
+        const from = handPos(), to = { x: tx, y: oy + yTop - 30 };
         const tossMs = reduceMotion ? 1 : 380;
         const path = pathEls[i], len = path.getTotalLength();
         const fallMs = reduceMotion ? 1 : 2300;

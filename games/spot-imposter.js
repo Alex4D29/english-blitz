@@ -16,16 +16,17 @@
     icon: "👮",
     howTo: (list) => {
       const what = {
-        letter: ["✅", "The green circle shows who's allowed, like \"A\". Everyone is a small a… except one!"],
-        phonics: ["✅", "The green circle shows a letter, like \"A\". The pictures all start with A… except one!"],
-        cvc: ["✅", "The green circle shows a picture, like a cat. Everyone says \"cat\"… except one!"],
-        hfw: ["✅", "The green circle shows a word, like \"what\". Everyone says \"what\"… except one!"],
-      }[list.type] || ["✅", "The green circle shows who's allowed."];
+        letter: ["🚶", "Lots of a's are marching… but one is an o, hiding in the crowd!"],
+        phonics: ["🚶", "The pictures all start with A… but one doesn't!"],
+        cvc: ["🚶", "Everyone says \"cat\"… but one says \"cot\"!"],
+        hfw: ["🚶", "Everyone says \"what\"… but one says \"why\"!"],
+      }[list.type] || ["🚶", "Everyone is the same… except one!"];
       return { en: {
         steps: [
           ["👮", "The policeman is looking for an imposter."],
+          ["❌", "The WANTED poster shows the imposter."],
           what,
-          ["❌", "The red sign shows the imposter, like \"o\". Find it in the parade and tap it to catch it!"],
+          ["👆", "Find it in the parade and tap it to catch it!"],
         ],
         tips: [
           "Tap the policeman to hear the imposter's name again.",
@@ -36,6 +37,7 @@
     },
     instruction: { en: "SPOT THE\nIMPOSTER!" },
     listen: "🔊",
+    wanted: "WANTED",
     gotcha: "GOTCHA!",
     laugh: "MWAHAHA!",
     copLabel: "Hear it again",
@@ -68,12 +70,13 @@
     border-radius:14px; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; gap:4px; transform:rotate(3deg);
     font-size:clamp(2.6rem, 13vw, 3.6rem); line-height:1; white-space:nowrap; margin-bottom:10px; }
   .sp-sign.word { font-size:clamp(1.7rem, 8vw, 2.3rem); }
-  .sp-sign::after { position:absolute; right:-14px; top:-14px; font-size:1.6rem; line-height:1; transform:rotate(-3deg); }
-  .sp-sign.ok { min-width:0; width:clamp(78px, 22vw, 100px); height:clamp(78px, 22vw, 100px); padding:0; border-radius:50%; transform:none;
-    border:8px solid #00b86b; box-shadow:0 0 0 4px #111, 0 7px 0 4px #111; }
-  .sp-sign.ok::after { content:"✅"; }
-  .sp-sign.bad { border:7px solid #e8173c; box-shadow:0 0 0 3px #111, 0 6px 0 3px #111; transform:rotate(-3deg); background:#fff4f4; }
-  .sp-sign.bad::after { content:"❌"; }
+  /* The WANTED poster: a header, the imposter big, and a big red X badge. */
+  .sp-sign.bad { flex-direction:column; gap:2px; min-width:clamp(130px, 40vw, 170px); height:auto; padding:6px 16px 10px; background:#fff4d6;
+    border:7px solid #e8173c; box-shadow:0 0 0 3px #111, 0 7px 0 3px #111; transform:rotate(-3deg); font-size:clamp(3rem, 15vw, 4.2rem); }
+  .sp-sign.bad.word { font-size:clamp(2rem, 9vw, 2.6rem); }
+  .sp-wanted { font-size:clamp(1rem, 5vw, 1.35rem); letter-spacing:.08em; color:#e8173c; -webkit-text-stroke:1px #111; }
+  .sp-x { position:absolute; right:-20px; top:-20px; width:46px; height:46px; border-radius:50%; background:#e8173c; border:4px solid #111;
+    box-shadow:0 4px 0 #111; color:#fff; font-size:2rem; line-height:38px; text-align:center; transform:rotate(8deg); -webkit-text-stroke:1px #111; }
   .sp-bubble { position:absolute; left:50%; top:92%; transform:translateX(-50%) rotate(-5deg); padding:4px 12px; background:#fff; border:4px solid #111;
     border-radius:99px; box-shadow:0 4px 0 #111; font-size:1.3rem; white-space:nowrap; color:#111; display:none; z-index:6; }
   .sp-bubble.show { display:block; animation:sp-pop .25s cubic-bezier(.2,1.8,.4,1); }
@@ -155,7 +158,7 @@
       const type = ctx.list.type;
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const N = speed >= 2 ? 10 : speed >= 1.5 ? 8 : 6;
+      const N = speed >= 2 ? 13 : speed >= 1.5 ? 11 : 9;
       const letterName = (it) => it.say || it.text.toUpperCase();
       const { tone, sweep, noise } = ctx.sfx;
 
@@ -245,26 +248,21 @@
       top.className = "sp-top";
       top.setAttribute("role", "button");
       top.setAttribute("aria-label", TEXT.copLabel);
-      top.innerHTML = '<div class="sp-sign ok"></div>' +
-        '<div class="sp-cop"><div class="sp-cop-body"></div><div class="sp-cop-face"></div><div class="sp-cop-hat"></div>' +
+      // Just the policeman and a WANTED poster of the imposter. (A green "allowed" sign was tried and
+      // confused players, so it's gone.)
+      top.innerHTML = '<div class="sp-cop"><div class="sp-cop-body"></div><div class="sp-cop-face"></div><div class="sp-cop-hat"></div>' +
         '<div class="sp-cop-brim"></div><div class="sp-cop-eye l"></div><div class="sp-cop-eye r"></div><div class="sp-cop-stache"></div>' +
-        '<div class="sp-bubble"></div></div><div class="sp-sign bad"></div>';
+        '<div class="sp-bubble"></div></div>' +
+        `<div class="sp-sign bad"><span class="sp-wanted">${TEXT.wanted}</span><span class="sp-st"></span><span class="sp-x">✕</span></div>`;
       const cop = top.querySelector(".sp-cop");
       const bubble = top.querySelector(".sp-bubble");
-      const okSign = top.querySelector(".sp-sign.ok");
       const badSign = top.querySelector(".sp-sign.bad");
-      okSign.innerHTML = '<span class="sp-st"></span>';
-      okSign.firstChild.textContent = signText;
-      if (signKind) okSign.classList.add(signKind);
-      badSign.innerHTML = '<span class="sp-st"></span>';
-      badSign.firstChild.textContent = oddW.text;
-      if (oddW.kind === "word") badSign.classList.add("word");
-      // Words shrink to fit their sign (the circle is the tighter one).
-      [okSign, badSign].forEach((s) => {
-        if (!s.classList.contains("word")) return;
-        const len = s.textContent.length;
-        s.style.fontSize = `min(${s === okSign ? "clamp(1.5rem, 7vw, 2rem)" : "clamp(1.7rem, 8vw, 2.3rem)"}, ${((s === okSign ? 76 : 96) / (len * 0.62)).toFixed(1)}px)`;
-      });
+      const badText = badSign.querySelector(".sp-st");
+      badText.textContent = oddW.text;
+      if (oddW.kind === "word") {
+        badSign.classList.add("word");
+        badText.style.fontSize = `min(clamp(2rem, 9vw, 2.6rem), ${(118 / (oddW.text.length * 0.62)).toFixed(1)}px)`;
+      }
       top.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       const field = document.createElement("div");
       field.className = "sp-field";
@@ -274,7 +272,7 @@
       wrap.append(top, field);
       ctx.root.appendChild(wrap);
 
-      const rows = isWord ? (N >= 8 ? 4 : 3) : N >= 8 ? 4 : 3;
+      const rows = N >= 11 ? 4 : 3;
       const ws = walkers.map((w, i) => {
         const el = document.createElement("div");
         el.className = "sp-w" + (isWord ? " word" : "");
@@ -299,7 +297,7 @@
         const r = field.getBoundingClientRect();
         W = r.width; H = r.height;
         laneH = H / rows;
-        wh = Math.max(40, Math.min(laneH * 0.72, W * (isWord ? 0.17 : 0.23)));
+        wh = Math.max(36, Math.min(laneH * 0.72, W * (isWord ? 0.14 : 0.2)));
         ww = wh;
         wwide = isWord ? ww * 1.6 : ww;
         loop = W + wwide * 1.4;
