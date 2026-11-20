@@ -217,6 +217,10 @@
   //                    nearest the middle, never at one option (a child would take it as "tap this one")
   //   edge: "bottom" – use the bottom edge instead of the middle
   //   small: true    – half size, finger only (no word), for tight spots (Samurai Slice: on the samurai)
+  //   noWord: true   – finger only, no TAP!/DRAG! word (Find My Baby, Claw Catch, Feed Me)
+  //   scale: n       – shrink the whole hint around its point (Clean the Room, Feed Me, Train Builder, Egg Shuffle)
+  //   side: true     – the word sits to the right of the finger, not under it (fits a narrow horizontal gap)
+  //   center: true   – the point is the middle of the finger, not the fingertip (to sit it inside a gap)
   function coachPoint(t, opts = {}) {
     if (!t) return null;
     const list = Array.isArray(t) ? t : [t];
@@ -249,9 +253,13 @@
     // Near the bottom, the word goes above the fingertip and the finger is kept on screen.
     const H = els.game.clientHeight;
     const low = opts && opts.small ? a.y > H - 60 : a.y > H * 0.62;  // a small hint has room below
-    a.y = Math.min(a.y, H - 80);
+    const o = opts || {};
+    const sc = o.scale || (o.small ? 0.5 : 1);
+    a.y = Math.min(a.y, H - 80 * sc);  // keep the whole finger on screen
     const el = document.createElement("div");
-    el.className = "coach " + kind + (low ? " low" : "") + (opts && opts.small ? " small" : "");
+    el.className = "coach " + kind + (low ? " low" : "") + (o.small ? " small" : "") +
+      (o.noWord ? " noword" : "") + (o.side ? " side" : "");
+    if (o.scale) el.style.transform = `scale(${o.scale})`;
     el.setAttribute("aria-hidden", "true");
     el.innerHTML = '<div class="coach-move"><span class="coach-icon"></span></div><span class="coach-word"></span>';
     el.querySelector(".coach-icon").textContent = T.inputIcon;
@@ -263,6 +271,10 @@
       el.style.setProperty("--dy", `${Math.round(b.y - a.y)}px`);
     }
     els.game.appendChild(el);
+    if (o.center) { // move up by half the drawn finger, so its middle sits on the point
+      const h = el.querySelector(".coach-icon").offsetHeight * sc;
+      el.style.top = `${Math.round(Math.min(a.y - h / 2, H - 80 * sc))}px`;
+    }
     state.coach = el;
     later(hideCoach, COACH_MS);
   }
@@ -371,7 +383,10 @@
     }
     later(() => {
       setHint(game);
+      // The game's picture above its title, so non-readers can tell which game is coming.
+      els.banner.querySelector(".banner-icon").textContent = game.icon || "";
       shout(els.banner, instructionFor(game, list), "instruction");
+      restartAnim(els.banner.querySelector(".banner-icon"));
       document.body.classList.add("flash");
       C.sfx.slam();
     }, t);

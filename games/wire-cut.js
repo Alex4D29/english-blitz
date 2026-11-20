@@ -212,14 +212,6 @@
       board.appendChild(svg);
       wrap.append(bomb, board, fx);
       ctx.root.appendChild(wrap);
-      // 👆 TAP! in the middle of the board, between the first two wires (never on one wire).
-      ctx.later(() => {
-        const g = ctx.root.getBoundingClientRect(), b = board.getBoundingClientRect();
-        const y = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
-        if (wires.length < 2) { ctx.hint(board); return; }
-        ctx.hint({ x: b.left + b.width / 2 - g.left, y: (y(wires[0].leftEl) + y(wires[1].leftEl)) / 2 - g.top });
-      }, 80);
-
       const wires = pairs.map((pair, i) => {
         const color = WIRE_COLORS[i % WIRE_COLORS.length];
         const L = pair.L || faces(pair.left, type, pics);

@@ -51,7 +51,6 @@
     bubbleSad: "😢",
     alert: "❗",
     tapHint: "👆TAP!",   // next to ❗ while a fish bites, so kids know to tap again
-    ghost: "👆",
     heart: "❤️",
     monsterLabel: "Monster. Tap to hear it again.",
     pondLabel: "Pond. Swipe or tap to throw the line. Tap a biting fish to catch it.",
@@ -153,7 +152,6 @@
   .fi-fx { position:absolute; inset:0; pointer-events:none; z-index:9; overflow:visible; }
   .fi-ripple { position:absolute; width:60px; height:24px; margin:-12px 0 0 -30px; border:4px solid rgba(255,255,255,.85); border-radius:50%; z-index:1;
     animation:fi-ripple .6s ease-out forwards; pointer-events:none; }
-  .fi-ghost { position:absolute; z-index:6; font-size:46px; line-height:1; pointer-events:none; animation:fi-ghost 1.6s ease-in-out infinite; }
   .fi-heart { position:absolute; font-size:30px; line-height:1; }
 
   @keyframes fi-bob    { to { transform:translateY(-6%); } }
@@ -167,10 +165,9 @@
   @keyframes fi-pulse  { to { scale:1.25; } }
   @keyframes fi-dip    { 0%, 100% { translate:0 0; } 45% { translate:0 9px; scale:.8; } }
   @keyframes fi-ripple { from { transform:scale(.3); opacity:1; } to { transform:scale(1.6); opacity:0; } }
-  @keyframes fi-ghost  { 0% { transform:translate(-40px, -70px); opacity:0; } 15% { opacity:1; } 70% { transform:translate(30px, 40px); opacity:1; } 100% { transform:translate(30px, 40px); opacity:0; } }
   @media (prefers-reduced-motion: reduce) {
     .fi-pond::before, .fi-body, .fi-bubble, .fi-fish .fi-tail, .fi-fish.bite .fi-flip, .fi-fish.hooked .fi-flip, .fi-fish.answer .fi-flip,
-    .fi-fish.bite .fi-alert, .fi-mon.happy .fi-body, .fi-mon.sad .fi-body, .fi-ghost { animation:none !important; }
+    .fi-fish.bite .fi-alert, .fi-mon.happy .fi-body, .fi-mon.sad .fi-body { animation:none !important; }
   }`;
 
   function injectCss() {
@@ -270,9 +267,6 @@
       bob.className = "fi-bob";
       const fx = document.createElement("div");
       fx.className = "fi-fx";
-      const ghost = document.createElement("div");
-      ghost.className = "fi-ghost";
-      ghost.textContent = TEXT.ghost;
 
       wrap.append(shore, pond, dock);
       const fish = catchItems.map((item, i) => {
@@ -295,7 +289,7 @@
           state: "roam", fleeT: 0, triedUntil: 0,
         };
       });
-      wrap.append(mon, svg, bob, ghost, fx);
+      wrap.append(mon, svg, bob, fx);
       ctx.root.appendChild(wrap);
 
       // Fish start in evenly spaced lanes, scattered across.
@@ -333,9 +327,6 @@
             f.tag.style.fontSize = `${tagH * 0.9}px`;
           }
         });
-        // The ghost finger shows a swipe into the middle of the pond.
-        ghost.style.left = `${P.l + P.w * 0.55 - 23}px`;
-        ghost.style.top = `${P.t + P.h * 0.4}px`;
       }
       measure();
       const ro = new ResizeObserver(measure);
@@ -356,7 +347,6 @@
       let biteEnd = 0, nextBiteAt = 0, nextPlip = 0;
       let hooked = null;               // { f, from, to, t0, dur, back } while reeling or tossing back
       let rodA = 40, rodBend = 0, lastTs = null;
-      let ghostShown = true;
 
       // ---------- Rod and line ----------
       const rodLen = () => S * 0.95;
@@ -572,7 +562,6 @@
         bait = null;
         aim = null;
         state = "fly";
-        if (ghostShown) { ghostShown = false; ghost.remove(); }
         const T = rodTip();
         const from = { x: T.x, y: T.y + S * 0.4 };
         const dist = Math.hypot(to.x - from.x, to.y - from.y);

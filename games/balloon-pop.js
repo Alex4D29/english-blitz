@@ -168,8 +168,6 @@
       fx.className = "bp-fx";
       wrap.append(speaker, sky, fx);
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint(sky), 80); // 👆 TAP! in the sky
-
       const balloons = options.map((item, i) => {
         const el = document.createElement("button");
         el.className = "bp-balloon" + (isPhonics ? " pic" : isLetter ? "" : " word");

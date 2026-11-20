@@ -278,7 +278,11 @@
       fx.className = "cc-fx";
       wrap.append(top, machine, stopBtn, fx);
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint(stopBtn), 80); // 👆 TAP! on STOP
+      // 👆 just the finger, pressing the right end of STOP (beside the word, so it stays readable).
+      ctx.later(() => {
+        const g = ctx.root.getBoundingClientRect(), r = stopBtn.getBoundingClientRect();
+        ctx.hint({ x: r.right - 34 - g.left, y: r.top + r.height / 2 - g.top }, null, { noWord: true, scale: 0.75 });
+      }, 80);
 
       // Cell size drives the prize and claw size.
       function measure() {

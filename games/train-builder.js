@@ -293,7 +293,13 @@
         return b;
       });
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint([...tray.children], null, { gap: true }), 80); // 👆 TAP! between the carriages
+      // 👆 TAP! in the gap between the track and the carriages, with the word beside the finger.
+      ctx.later(() => {
+        const g = ctx.root.getBoundingClientRect(), t = tray.getBoundingClientRect();
+        const k = wrap.querySelector(".tb-track").getBoundingClientRect();
+        ctx.hint({ x: t.left + t.width / 2 - 30 - g.left, y: (k.bottom + t.top) / 2 - g.top }, null,
+          { scale: 0.65, side: true, center: true });
+      }, 80);
       // A sight word on the engine ("about") shrinks until it fits the cab window.
       // Measured after layout; a face without a size yet is left alone.
       if (engine.kind === "word") ctx.raf(() => {

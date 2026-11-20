@@ -273,8 +273,6 @@
       fx.className = "wm-fx";
       wrap.append(top, field, fx);
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint([...field.querySelectorAll(".wm-hole")], null, { gap: true }), 80); // 👆 TAP! between the holes
-
       const holes = [];
       for (let i = 0; i < cols * rows; i++) {
         const el = document.createElement("button");

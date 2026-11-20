@@ -14,4 +14,8 @@ window.GAME_FILES = [
   "egg-shuffle",
   "clean-room",
   "samurai-slice",
+  "ghost-hunt",
+  "puzzle-reveal",
+  "stop-sneeze",
+  "spot-imposter",
 ];

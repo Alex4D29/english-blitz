@@ -181,7 +181,7 @@
       const floor = wrap.querySelector(".cr-rug");
       const boxRow = wrap.querySelector(".cr-boxes");
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint(floor, boxes[0].el), 80); // 👆 DRAG! from the rug into the box
+      ctx.later(() => ctx.hint(floor, boxes[0].el, { scale: 0.65 }), 80); // 👆 DRAG! from the rug into the box
 
       const boxes = boxItems.map((item, i) => {
         const el = document.createElement("div");

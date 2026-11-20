@@ -166,7 +166,12 @@
       wrap.querySelector(".fm-emoji").textContent = target.emoji || target.text;
       creature.setAttribute("aria-label", TEXT.creatureLabel(target.word || target.text));
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint([...tray.children], wrap.querySelector(".fm-mouth"), { gap: true }), 80); // 👆 DRAG! from between the tiles to the mouth
+      // 👆 a small finger that starts in the middle just above the tiles (never on one) and slides up to the mouth.
+      ctx.later(() => {
+        const g = ctx.root.getBoundingClientRect(), t = tray.getBoundingClientRect();
+        ctx.hint({ x: t.left + t.width / 2 - g.left, y: t.top - 34 - g.top }, wrap.querySelector(".fm-mouth"),
+          { scale: 0.6, noWord: true, center: true });
+      }, 80);
 
       const tiles = options.map((item, i) => {
         const b = document.createElement("button");

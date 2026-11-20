@@ -275,8 +275,6 @@
 
       wrap.append(top, field);
       ctx.root.appendChild(wrap);
-      ctx.later(() => ctx.hint(field), 80); // 👆 TAP! in the sky
-
       // ---------- Sizing ----------
       let fw = 0, fh = 0, d = 70;
       function measure() {

@@ -345,8 +345,12 @@
         pods.forEach((p) => { p.el.disabled = false; p.el.classList.add("ready"); p.el.setAttribute("aria-label", TEXT.eggLabel(p.slot)); });
         tone(1047, 0.12, "triangle", 0.15);
         ctx.say(prompt);
-        // 👆 TAP! just under the row, between two eggs (never pointing at one).
-        ctx.hint(pods.map((p) => p.el), null, { gap: true, edge: "bottom" });
+        // 👆 TAP! under the middle of the row, with the word beside the finger (never pointing at one egg).
+        // A gap below the eggs, so the fingertip doesn't touch the middle one.
+        const g = ctx.root.getBoundingClientRect(), rs = pods.map((p) => p.el.getBoundingClientRect());
+        const left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
+        const bottom = Math.max(...rs.map((r) => r.bottom));
+        ctx.hint({ x: (left + right) / 2 - g.left, y: bottom + 18 - g.top }, null, { side: true, scale: 0.7 });
       }
 
       function replay() { if (phase !== "done") ctx.say(prompt); }
