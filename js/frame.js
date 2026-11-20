@@ -451,6 +451,7 @@
       shuffle: C.shuffle,
       pick: C.pick,
       pickOptions: (target, n) => C.pickOptions(items, target, n),
+      lowerLookalikes: (target) => C.lowerLookalikes(items, target), // letters whose lowercase looks like target's (b → d, p, h)
       // Phonics: pictures that start with a letter, and wrong pictures from other letters.
       phonics: {
         pics: C.startPics,                                     // (item) => [{ word, emoji }] starting with item.text

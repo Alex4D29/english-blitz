@@ -22,4 +22,5 @@ window.GAME_FILES = [
   "sack-man",
   "pachinko",
   "mouse-trap",
+  "froggy-hop",
 ];

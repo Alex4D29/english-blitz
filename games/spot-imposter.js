@@ -44,11 +44,6 @@
     answer: (letter, word) => `${letter} for ${word}`,
   };
 
-  // Lowercase letters that look like each other, for the ABC imposter.
-  const LOWER_LOOKALIKE = {
-    a: "oed", b: "dph", c: "oe", d: "bq", e: "cao", f: "t", g: "qy", h: "nb", i: "j", j: "i", k: "hx", l: "t", m: "nw",
-    n: "mhu", o: "ac", p: "qb", q: "pg", r: "n", s: "z", t: "f", u: "nv", v: "wy", w: "vm", x: "k", y: "vg", z: "s",
-  };
   const WALKER_COLORS =["#ff8a00", "#8a2be2", "#00b86b", "#ff2e88", "#1e6bff", "#e8173c"];
 
   const CSS = `
@@ -224,9 +219,7 @@
         const il = (o) => [o, target].map((x) => x.text.toUpperCase()).sort().join("") !== "IL";
         // The imposter must look different in lowercase too.
         // Lowercase shapes that look alike (a/o, b/d, m/n…); fall back to the list's own look-alikes.
-        const shapes = (LOWER_LOOKALIKE[target.text.toLowerCase()] || "").split("");
-        const byShape = ctx.shuffle(ctx.items.filter((o) => shapes.includes(o.text.toLowerCase()) && il(o)));
-        const odd = byShape[0] || lookAlike(target, (o) => il(o) && o.text.toLowerCase() !== target.text.toLowerCase());
+        const odd = ctx.lowerLookalikes(target)[0] || lookAlike(target, (o) => il(o) && o.text.toLowerCase() !== target.text.toLowerCase());
         signText = target.text.toUpperCase();
         prompt = letterName(target);
         oddSpoken = letterName(odd);

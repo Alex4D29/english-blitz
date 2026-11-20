@@ -85,6 +85,20 @@
     return { right, wrong };
   }
 
+  // ---------- Lowercase look-alikes ----------
+  // `tricky` is about capitals and sounds; these are lowercase shapes that look alike (a/o, b/d, m/n…),
+  // for games that show lowercase letters.
+  const LOWER_LOOKALIKE = {
+    a: "oed", b: "dph", c: "oe", d: "bq", e: "cao", f: "t", g: "qy", h: "nb", i: "j", j: "i", k: "hx", l: "t", m: "nw",
+    n: "mhu", o: "ac", p: "qb", q: "pg", r: "n", s: "z", t: "f", u: "nv", v: "wy", w: "vm", x: "k", y: "vg", z: "s",
+  };
+  // Letter items from the pool whose lowercase looks like the target's, shuffled. I and l are never paired.
+  function lowerLookalikes(pool, target) {
+    const shapes = (LOWER_LOOKALIKE[target.text.toLowerCase()] || "").split("");
+    const notIL = (o) => [o.text, target.text].map((x) => x.toUpperCase()).sort().join("") !== "IL";
+    return shuffle(pool.filter((o) => o !== target && shapes.includes(o.text.toLowerCase()) && notIL(o)));
+  }
+
   // ---------- Audio ----------
   // The AudioContext can only be created/resumed inside a user tap (iOS), so
   // the frame calls unlock() from the mode buttons.
@@ -281,7 +295,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet,
+    startPics, phonicsSet, lowerLookalikes,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,
