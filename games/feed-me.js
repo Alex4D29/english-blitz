@@ -120,6 +120,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc"], // needs a picture for every item
     duration: 6000,
+    input: "drag", // frame shows DRAG! under the instruction
 
     start(ctx) {
       injectCss();
@@ -165,6 +166,7 @@
       wrap.querySelector(".fm-emoji").textContent = target.emoji || target.text;
       creature.setAttribute("aria-label", TEXT.creatureLabel(target.word || target.text));
       ctx.root.appendChild(wrap);
+      ctx.later(() => ctx.hint([...tray.children], wrap.querySelector(".fm-mouth"), { gap: true }), 80); // 👆 DRAG! from between the tiles to the mouth
 
       const tiles = options.map((item, i) => {
         const b = document.createElement("button");

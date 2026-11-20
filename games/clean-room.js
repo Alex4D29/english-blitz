@@ -137,6 +137,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
     duration: 10000,
+    input: "drag", // frame shows DRAG! under the instruction
 
     start(ctx) {
       injectCss();
@@ -180,6 +181,7 @@
       const floor = wrap.querySelector(".cr-rug");
       const boxRow = wrap.querySelector(".cr-boxes");
       ctx.root.appendChild(wrap);
+      ctx.later(() => ctx.hint(floor, boxes[0].el), 80); // 👆 DRAG! from the rug into the box
 
       const boxes = boxItems.map((item, i) => {
         const el = document.createElement("div");

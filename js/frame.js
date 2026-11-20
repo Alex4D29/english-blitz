@@ -12,7 +12,8 @@
   const START_DELAY_MS = 500;
   const SPEEDUP_MS = 1100;
   const ROUND_MS = 700;
-  const INSTRUCTION_MS = 1000;
+  const INSTRUCTION_MS = 1300;  // long enough to see the TAP! / DRAG! hint move
+  const COACH_MS = 2400;        // how long ctx.hint's in-game TAP! / DRAG! stays up
   const STAMP_DELAY_MS = 250;   // let the game's own win/lose effect land first
   const FEEDBACK_MS = 1400;
   const SPEECH_WAIT_MS = 2500;  // max extra wait for speech to finish after feedback
@@ -54,7 +55,7 @@
     howtoTipsBox: $("#howtoTipsBox"), howtoTips: $("#howtoTips"),
     howtoPlayBtn: $("#howtoPlayBtn"), howtoBackBtn: $("#howtoBackBtn"),
     status: $("#status"), roundPill: $("#roundPill"), bar: $("#bar"),
-    game: $("#game"), banner: $("#banner"), stamp: $("#stamp"),
+    game: $("#game"), banner: $("#banner"), stamp: $("#stamp"), hint: $("#banner .hint"),
     resTitle: $("#resTitle"), stars: $("#stars"), resStats: $("#resStats"), record: $("#record"),
     againBtn: $("#againBtn"), menuBtn: $("#menuBtn"),
   };
@@ -84,6 +85,7 @@
     timers: [],                 // frame's own (transitions, feedback)
     gameTimers: [],             // ctx.later
     gameRafs: [],               // ctx.raf
+    coach: null,                // the in-game TAP! / DRAG! element (ctx.hint)
   };
 
   // ---------- Static text ----------
@@ -176,10 +178,97 @@
     const h = typeof game.howTo === "function" ? game.howTo(list) : game.howTo;
     return (h && h.en) || null;
   }
+  // Challenge warm-up: the first rounds get a long, fixed time limit at 1×,
+  // and the normal speed-ups only start counting after them.
+  function warmupRounds() {
+    return (state.mode.warmup || []).reduce((n, w) => n + w.games, 0);
+  }
+  function warmupMsFor(round) {
+    let n = 0;
+    for (const w of state.mode.warmup || []) {
+      n += w.games;
+      if (round <= n) return w.ms;
+    }
+    return 0;
+  }
   function speedFor(round) {
     const m = state.mode;
     if (!m.speedUpEvery) return 1;
-    return Math.min(m.maxSpeed, 1 + Math.floor((round - 1) / m.speedUpEvery) * m.speedStep);
+    const r = round - warmupRounds();
+    if (r < 1) return 1;
+    return Math.min(m.maxSpeed, 1 + Math.floor((r - 1) / m.speedUpEvery) * m.speedStep);
+  }
+  // The TAP! / DRAG! hint under the instruction, from the game's `input`.
+  function setHint(game) {
+    const kind = T.input[game.input] ? game.input : "";   // "tap", "drag" or "slice"
+    els.hint.hidden = !kind;
+    if (!kind) return;
+    els.hint.className = "hint " + kind;
+    els.hint.querySelector(".hint-icon").textContent = T.inputIcon;
+    els.hint.querySelector(".hint-word").textContent = T.input[kind];
+  }
+
+  // ---------- In-game coach (ctx.hint) ----------
+  // A big 👆 TAP! / DRAG! shown for a moment over the game itself, where the
+  // game points it. It vanishes after COACH_MS or as soon as the player touches.
+  // A point is an element, an array of elements (their combined box), or
+  // { x, y } in px inside #game. Options:
+  //   gap: true      – for an array of answer options: point at the gap between the two options
+  //                    nearest the middle, never at one option (a child would take it as "tap this one")
+  //   edge: "bottom" – use the bottom edge instead of the middle
+  //   small: true    – half size, finger only (no word), for tight spots (Samurai Slice: on the samurai)
+  function coachPoint(t, opts = {}) {
+    if (!t) return null;
+    const list = Array.isArray(t) ? t : [t];
+    if (!list[0] || !list[0].getBoundingClientRect) return typeof t.x === "number" ? t : null;
+    const g = els.game.getBoundingClientRect();
+    let rects = list.map((el) => el.getBoundingClientRect()).filter((q) => q.width || q.height);
+    if (!rects.length) return null;
+    const box = (rs) => {
+      const l = Math.min(...rs.map((q) => q.left)), r = Math.max(...rs.map((q) => q.right));
+      const top = Math.min(...rs.map((q) => q.top)), b = Math.max(...rs.map((q) => q.bottom));
+      return { l, r, top, b, cx: (l + r) / 2, cy: (top + b) / 2 };
+    };
+    let all = box(rects);
+    if (opts.gap && rects.length >= 2) {
+      const d = (q) => Math.hypot(q.left + q.width / 2 - all.cx, q.top + q.height / 2 - all.cy);
+      const two = rects.slice().sort((p, q) => d(p) - d(q)).slice(0, 2);
+      const c = (q) => ({ x: q.left + q.width / 2, y: q.top + q.height / 2 });
+      const [p, q] = two.map(c);
+      all = { ...box(two), cx: (p.x + q.x) / 2, cy: (p.y + q.y) / 2 };
+    }
+    return { x: all.cx - g.left, y: (opts.edge === "bottom" ? all.b : all.cy) - g.top };
+  }
+  function showCoach(game, from, to, opts, later) {
+    const kind = game.input;
+    if (!T.input[kind]) return;
+    const a = coachPoint(from, opts || {});
+    const b = kind === "drag" ? coachPoint(to) : null;
+    if (!a || (kind === "drag" && !b)) return;
+    hideCoach();
+    // Near the bottom, the word goes above the fingertip and the finger is kept on screen.
+    const H = els.game.clientHeight;
+    const low = opts && opts.small ? a.y > H - 60 : a.y > H * 0.62;  // a small hint has room below
+    a.y = Math.min(a.y, H - 80);
+    const el = document.createElement("div");
+    el.className = "coach " + kind + (low ? " low" : "") + (opts && opts.small ? " small" : "");
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML = '<div class="coach-move"><span class="coach-icon"></span></div><span class="coach-word"></span>';
+    el.querySelector(".coach-icon").textContent = T.inputIcon;
+    el.querySelector(".coach-word").textContent = T.input[kind];
+    el.style.left = `${Math.round(a.x)}px`;
+    el.style.top = `${Math.round(a.y)}px`;
+    if (b) {
+      el.style.setProperty("--dx", `${Math.round(b.x - a.x)}px`);
+      el.style.setProperty("--dy", `${Math.round(b.y - a.y)}px`);
+    }
+    els.game.appendChild(el);
+    state.coach = el;
+    later(hideCoach, COACH_MS);
+  }
+  function hideCoach() {
+    if (state.coach) state.coach.remove();
+    state.coach = null;
   }
 
   // ---------- HUD ----------
@@ -231,6 +320,7 @@
     if (state.gameActive) C.stopSpeech();
     state.gameActive = false;
     state.current = null;
+    state.coach = null;
     els.game.innerHTML = "";
     els.game.classList.remove("locked");
   }
@@ -280,6 +370,7 @@
       t += ROUND_MS;
     }
     later(() => {
+      setHint(game);
       shout(els.banner, instructionFor(game, list), "instruction");
       document.body.classList.add("flash");
       C.sfx.slam();
@@ -295,7 +386,8 @@
   function startGame(game, list) {
     const token = ++state.token;
     const alive = () => token === state.token;
-    const timeLimit = Math.round((game.duration || BASE_MS) / state.speed);
+    const paceMs = Math.round((game.duration || BASE_MS) / state.speed);
+    const timeLimit = Math.max(paceMs, warmupMsFor(state.round));
     state.reported = false;
     state.gameActive = true;
     state.phase = "playing";
@@ -310,6 +402,9 @@
       list: { id: list.id, type: list.type },
       speed: state.speed,
       timeLimit,
+      // Show 👆 TAP! / DRAG! over the game for a moment (see showCoach). Drag games pass a target too.
+      hint: (from, to, opts) => { if (alive() && !state.reported) showCoach(game, from, to, opts, ctx.later); },
+      paceMs,       // the normal time limit; only differs from timeLimit in the Challenge warm-up
       audio: C.audioCtx(),
       canSpeak: C.canSpeak,
       get ended() { return !alive() || state.reported; },
@@ -373,6 +468,7 @@
     state.reported = true;
     state.phase = "feedback";
     cancelAnimationFrame(state.timerRaf);
+    hideCoach();
     const { game, timeLimit, t0, onTimeout } = state.current;
     const timeMs = Math.round(Math.min(performance.now() - t0, timeLimit));
     els.game.classList.add("locked");
@@ -612,6 +708,7 @@
     }
   });
 
+  els.game.addEventListener("pointerdown", hideCoach, true); // the first touch clears the in-game hint
   els.funBtn.addEventListener("click", () => chooseContent("fun"));
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));

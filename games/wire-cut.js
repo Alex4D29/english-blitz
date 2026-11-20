@@ -1,9 +1,10 @@
-// WIRE CUT — a bomb is wired up with pairs that should match (A—a, B—b,
-// 🐱—cat…). One pair is wrong (B—d). Cut that wire to defuse the bomb;
-// cut a good wire and it blows up.
+// WIRE CUT — a bomb is wired up with pairs. Only ONE pair matches (A—a, 🐱—cat);
+// every other pair is wrong (B—d, 🐶—cot), with look-alikes first. Cut the
+// matching wire to defuse the bomb; cut a wrong one and it blows up.
+// (Playtesting: kids spot a matching pair and go for it, so that's the answer.)
 //
-// Phonics list: letter—picture pairs (B—⚽). The wrong one has a picture from a look-alike
-// letter (B—🦆), and that letter stays off the board.
+// Phonics list: letter—picture pairs. The match is B—⚽; the wrong pairs get pictures
+// from other letters (C—🦆), never from a letter that's on the board.
 // Tap a tile or the wire itself to cut. Faster speeds add a 4th pair and
 // cross the wires so they have to be traced (colors help).
 (function () {
@@ -13,20 +14,20 @@
     // Practice mode's "How to play" card: steps (icon + sentence) and tips.
     howTo: (list) => ({ en: {
       steps: [
-        ["🔗", list.type === "letter" ? "Each wire joins two things that should match, like A and a."
-          : list.type === "phonics" ? "Each wire joins a letter to a picture that starts with it, like B and ⚽ ball."
-          : list.type === "hfw" ? "Each wire joins a big word to its small word, like THE and the."
-          : "Each wire joins two things that should match, like 🐱 and cat."],
-        ["🔍", "But one pair is wrong! Find the pair that doesn't match."],
+        ["🔗", "Each wire joins two things. Only ONE wire joins two things that match!"],
+        ["🔍", list.type === "letter" ? "Find the match, like A and a."
+          : list.type === "phonics" ? "Find the letter joined to a picture that starts with it, like B and ⚽ ball."
+          : list.type === "hfw" ? "Find the big word joined to the same small word, like THE and the."
+          : "Find the picture joined to its word, like 🐱 and cat."],
         ["✂️", "Tap that wire, or either end of it, to cut it."],
       ],
       tips: [
-        "Cut a good wire and the bomb goes BOOM!",
+        "Cut a wire that doesn't match and the bomb goes BOOM! Then the match lights up green.",
         "Follow the colors to see which ends go together.",
         "When the game speeds up, the wires cross and there are more of them.",
       ],
     } }),
-    instruction: { en: "CUT THE\nWRONG WIRE!" },
+    instruction: { en: "CUT THE\nMATCH!" },
     cutLabel: (a, b) => `Cut the wire from ${a} to ${b}`,
     bombLabel: "Bomb",
   };
@@ -61,6 +62,7 @@
   .wc-tile:active:not(:disabled) { transform:translateY(5px); box-shadow:0 2px 0 #111; }
   .wc-tile:disabled { cursor:default; }
   .wc-tile.bad  { background:#ff3b3b; color:#fff !important; animation:wc-pulse .3s ease-in-out 3; }
+  .wc-tile.answer { background:#1fd65f; color:#fff !important; animation:wc-pulse .3s ease-in-out 4; }
   .wc-tile.good { background:#1fd65f; color:#fff !important; animation:wc-pop .4s cubic-bezier(.2,1.8,.4,1); }
   .wc-snip { position:absolute; z-index:2; width:44px; height:44px; margin:-22px 0 0 -22px; pointer-events:none;
     display:flex; align-items:center; justify-content:center; font-size:24px; background:#fff;
@@ -119,16 +121,27 @@
     }
   }
 
-  // Build the pairs from `pool`: one item gets a decoy on its right side, ideally a look-alike (B—d, 🐱—cot, WAS—saw).
-  function buildPairs(ctx, pool, count) {
-    const { pick, shuffle } = ctx;
-    const odd = pick(pool);
-    // The decoy only shows as a word on the right, so it may come from the whole list (no picture needed).
-    const decoy = ctx.pickOptions(odd, 2).find((it) => it !== odd && it.text.length <= MAX_WORD)
-      || pick(pool.filter((it) => it !== odd));
-    // Leave the decoy out of the other pairs so its real match isn't on screen too.
-    const others = shuffle(pool.filter((it) => it !== odd && it !== decoy)).slice(0, count - 1);
-    return shuffle([{ left: odd, right: decoy, odd: true }, ...others.map((it) => ({ left: it, right: it, odd: false }))]);
+  // Uppercase I and lowercase l look the same, so that pair would look like a match.
+  const looksSame = (a, b, type) => type === "letter" && a.text.toUpperCase() === "I" && b.text.toLowerCase() === "l";
+
+  // Build the pairs from `pool`: the first item is the one real match; every other left item gets a
+  // wrong partner on the right, ideally a look-alike (B—d, 🐶—cot, WAS—saw).
+  function buildPairs(ctx, pool, count, type) {
+    const lefts = ctx.shuffle(pool.slice()).slice(0, count);
+    const [match, ...wrongs] = lefts;
+    // Wrong partners only show as words on the right, so they may come from the whole list
+    // (no picture needed). None of them is a left item's own partner, so no wire matches by accident.
+    const used = new Set(lefts);
+    const ok = (it, left) => !used.has(it) && it.text.length <= MAX_WORD && !looksSame(left, it, type);
+    const pairs = [{ left: match, right: match, match: true }];
+    for (const it of wrongs) {
+      const partner = ctx.pickOptions(it, 5).find((o) => ok(o, it))
+        || ctx.shuffle(ctx.items.slice()).find((o) => ok(o, it));
+      if (!partner) continue; // tiny list: fewer wires
+      used.add(partner);
+      pairs.push({ left: it, right: partner, match: false });
+    }
+    return ctx.shuffle(pairs);
   }
 
   registerMicrogame({
@@ -139,6 +152,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000,
+    input: "tap",  // frame shows TAP! under the instruction
 
     start(ctx) {
       injectCss();
@@ -156,21 +170,24 @@
       let pool = pics ? withPics : fits;
       let pairs;
       if (type === "phonics") {
-        // Letter—picture pairs (B—⚽). The odd one gets a picture from another letter, a look-alike
-        // when there is one (B—🦆 duck). That letter stays off the board, so 🦆 has no D to match.
+        // Letter—picture pairs. The match is B—⚽ (a picture that starts with B). Each wrong pair gets
+        // a picture from another letter, a look-alike when there is one (C—🦆), but never from a
+        // letter that's on the board, so no wrong picture has a partner sitting on the left.
         pool = ctx.items.filter((it) => ctx.phonics.pics(it).length);
-        const n = Math.min(speed >= 1.5 ? 4 : 3, pool.length - 1);
-        const odd = pool[0];
-        const decoy = ctx.phonics.set(odd, 0, 1).wrong[0];
-        const others = shuffle(pool.filter((it) => it !== odd && it.text !== decoy.letter)).slice(0, n - 1);
+        const n = Math.min(speed >= 1.5 ? 4 : 3, pool.length);
+        const lefts = pool.slice(0, n);
+        const onBoard = new Set(lefts.map((it) => it.text));
+        const usedEmoji = new Set();
         const letterFace = (it) => ({ left: it.text.toUpperCase(), spoken: it.say || it.text, word: false, pic: false });
-        const picFace = (p) => ({ right: p.emoji, spoken: p.word, word: false, pic: true, picRight: true });
-        pairs = shuffle([
-          { odd: true, L: letterFace(odd), R: picFace(decoy) },
-          ...others.map((it) => ({ odd: false, L: letterFace(it), R: picFace(ctx.pick(ctx.phonics.pics(it))) })),
-        ]);
+        const picFace = (p) => { usedEmoji.add(p.emoji); return { right: p.emoji, spoken: p.word, word: false, pic: true, picRight: true }; };
+        pairs = [{ match: true, L: letterFace(lefts[0]), R: picFace(ctx.pick(ctx.phonics.pics(lefts[0]))) }];
+        for (const it of lefts.slice(1)) {
+          const p = ctx.phonics.set(it, 0, 25).wrong.find((w) => !onBoard.has(w.letter) && !usedEmoji.has(w.emoji));
+          if (p) pairs.push({ match: false, L: letterFace(it), R: picFace(p) });
+        }
+        pairs = shuffle(pairs);
       } else {
-        pairs = buildPairs(ctx, pool, Math.min(speed >= 1.5 ? 4 : 3, pool.length - 1));
+        pairs = buildPairs(ctx, pool, Math.min(speed >= 1.5 ? 4 : 3, pool.length), type);
       }
       const count = pairs.length;
       // Right-hand row for each pair. When crossed, make sure at least one wire actually crosses.
@@ -195,6 +212,13 @@
       board.appendChild(svg);
       wrap.append(bomb, board, fx);
       ctx.root.appendChild(wrap);
+      // 👆 TAP! in the middle of the board, between the first two wires (never on one wire).
+      ctx.later(() => {
+        const g = ctx.root.getBoundingClientRect(), b = board.getBoundingClientRect();
+        const y = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+        if (wires.length < 2) { ctx.hint(board); return; }
+        ctx.hint({ x: b.left + b.width / 2 - g.left, y: (y(wires[0].leftEl) + y(wires[1].leftEl)) / 2 - g.top });
+      }, 80);
 
       const wires = pairs.map((pair, i) => {
         const color = WIRE_COLORS[i % WIRE_COLORS.length];
@@ -298,7 +322,7 @@
         lockBoard();
         ctx.say(`${w.sayLeft}... ${w.sayRight}`);
 
-        if (w.pair.odd) {
+        if (w.pair.match) {
           w.leftEl.classList.add("good");
           w.rightEl.classList.add("good");
           wrap.classList.add("safe");
@@ -306,22 +330,26 @@
           later(confetti, 120);
         } else {
           ctx.lose();
-          // Show which pair was the wrong one, then boom.
-          const odd = wires.find((x) => x.pair.odd);
-          odd.leftEl.classList.add("bad");
-          odd.rightEl.classList.add("bad");
+          // The cut pair turns red, the real match lights up green, then boom.
+          w.leftEl.classList.add("bad");
+          w.rightEl.classList.add("bad");
+          showMatch();
           later(explode, 220);
         }
       }
+      function showMatch() {
+        const m = wires.find((x) => x.pair.match);
+        m.leftEl.classList.add("answer");
+        m.rightEl.classList.add("answer");
+        return m;
+      }
 
-      // Out of time: show which pair was wrong, then boom.
+      // Out of time: light up the match, say it, then boom.
       ctx.onTimeout(() => {
         done = true;
         lockBoard();
-        const odd = wires.find((x) => x.pair.odd);
-        odd.leftEl.classList.add("bad");
-        odd.rightEl.classList.add("bad");
-        ctx.say(`${odd.sayLeft}... ${odd.sayRight}`);
+        const m = showMatch();
+        ctx.say(`${m.sayLeft}... ${m.sayRight}`);
         later(explode, 300);
       });
 
@@ -356,10 +384,10 @@
         const flash = document.createElement("div");
         flash.className = "wc-flash";
         fx.appendChild(flash);
-        // Blow the good pairs away from the bomb; the wrong pair stays put so the player sees the answer.
+        // Blow the good pairs away from the bomb; the match stays put so the player sees the answer.
         const box = wrap.getBoundingClientRect();
         const cx = box.left + box.width / 2, cy = box.top + bomb.offsetHeight / 2;
-        wires.filter((w) => !w.pair.odd).forEach((w) => [w.leftEl, w.rightEl].forEach((el) => {
+        wires.filter((w) => !w.pair.match).forEach((w) => [w.leftEl, w.rightEl].forEach((el) => {
           const r = el.getBoundingClientRect();
           const vx = r.left + r.width / 2 - cx, vy = r.top + r.height / 2 - cy;
           const len = Math.hypot(vx, vy) || 1;
@@ -369,7 +397,7 @@
              { transform: `translate(${(vx / len) * push}px,${(vy / len) * push}px) rotate(${(Math.random() - 0.5) * 120}deg)` }],
             { duration: 450, delay: 60, easing: "cubic-bezier(.1,.8,.3,1)", fill: "forwards" });
         }));
-        wires.filter((w) => !w.pair.odd).forEach((w) =>
+        wires.filter((w) => !w.pair.match).forEach((w) =>
           w.g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" }));
       }
 

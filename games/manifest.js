@@ -13,4 +13,5 @@ window.GAME_FILES = [
   "fishing",
   "egg-shuffle",
   "clean-room",
+  "samurai-slice",
 ];

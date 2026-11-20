@@ -31,7 +31,7 @@
         steps: [
           first,
           ["👆", "Swipe into the water to throw the fishing line. It lands where your finger stops."],
-          ["🐟", "Fish near the float come to bite. When the float bobs and ❗ pops up, tap the fish!"],
+          ["🐟", "Fish near the float come to bite. When the float bobs and ❗ 👆TAP! pops up, tap the fish again to pull it up!"],
         ],
         tips: [
           "Throw the line close to the fish you want.",
@@ -50,6 +50,7 @@
     bubbleHappy: "❤️",
     bubbleSad: "😢",
     alert: "❗",
+    tapHint: "👆TAP!",   // next to ❗ while a fish bites, so kids know to tap again
     ghost: "👆",
     heart: "❤️",
     monsterLabel: "Monster. Tap to hear it again.",
@@ -132,9 +133,12 @@
     background:#fff; border:3px solid #111; border-radius:999px; line-height:1; color:#111; font-weight:900; white-space:nowrap; overflow:visible; }
   .fi-fish.left .fi-tag { left:27%; right:23%; }
   .fi-alert { position:absolute; left:50%; top:-58%; font-size:calc(var(--fh) * .5); line-height:1; transform:translateX(-50%) scale(0);
-    transition:transform .15s cubic-bezier(.2,1.8,.4,1); }
+    transition:transform .15s cubic-bezier(.2,1.8,.4,1); display:flex; align-items:center; gap:4px; white-space:nowrap; pointer-events:none; }
+  .fi-tap { font-size:.42em; font-weight:900; color:#111; background:#fff; border:3px solid #111; border-radius:999px;
+    padding:.15em .45em; box-shadow:0 3px 0 #111; }
   .fi-fish.bite .fi-alert { transform:translateX(-50%) scale(1); animation:fi-pulse .3s ease-in-out infinite alternate; }
   .fi-fish.bite .fi-flip { animation:fi-nibble .18s ease-in-out infinite alternate; }
+  .fi-fish.bite { z-index:7; }   /* keep ❗ 👆TAP! above the other fish */
   .fi-fish.hooked { z-index:8; }
   .fi-fish.hooked .fi-flip { animation:fi-flop .14s ease-in-out infinite alternate; }
   .fi-fish.answer .fi-fbody { box-shadow:0 0 0 6px #ffd400, 0 0 26px 12px #ffd400; }
@@ -193,6 +197,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc", "hfw"],
     duration: 12000, // cast, wait for a bite, maybe a wrong fish and a second cast
+    input: "tap",  // frame shows TAP! under the instruction
 
     start(ctx) {
       injectCss();
@@ -276,9 +281,10 @@
         el.style.setProperty("--fc", FISH_COLORS[i % FISH_COLORS.length]);
         el.innerHTML =
           '<div class="fi-flip"><div class="fi-tail"></div><div class="fi-fin"></div><div class="fi-fbody"></div><div class="fi-feye"></div></div>' +
-          '<div class="fi-tag"></div><div class="fi-alert"></div>';
+          '<div class="fi-tag"></div><div class="fi-alert"><span class="fi-bang"></span><span class="fi-tap"></span></div>';
         el.querySelector(".fi-tag").textContent = isHfw ? item.text : item.emoji;
-        el.querySelector(".fi-alert").textContent = TEXT.alert;
+        el.querySelector(".fi-bang").textContent = TEXT.alert;
+        el.querySelector(".fi-tap").textContent = TEXT.tapHint;
         wrap.appendChild(el);
         return {
           item, el, tag: el.querySelector(".fi-tag"),
@@ -523,7 +529,10 @@
       function hitsFish(f, p) {
         const c = fishPx(f);
         const b = bait ? toPx(bait.nx, bait.ny) : c;
-        return (Math.abs(p.x - c.x) <= FW / 2 + HIT_SLOP && Math.abs(p.y - c.y) <= FH / 2 + HIT_SLOP) ||
+        // A biting fish's ❗ 👆TAP! sign sits above it, and kids tap the sign too.
+        const above = f.state === "bite" ? FH * 0.6 : 0;
+        return (Math.abs(p.x - c.x) <= FW / 2 + HIT_SLOP &&
+          p.y >= c.y - FH / 2 - HIT_SLOP - above && p.y <= c.y + FH / 2 + HIT_SLOP) ||
           Math.hypot(p.x - b.x, p.y - b.y) <= 60;
       }
 

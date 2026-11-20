@@ -179,6 +179,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 13000, // needs 3 hits, and targets have to be fired first
+    input: "tap",  // frame shows TAP! under the instruction
 
     start(ctx) {
       injectCss();
@@ -274,6 +275,7 @@
 
       wrap.append(top, field);
       ctx.root.appendChild(wrap);
+      ctx.later(() => ctx.hint(field), 80); // 👆 TAP! in the sky
 
       // ---------- Sizing ----------
       let fw = 0, fh = 0, d = 70;

@@ -6,6 +6,8 @@
 //   speedUpEvery  – speed goes up after this many games played (0 = never)
 //   speedStep     – how much it goes up each time
 //   maxSpeed      – speed cap
+//   warmup        – optional [{ games, ms }, …]: the first rounds stay at 1× with at least
+//                   `ms` to play; speed-ups only start counting after the last warm-up round
 window.MODES = {
   fun: {
     id: "fun",
@@ -22,6 +24,8 @@ window.MODES = {
     speedUpEvery: 5,
     speedStep: 0.25,
     maxSpeed: 2.5,
+    // Rounds 1–5 get 20 s, 6–10 get 15 s, then the normal 1× start and speed-ups from round 16.
+    warmup: [{ games: 5, ms: 20000 }, { games: 5, ms: 15000 }],
     highScoreKey: "wwe.challenge.best",
   },
   // One chosen game, over and over, at 1×, until the player leaves. No results screen.

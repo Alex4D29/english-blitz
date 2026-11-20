@@ -146,6 +146,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
     duration: 7000,
+    input: "drag", // frame shows DRAG! under the instruction
 
     start(ctx) {
       injectCss();
@@ -184,6 +185,7 @@
       const monLooks = [...mon.querySelectorAll(".mb-look")];
       const ground = wrap.querySelector(".mb-ground");
       ctx.root.appendChild(wrap);
+      ctx.later(() => ctx.hint(ground, mon), 80); // 👆 DRAG! from the babies up to the monster
 
       const colors = ctx.shuffle(BABY_COLORS.slice());
       const babies = options.map((item, i) => {

@@ -179,6 +179,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000, // three or more taps, so a little longer than the others
+    input: "tap",  // frame shows TAP! under the instruction
 
     start(ctx) {
       injectCss();
@@ -292,6 +293,7 @@
         return b;
       });
       ctx.root.appendChild(wrap);
+      ctx.later(() => ctx.hint([...tray.children], null, { gap: true }), 80); // 👆 TAP! between the carriages
       // A sight word on the engine ("about") shrinks until it fits the cab window.
       // Measured after layout; a face without a size yet is left alone.
       if (engine.kind === "word") ctx.raf(() => {

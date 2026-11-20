@@ -39,6 +39,9 @@ window.TEXT = {
   timeout: "TOO\nSLOW!",
   livesLabel: (n) => `${n} lives left`,
   progressLabel: (n, total) => `Game ${n} of ${total}`,
+  // Shown under each game's instruction so kids know whether to tap or drag.
+  input: { tap: "TAP!", drag: "DRAG!", slice: "SLICE!" },
+  inputIcon: "👆",
 
   again: "PLAY AGAIN",
   menu: "MENU",

@@ -168,6 +168,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "cvc", "hfw"],
     duration: 10000,
+    input: "tap",  // frame shows TAP! under the instruction
 
     start(ctx) {
       injectCss();
@@ -191,9 +192,10 @@
       const prompt = isLetter ? TEXT.prompt(spoken(target), target.word) : spoken(target);
 
       // ---------- Timing (all inside ctx.timeLimit) ----------
-      const T = ctx.timeLimit;
-      const chooseMs = Math.max(1800, T * 0.4);
-      const watchMs = Math.max(900, T - chooseMs - 150);
+      // The shuffle is paced on the normal limit (paceMs), so the long Challenge
+      // warm-up limits don't play it in slow motion; the spare time goes to choosing.
+      const P = ctx.paceMs || ctx.timeLimit;
+      const watchMs = Math.max(900, P - Math.max(1800, P * 0.4) - 150);
       const swapCount = speed >= 2 ? 4 : 3;
       const showMs = watchMs * 0.35;
       const dropMs = Math.min(600, watchMs * 0.12);
@@ -343,6 +345,8 @@
         pods.forEach((p) => { p.el.disabled = false; p.el.classList.add("ready"); p.el.setAttribute("aria-label", TEXT.eggLabel(p.slot)); });
         tone(1047, 0.12, "triangle", 0.15);
         ctx.say(prompt);
+        // 👆 TAP! just under the row, between two eggs (never pointing at one).
+        ctx.hint(pods.map((p) => p.el), null, { gap: true, edge: "bottom" });
       }
 
       function replay() { if (phase !== "done") ctx.say(prompt); }

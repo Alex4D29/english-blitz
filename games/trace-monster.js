@@ -218,6 +218,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
     duration: 7000, // tracing takes longer than a tap
+    input: "drag", // frame shows DRAG! under the instruction
 
     start(ctx) {
       injectCss();

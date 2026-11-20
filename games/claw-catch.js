@@ -174,6 +174,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc"], // needs a picture for every item
     duration: 9000, // two timed stops
+    input: "tap",  // frame shows TAP! under the instruction
 
     start(ctx) {
       injectCss();
@@ -277,6 +278,7 @@
       fx.className = "cc-fx";
       wrap.append(top, machine, stopBtn, fx);
       ctx.root.appendChild(wrap);
+      ctx.later(() => ctx.hint(stopBtn), 80); // 👆 TAP! on STOP
 
       // Cell size drives the prize and claw size.
       function measure() {
