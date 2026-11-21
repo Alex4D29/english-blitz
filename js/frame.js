@@ -545,7 +545,11 @@
       ripple.style.top = `${at.y}px`;
       els.game.appendChild(ripple);
       ctx.later(() => ripple.remove(), 500);
-      down = hitAt(at, elementOf(t));
+      // A named element always gets the press, even if something else is under the fingertip for a
+      // moment (a sign mid-flip, a moving target): the demo must never miss what it means to hit.
+      const target = elementOf(t);
+      down = hitAt(at, target);
+      if (target && !(down && target.contains(down))) down = target;
       if (down) fire("pointerdown", down, at);
     };
     const release = () => {

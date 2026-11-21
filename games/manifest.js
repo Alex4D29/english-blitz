@@ -30,4 +30,6 @@ window.GAME_FILES = [
   "pizza-chef",
   "treasure-dig",
   "hoop-shot",
+  "penalty-kick",
+  "monster-boxing",
 ];
