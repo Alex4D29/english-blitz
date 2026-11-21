@@ -26,7 +26,7 @@
   const DEMO_AFTER_MS = 1500;   // after the demo's win, let the game's own celebration play
   const DEMO_MAX_MS = 24000;    // give up on a demo that never reports (a script that missed)
   const DEMO_POINTER = 4242;    // pointerId of the ghost finger's events
-  const TUTORIAL_KEY = "wwe.tutorial";               // localStorage: the tutorial toggle
+  const TUTORIAL_KEY = "wwe.tutorial";               // localStorage: the last 👀 Watch first? answer
   const CONTENT_TYPES = ["letter", "phonics", "cvc", "hfw"];   // content picker order
   const DEFAULT_TYPES = ["letter", "phonics"];
   const TYPES_KEY = "wwe.content.v2";                // localStorage: the last ticked types
@@ -56,7 +56,7 @@
     title: $("#title"), settings: $("#settings"), play: $("#play"), results: $("#results"),
     practice: $("#practice"), howto: $("#howto"), content: $("#content"),
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
-    tutorialBtn: $("#tutorialBtn"),
+    askWatch: $("#askWatch"), watchYes: $("#watchYes"), watchNo: $("#watchNo"),
     funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
@@ -123,6 +123,7 @@
   }
   function showScreen(name) {
     ["title", "settings", "content", "practice", "howto", "play", "results"].forEach((n) => { els[n].hidden = n !== name; });
+    els.askWatch.hidden = true;
     state.screen = name;
     if (name !== "play") els[name].scrollTop = 0;
   }
@@ -987,22 +988,26 @@
       b.addEventListener("click", () => toggleType(type, b));
       els.contentGrid.appendChild(b);
     });
-    // The tutorial toggle: Fun and Challenge only (Practice has its How to play card).
-    const tb = els.tutorialBtn, info = T.tutorial;
-    tb.hidden = state.pendingMode === "practice";
-    tb.setAttribute("aria-pressed", String(state.tutorial));
-    tb.setAttribute("aria-label", `${info.name}: ${info.label}`);
-    tb.querySelector(".nm").textContent = info.name;
-    tb.querySelector(".lbl").textContent = info.label;
-    tb.querySelector(".sample").textContent = info.sample;
   }
 
-  function toggleTutorial() {
+  // ---------- 👀 Watch first? (Fun and Challenge, every time PLAY or PLAY AGAIN is pressed) ----------
+  // A pop-up with two big buttons: 👀 WATCH FIRST (new games show their tutorial) or 🙈 JUST PLAY.
+  // The last choice pulses, and the voice asks, for children who can't read.
+  function askWatch(modeId) {
     C.unlock();
-    state.tutorial = !state.tutorial;
-    els.tutorialBtn.setAttribute("aria-pressed", String(state.tutorial));
-    C.sfx.tone(state.tutorial ? 660 : 440, 0.08);
-    C.storage.set(TUTORIAL_KEY, state.tutorial);
+    state.askMode = modeId;
+    els.watchYes.classList.toggle("hot", state.tutorial);
+    els.watchNo.classList.toggle("hot", !state.tutorial);
+    els.askWatch.hidden = false;
+    restartAnim(els.askWatch.querySelector(".ask-card"));
+    C.say(T.spoken.askWatch);
+  }
+  function answerWatch(yes) {
+    if (els.askWatch.hidden) return;
+    els.askWatch.hidden = true;
+    state.tutorial = yes;
+    C.storage.set(TUTORIAL_KEY, yes);
+    startMode(state.askMode || "fun");
   }
 
   function toggleType(type, btn) {
@@ -1023,7 +1028,7 @@
 
   function contentGo() {
     if (state.pendingMode === "practice") showPractice("practice");
-    else startMode(state.pendingMode || "fun");
+    else askWatch(state.pendingMode || "fun");
   }
 
   // ---------- Practice: pick a game, read how to play, then play it on repeat ----------
@@ -1123,7 +1128,8 @@
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
   els.contentGoBtn.addEventListener("click", contentGo);
-  els.tutorialBtn.addEventListener("click", toggleTutorial);
+  els.watchYes.addEventListener("click", () => answerWatch(true));
+  els.watchNo.addEventListener("click", () => answerWatch(false));
   els.contentBackBtn.addEventListener("click", goTitle);
   els.practiceBackBtn.addEventListener("click", () => (listParam || state.picker === "tutorial" ? goTitle() : chooseContent("practice")));
   els.tutorialsBtn.addEventListener("click", () => { C.unlock(); showPractice("tutorial"); });
@@ -1137,7 +1143,7 @@
   els.settingsBtn.addEventListener("click", () => showScreen("settings"));
   els.backBtn.addEventListener("click", () => showScreen("title"));
   els.quitBtn.addEventListener("click", quitPlay);
-  els.againBtn.addEventListener("click", () => startMode(state.mode.id));
+  els.againBtn.addEventListener("click", () => (state.mode.id === "practice" ? startMode("practice") : askWatch(state.mode.id)));
   els.menuBtn.addEventListener("click", goTitle);
 
   // ---------- Boot: load the games listed in games/manifest.js ----------

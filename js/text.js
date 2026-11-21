@@ -18,8 +18,11 @@ window.TEXT = {
     cvc: { name: "CVC", sample: "cat 🐱", label: "CVC words" },
     hfw: { name: "HFW", sample: "the", label: "Sight words" },
   },
-  // Tutorial toggle on the content picker (Fun and Challenge only): new games are shown first.
-  tutorial: { name: "TUTORIAL", label: "Watch new games first", sample: "👀" },
+
+  // 👀 Watch first? pop-up after PLAY in Fun and Challenge.
+  askWatch: "WATCH\nFIRST?",
+  watchYes: "WATCH FIRST",
+  watchNo: "JUST PLAY",
   watch: "WATCH!",                    // banner before a game's tutorial
   watchPill: "👀 TUTORIAL 👀",         // fills the top bar while the game plays itself
   yourTurn: "YOUR\nTURN!",             // banner after it
@@ -62,6 +65,7 @@ window.TEXT = {
     ready: "Let's go!",
     watch: "Watch me!",
     yourTurn: "Your turn!",
+    askWatch: "Do you want to watch first?",
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
     done: "Well done!",
     record: "New high score!", // not "new record": TTS stresses "record" like the verb

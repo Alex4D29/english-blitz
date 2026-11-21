@@ -275,9 +275,6 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 }
 
 /* ---------- Tutorial (see runDemo in frame.js) ---------- */
-.content-btn.tutorial { width: min(100%, 440px); margin-top: 10px; border-style: dashed; } /* a setting, not a content type */
-.content-btn.tutorial[hidden] { display: none; }
-.content-btn.tutorial[aria-pressed="true"] { background: #9c6bff; }
 /* While a game plays itself it must look unmistakably like a demo: the whole top bar becomes a
    big 👀 TUTORIAL banner, the timer turns into caution tape, and the game gets a thick
    yellow-and-black striped frame with darkened edges. */
@@ -334,3 +331,19 @@ body.demo #stage::before {
 @media (prefers-reduced-motion: reduce) {
   #roundPill.watch, .demo-ring, body.demo #stage::before { animation: none; }
 }
+
+/* ---------- 👀 Watch first? (askWatch in frame.js) ---------- */
+.ask { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(0, 0, 0, .55); }
+.ask[hidden] { display: none; }
+.ask-card { width: min(100%, 420px); display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  padding: 18px 18px 22px; animation: pop .35s cubic-bezier(.2, 1.8, .4, 1) both; }
+.ask-icon { font-size: clamp(4rem, 22vw, 6rem); line-height: 1; animation: demo-eyes 1.4s ease-in-out infinite; }
+.ask-card .shout { font-size: clamp(2.2rem, 11vw, 3.4rem); line-height: 1; white-space: pre-line; margin: 0; }
+.ask-buttons { display: flex; flex-direction: column; gap: 14px; width: 100%; margin-top: 6px; }
+.ask-buttons .chunky { width: 100%; font-size: clamp(1.4rem, 7vw, 2rem); padding: 14px 18px; }
+.ask-yes { background: #9c6bff; color: var(--paper); -webkit-text-stroke: 1px var(--ink); }
+.ask-no { background: var(--paper); }
+.ask-buttons .chunky.hot { animation: pulse 1s ease-in-out infinite; } /* the last answer */
+.ask-yes.hot { background: #9c6bff; }
+@media (prefers-reduced-motion: reduce) { .ask-icon, .ask-buttons .chunky.hot { animation: none; } }

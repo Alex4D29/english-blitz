@@ -28,8 +28,6 @@
   <h1 class="shout" data-text="whatToPlay"></h1>
   <p class="card" data-text="pickContent"></p>
   <div id="contentGrid" role="group"></div>
-  <!-- Fun and Challenge only: show each new game once (the game plays itself), then "YOUR TURN!" -->
-  <button class="content-btn tutorial long" id="tutorialBtn" aria-pressed="true"><span class="tick" aria-hidden="true">✔</span><span class="what"><span class="nm"></span><span class="lbl"></span></span><span class="sample" aria-hidden="true"></span></button>
   <div class="buttons">
     <button class="chunky hot" id="contentGoBtn">▶️ <span data-text="play"></span></button>
     <button class="chunky" id="contentBackBtn">⬅️ <span data-text="back"></span></button>
@@ -84,6 +82,18 @@
     <div id="banner" hidden><div class="banner-icon" aria-hidden="true"></div><div class="shout"></div></div>
     <div id="stamp" hidden><div class="shout"></div></div>
   </main>
+</div>
+
+<!-- 👀 Watch first? Pops up after PLAY / PLAY AGAIN in Fun and Challenge (new games show a tutorial first) -->
+<div id="askWatch" class="ask" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
+  <div class="ask-card card">
+    <div class="ask-icon" aria-hidden="true">👀</div>
+    <h2 class="shout" id="askTitle" data-text="askWatch"></h2>
+    <div class="ask-buttons">
+      <button class="chunky ask-yes" id="watchYes">👀 <span data-text="watchYes"></span></button>
+      <button class="chunky ask-no" id="watchNo">🙈 <span data-text="watchNo"></span></button>
+    </div>
+  </div>
 </div>
 
 <!-- Results -->
