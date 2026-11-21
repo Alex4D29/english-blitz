@@ -31,6 +31,7 @@
     cornerLabel: (t) => `Kick to ${t}`,
     goal: "GOAL!",
     haha: "HA HA!",
+    saved: "SAVED!",
     answer: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
   };
 
@@ -77,7 +78,16 @@
   .pk-keye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:pk-goggle 1s ease-in-out infinite; }
   .pk-kmouth { position:absolute; left:30%; right:30%; top:46%; height:12%; z-index:1; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; overflow:hidden; }
   .pk-kmouth::after { content:""; position:absolute; left:24%; right:24%; bottom:-30%; height:70%; background:#ff6f91; border-radius:50%; }
-  .pk-glove { position:absolute; top:18%; width:30%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50% 50% 40% 40%; z-index:2; }
+  .pk-glove { position:absolute; top:18%; width:30%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50% 50% 40% 40%; z-index:3; transition:left .12s, right .12s, top .12s; }
+  /* A save: the ball sits in the keeper's hands (drawn inside the keeper, under its gloves), and the gloves close round it */
+  .pk-kball { position:absolute; left:50%; top:2%; display:none; transform:translateX(-50%); font-size:calc(var(--kz) * .42); line-height:1; z-index:2; }
+  .pk-keeper.holding .pk-kball { display:block; }
+  .pk-keeper.holding .pk-glove.l { left:6%; top:6%; } .pk-keeper.holding .pk-glove.r { right:6%; top:6%; }
+  .pk-keeper.holding.gloat .pk-kball { top:-34%; }   /* held up over its head */
+  .pk-keeper.holding.gloat .pk-glove.l { left:4%; top:-26%; } .pk-keeper.holding.gloat .pk-glove.r { right:4%; top:-26%; }
+  .pk-impact { position:absolute; width:calc(var(--kz) * 1.1); height:calc(var(--kz) * 1.1); transform:translate(-50%, -50%) scale(.3); z-index:8; pointer-events:none;
+    background:#fff; border:4px solid #111; clip-path:polygon(50% 0, 60% 32%, 92% 18%, 70% 46%, 100% 56%, 68% 64%, 82% 96%, 54% 74%, 40% 100%, 36% 70%, 6% 86%, 26% 56%, 0 38%, 32% 34%, 18% 6%, 44% 26%);
+    animation:pk-impact .45s ease-out forwards; }
   .pk-glove.l { left:-12%; transform:rotate(-20deg); } .pk-glove.r { right:-12%; transform:rotate(20deg); }
   .pk-kleg { position:absolute; bottom:0; width:18%; height:16%; background:#111; border-radius:6px; }
   .pk-kleg.l { left:26%; } .pk-kleg.r { right:26%; }
@@ -108,6 +118,7 @@
   .pk-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:10; pointer-events:none; font-size:2.6rem; color:#ffd400; -webkit-text-stroke:3px #111;
     paint-order:stroke fill; text-shadow:0 5px 0 #111; white-space:nowrap; animation:pk-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
   .pk-word.bad { color:#ff4d6d; font-size:2rem; }
+  .pk-word.saved { color:#ff4d6d; font-size:3.2rem; z-index:11; }   /* big and right over the goal, so a save is unmistakable */
 
   @keyframes pk-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
   @keyframes pk-talk { 50% { transform:scaleY(.4); } }
@@ -119,6 +130,7 @@
   @keyframes pk-dance { from { rotate:-10deg; } to { rotate:10deg; } }
   @keyframes pk-tear { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(40px); } }
   @keyframes pk-pop { from { transform:translate(-50%, -50%) rotate(-8deg) scale(.2); } }
+  @keyframes pk-impact { 50% { transform:translate(-50%, -50%) scale(1.1); opacity:1; } to { transform:translate(-50%, -50%) scale(1.3); opacity:0; } }
   @media (prefers-reduced-motion: reduce) {
     .pk-aeye i, .pk-keye i, .pk-peye i, .pk-amouth, .pk-goal.bulge, .pk-corner.right, .pk-keeper.gloat, .pk-player.yay, .pk-word { animation:none !important; }
   }`;
@@ -192,7 +204,7 @@
       const keeper = document.createElement("div");
       keeper.className = "pk-keeper";
       keeper.innerHTML = '<div class="pk-kleg l"></div><div class="pk-kleg r"></div><div class="pk-kbody"></div><div class="pk-keye l"><i></i></div><div class="pk-keye r"><i></i></div>' +
-        '<div class="pk-kmouth"></div><div class="pk-glove l"></div><div class="pk-glove r"></div>';
+        '<div class="pk-kmouth"></div><div class="pk-kball">⚽</div><div class="pk-glove l"></div><div class="pk-glove r"></div>';
       const player = document.createElement("div");
       player.className = "pk-player";
       player.innerHTML = '<div class="pk-pleg l"></div><div class="pk-pleg r"></div><div class="pk-pbody"></div><div class="pk-peye l"><i></i></div><div class="pk-peye r"><i></i></div><div class="pk-pmouth"></div>';
@@ -224,7 +236,7 @@
         Object.assign(goalEl.style, { left: `${gx}px`, top: `${gy}px`, width: `${gw}px`, height: `${gh}px` });
         line.style.top = `${gy + gh}px`;
         cs = Math.max(48, Math.min(gw * 0.2, gh * 0.4, 90));
-        kz = Math.min(gh * 0.8, 130); pz = Math.max(60, Math.min(H * 0.24, 110)); bz = Math.max(34, Math.min(H * 0.1, 56));
+        kz = Math.min(gh * 0.8, 130); pz = Math.max(60, Math.min(H * 0.24, 110)); bz = Math.max(48, Math.min(H * 0.15, 80));
         pitch.style.setProperty("--cs", `${cs}px`);
         pitch.style.setProperty("--kz", `${kz}px`);
         pitch.style.setProperty("--pz", `${pz}px`);
@@ -276,13 +288,19 @@
         const side = to.i % 2 ? 1 : -1;
         dive = { t0: performance.now(), ms: reduceMotion ? 1 : 380, fx: kx, fy: ky,
           tx: to.x - side * kz * 0.05, ty: to.y + kz * (to.i < 2 ? 0.75 : 0.55), rot: side * (to.i < 2 ? 70 : 85) };
-        const from = { x: spotX, y: spotY }, aim = { x: c.x, y: c.y + cs * 0.1 }, t0 = performance.now(), ms = reduceMotion ? 1 : 460;
+        // A goal flies into the corner. A save never reaches the net: it flies into the keeper's hands,
+        // where they'll be at the end of its dive (the keeper turns about a point 20% up from its feet,
+        // and its hands are 57% of its height above that).
+        const th = (dive.rot * Math.PI) / 180;
+        const hands = { x: dive.tx + Math.sin(th) * kz * 0.57, y: dive.ty - kz * 0.2 - Math.cos(th) * kz * 0.57 };
+        const from = { x: spotX, y: spotY }, aim = right ? { x: c.x, y: c.y + cs * 0.1 } : hands;
+        const t0 = performance.now(), ms = reduceMotion ? 1 : 460;
         (function fly(now) {
           const k = Math.min(1, (now - t0) / ms);
           const x = from.x + (aim.x - from.x) * k, y = from.y + (aim.y - from.y) * k - Math.sin(k * Math.PI) * H * 0.08;
-          setBall(x, y, 1 - 0.45 * k, k * 720);
+          setBall(x, y, 1 - 0.3 * k, k * 720);
           if (k < 1) { ctx.raf(fly); return; }
-          if (right) goal(c); else saved(c);
+          if (right) goal(c); else saved(c, aim);
         })(t0);
       }
 
@@ -298,20 +316,26 @@
         ctx.say(answer);
       }
 
-      function saved(c) {
-        // Caught: the ball sticks to the keeper's gloves.
-        tone(160, 0.1, "square", 0.12); noise(0.1, "lowpass", 1500, 300, 0.4); // glove thud
-        const hold = () => setBall(kx + (c.i % 2 ? -kz * 0.1 : kz * 0.1), ky - kz * 0.75, 0.55, 0);
-        hold();
+      function saved(c, at) {
+        // Caught, nowhere near the net: an impact burst, SAVED!, and the ball is now in the keeper's
+        // hands (drawn inside the keeper, with the gloves closing round it).
+        tone(160, 0.1, "square", 0.14); noise(0.12, "lowpass", 1500, 300, 0.5); // glove THUD
+        ball.style.visibility = "hidden";
+        keeper.classList.add("holding");
+        const burst = document.createElement("div");
+        burst.className = "pk-impact";
+        burst.style.left = `${at.x}px`; burst.style.top = `${at.y}px`;
+        fx.appendChild(burst);
+        ctx.later(() => burst.remove(), 500);
+        say(TEXT.saved, W / 2, gy + gh * 0.55, true, "saved");
         ctx.later(() => {
           // Back on its feet to gloat: HA HA!, tongue out, a little dance.
           dive = null;
           keeper.style.transition = reduceMotion ? "" : "transform .25s ease-out";
           keeper.classList.add("gloat");
           kx = W / 2; ky = gy + gh;
-          keeper.style.transform = `translate(${kx}px, ${ky}px)`;
-          setBall(kx + kz * 0.3, ky - kz * 0.95, 0.55, 0);
-          say(TEXT.haha, W / 2 + kz * 0.5, gy + gh * 0.15, true);
+          keeper.style.transform = `translate(${kx}px, ${ky}px)`; // (it holds the ball up over its head)
+          say(TEXT.haha, W / 2 + kz * 0.6, gy + gh * 0.1, true);
           [0, 0.18, 0.36].forEach((t) => { tone(330, 0.1, "square", 0.08, t); tone(262, 0.1, "square", 0.06, t + 0.09); }); // ha-ha-ha
           player.classList.remove("kick");
           player.classList.add("cry");
@@ -332,9 +356,9 @@
           ctx.later(() => t.remove(), 800);
         }, n * 260 + k * 120)));
       }
-      function say(text, x, y, bad) {
+      function say(text, x, y, bad, extra) {
         const w = document.createElement("div");
-        w.className = "pk-word" + (bad ? " bad" : "");
+        w.className = "pk-word" + (bad ? " bad" : "") + (extra ? ` ${extra}` : "");
         w.textContent = text;
         w.style.left = `${Math.max(70, Math.min(W - 70, x))}px`; w.style.top = `${y}px`;
         fx.appendChild(w);

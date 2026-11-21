@@ -78,6 +78,9 @@
   .mb-mon.hit .mb-eye i { animation:mb-dizzy .4s linear infinite; }
   .mb-mon.hit .mb-mouth { left:40%; right:40%; border-radius:50%; }
   .mb-mon.ko { transform-origin:50% 100%; }
+  .mb-mon.ko.landed .mb-body { animation:mb-thud .35s ease-out; }   /* one bounce on the canvas */
+  .mb-dizzy.small { transform:translate(-50%, -50%); }
+  .mb-dizzy.small span { font-size:1.6rem; }
   .mb-mon.ko .mb-eye i { display:none; }
   .mb-mon.ko .mb-eye::before, .mb-mon.ko .mb-eye::after { content:""; position:absolute; left:15%; right:15%; top:44%; height:12%; background:#111; border-radius:9px; }
   .mb-mon.ko .mb-eye::before { transform:rotate(45deg); } .mb-mon.ko .mb-eye::after { transform:rotate(-45deg); }
@@ -131,6 +134,7 @@
   @keyframes mb-shake { 25% { translate:-8px 3px; } 75% { translate:8px -3px; } }
   @keyframes mb-red { from { opacity:0; } 30% { opacity:1; } to { opacity:.7; } }
   @keyframes mb-spin { to { transform:translate(-50%, -50%) rotate(360deg); } }
+  @keyframes mb-thud { 40% { transform:translateX(-6%) scaleX(.92); } 70% { transform:translateX(2%); } }
   @media (prefers-reduced-motion: reduce) {
     .mb-eye i, .mb-glove, .mb-mon.hit, .mb-mon.gloat, .mb-pad.right, .mb-word, .mb-ring.koed, .mb-dizzy, .mb-bell.ring { animation:none !important; }
   }`;
@@ -226,9 +230,12 @@
         const bob = reduceMotion ? 0 : Math.abs(Math.sin(now * 0.004 * (0.8 + 0.3 * speed))) * mz * 0.03;
         const dodge = now < dodgeUntil ? dodgeDir * W * 0.22 * Math.sin(((dodgeUntil - now) / 450) * Math.PI) : 0;
         mx = W / 2 + weave + dodge; my = H * 0.93 - bob;
-        let tf = `translate(${mx.toFixed(1)}px, ${my.toFixed(1)}px)`;
-        if (state === "ko") tf += " rotate(-80deg) translateY(10%)";
-        mon.style.transform = tf;
+        // Knocked out: flat on its side on the canvas. It turns about its feet (transform-origin 50% 100%),
+        // a little smaller (sprawled further back), so shift it right and up to lie on the floor, centred.
+        mon.style.transform = state === "ko"
+          ? `translate(${(mx + mz * 0.4).toFixed(1)}px, ${(H * 0.95 - mz * 0.36).toFixed(1)}px) rotate(-90deg) scale(.8)`
+          : `translate(${mx.toFixed(1)}px, ${my.toFixed(1)}px)`;
+        if (state === "ko") return;
         // Pads ride on the monster.
         const left = mx - mz * 0.45, topY = my - mz;
         pads.forEach((p) => { p.el.style.left = `${left + mz * 0.9 * p.fx}px`; p.el.style.top = `${topY + mz * p.fy}px`; });
@@ -298,9 +305,21 @@
         state = "ko";
         mon.classList.remove("hit");
         mon.classList.add("ko");
-        mon.style.transition = reduceMotion ? "" : "transform .5s cubic-bezier(.5,0,.8,.6)";
+        // TIMBER: it topples onto its side (the frame loop stops placing it, so place it once here),
+        // its pads fade away, it bounces once on the canvas, and stars circle its head.
+        mon.style.transition = reduceMotion ? "" : "transform .55s cubic-bezier(.55,0,.9,.55)";
+        place(performance.now());
+        pads.forEach((p) => { p.el.style.transition = "opacity .2s"; p.el.style.opacity = "0"; p.el.disabled = true; });
+        ctx.later(() => {
+          mon.classList.add("landed");
+          const s = document.createElement("div");
+          s.className = "mb-dizzy small";
+          s.style.left = `${mx - mz * 0.24}px`; s.style.top = `${H * 0.95 - mz * 0.58}px`; s.style.width = `${mz * 0.42}px`;
+          s.innerHTML = [0, 120, 240].map((a) => `<span style="left:${50 + 40 * Math.cos(a * Math.PI / 180)}%;top:${50 + 40 * Math.sin(a * Math.PI / 180)}%">⭐</span>`).join("");
+          fx.appendChild(s);
+        }, reduceMotion ? 10 : 560);
         bigWord(TEXT.ko, "#ffd400");
-        noise(0.4, "lowpass", 600, 80, 0.8, 0.35); // THUD on the canvas
+        noise(0.4, "lowpass", 600, 80, 0.8, 0.55); // THUD on the canvas
         [0, 0.12, 0.24, 0.36].forEach((t, i) => tone(523 + i * 131, 0.14, "triangle", 0.12, 0.2 + t)); // ding-ding-ding
         ctx.later(() => ctx.confetti(fx, W / 2, H * 0.4, { count: 100 }), 300);
         ctx.say(C.answer);
