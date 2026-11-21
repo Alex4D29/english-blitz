@@ -28,4 +28,6 @@ window.GAME_FILES = [
   "track-switch",
   "bunny-burrow",
   "pizza-chef",
+  "treasure-dig",
+  "hoop-shot",
 ];
