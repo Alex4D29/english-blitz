@@ -70,7 +70,8 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 .mode-btn .ico { font-size: 1.5em; -webkit-text-stroke: 0; }
 .mode-btn.fun { background: #ff2e88; }
 .mode-btn.challenge { background: #1e6bff; }
-.mode-btn.practice { background: #1fd65f; min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
+.mode-btn.practice, .mode-btn.tutorials { background: #1fd65f; min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
+.mode-btn.tutorials { background: #9c6bff; }
 .mode-btn:disabled { opacity: .5; }
 #loading { font-size: 1.2rem; }
 
@@ -184,38 +185,15 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
   pointer-events: none; z-index: 4;
 }
 #banner { flex-direction: column; gap: 18px; }
-#banner:not(.instruction) .hint, #banner .hint[hidden] { display: none; }
 #banner:not(.instruction) .banner-icon, #banner .banner-icon:empty { display: none; }
 #banner .banner-icon {   /* the game's picture above the instruction */
   font-size: clamp(4.5rem, 26vw, 7.5rem); line-height: 1; margin-bottom: -6px;
   filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 0 rgba(0, 0, 0, .35));
   animation: pop .4s cubic-bezier(.2, 1.8, .4, 1) both, wobble .35s .4s ease-in-out 2;
 }
-#banner .hint {   /* TAP! / DRAG! under the instruction */
-  display: flex; align-items: center; gap: 10px; padding: 8px 22px 8px 14px;
-  background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 5px 0 var(--ink);
-  font-size: clamp(1.8rem, 9vw, 3rem); line-height: 1; color: var(--ink);
-  animation: pop .35s .2s cubic-bezier(.2, 1.8, .4, 1) both;
-}
-.hint-icon { display: inline-block; position: relative; font-size: 1.2em; }
-.hint.tap .hint-icon { animation: hint-tap .5s ease-in-out infinite; }
-.hint.tap .hint-icon::after {   /* ripple where the finger presses */
-  content: ""; position: absolute; left: 14%; top: -6%; width: 36%; aspect-ratio: 1; border-radius: 50%;
-  border: 3px solid var(--ink); opacity: 0; animation: hint-ripple .5s ease-out infinite;
-}
-.hint.drag .hint-icon { animation: hint-drag .9s ease-in-out infinite; }
+/* Finger press + ripple, used by the in-game coach (ctx.hint) */
 @keyframes hint-tap { 0%, 100% { transform: translateY(-6px); } 45%, 60% { transform: translateY(4px) scale(.9); } }
 @keyframes hint-ripple { 0%, 45% { opacity: 0; transform: scale(.4); } 55% { opacity: 1; } 100% { opacity: 0; transform: scale(2); } }
-@keyframes hint-drag { 0%, 100% { transform: translateX(-16px) rotate(-10deg); } 50% { transform: translateX(16px) rotate(10deg); } }
-/* SLICE!: the finger swipes down-right and leaves a white slash behind it */
-.hint.slice { position: relative; }
-.hint.slice .hint-icon { animation: hint-swipe .8s ease-in infinite; z-index: 1; }
-.hint.slice::before {
-  content: ""; position: absolute; left: 4px; top: 22%; width: 1.7em; height: 9px; border-radius: 99px;
-  background: var(--paper); border: 3px solid var(--ink); transform-origin: 0 50%; transform: rotate(38deg); animation: hint-streak .8s ease-in infinite;
-}
-@keyframes hint-swipe { 0% { transform: translate(-14px, -12px); opacity: 0; } 15% { opacity: 1; } 55% { transform: translate(14px, 12px); opacity: 1; } 100% { transform: translate(14px, 12px); opacity: 0; } }
-@keyframes hint-streak { 0%, 12% { transform: rotate(38deg) scaleX(0); opacity: 1; } 55% { transform: rotate(38deg) scaleX(1); opacity: 1; } 100% { transform: rotate(38deg) scaleX(1); opacity: 0; } }
 /* In-game TAP! / DRAG! (ctx.hint): the fingertip sits on the point; the word pill hangs below */
 .coach { position: absolute; width: 0; height: 0; z-index: 50; pointer-events: none; animation: coach-life 2.4s ease-out both; }
 .coach-move { position: absolute; left: 0; top: 0; transform: translateX(-50%); }
@@ -291,7 +269,68 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 
 @media (prefers-reduced-motion: reduce) {
   #burst, .logo, .chunky.hot, #bar.low, .pip.now, #record, #howtoIcon { animation: none; }
-  #banner .shout, #stamp .shout, .star, #resTitle, .heart.broke, #banner .hint, #banner .banner-icon { animation-duration: .01s !important; }
-  .hint-icon, .hint-icon::after, .coach-icon, .coach::before, .hint.slice::before, .coach.slice .coach-move { animation: none !important; }
+  #banner .shout, #stamp .shout, .star, #resTitle, .heart.broke, #banner .banner-icon { animation-duration: .01s !important; }
+  .coach-icon, .coach::before, .coach.slice .coach-move { animation: none !important; }
   .coach.drag .coach-move { animation-duration: 2.4s; animation-iteration-count: 1; } /* one slow slide, no loop */
+}
+
+/* ---------- Tutorial (see runDemo in frame.js) ---------- */
+.content-btn.tutorial { width: min(100%, 440px); margin-top: 10px; border-style: dashed; } /* a setting, not a content type */
+.content-btn.tutorial[hidden] { display: none; }
+.content-btn.tutorial[aria-pressed="true"] { background: #9c6bff; }
+/* While a game plays itself it must look unmistakably like a demo: the whole top bar becomes a
+   big 👀 TUTORIAL banner, the timer turns into caution tape, and the game gets a thick
+   yellow-and-black striped frame with darkened edges. */
+body.demo #timer { background: repeating-linear-gradient(-45deg, #ffd400 0 12px, var(--ink) 12px 24px); }
+body.demo #bar { visibility: hidden; }
+body.demo #status { display: none; }
+body.demo #stage::after { /* sits just outside the game (in the gaps round it), so it never covers anything */
+  content: ""; position: absolute; inset: -9px; z-index: 60; pointer-events: none;
+  border: 9px solid transparent;
+  border-image: repeating-linear-gradient(-45deg, #ffd400 0 14px, var(--ink) 14px 28px) 9;
+  box-shadow: inset 0 0 40px 8px rgba(0, 0, 0, .4);
+}
+/* A big 👀 badge on the frame's top-left corner for the whole demo: "watch!" without reading */
+body.demo #stage::before {
+  content: "👀"; position: absolute; left: -20px; top: -24px; z-index: 61; pointer-events: none;
+  width: 68px; height: 68px; display: flex; align-items: center; justify-content: center;
+  font-size: 44px; line-height: 1; background: #ffd400; border: 5px solid var(--ink); border-radius: 50%;
+  box-shadow: 0 5px 0 var(--ink); animation: demo-eyes 1.4s ease-in-out infinite;
+}
+@keyframes demo-eyes { 0%, 100% { transform: rotate(-10deg) scale(1); } 50% { transform: rotate(10deg) scale(1.12); } }
+#roundPill.watch {
+  flex: 1; margin-left: 0; justify-content: center; text-align: center;
+  background: #ffd400; font-size: clamp(1.3rem, 6.5vw, 1.9rem); padding: 6px 12px;
+  animation: pulse .8s ease-in-out infinite;
+}
+#banner.watch .banner-icon, #banner.turn .banner-icon { display: block; }
+#banner.watch .shout, #banner.turn .shout { font-size: clamp(3rem, 16vw, 6rem); }
+#banner.watch .shout { color: #ffd400; }
+#banner.turn .shout { color: #7cf04f; }
+/* ctx.reveal: the target card while it's big in the middle */
+.fx-reveal { z-index: 95 !important; pointer-events: none; }
+/* The ghost finger: its fingertip sits on the point */
+.demo-finger {
+  position: absolute; z-index: 80; width: 0; height: 0; pointer-events: none;
+}
+.demo-finger span {
+  position: absolute; left: -32px; top: -5px; font-size: 80px; line-height: 1; display: block;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 0 rgba(0, 0, 0, .4));
+  transition: transform .12s ease-out;
+}
+.demo-finger.press span { transform: translateY(6px) scale(.88); }
+.demo-ring {
+  position: absolute; z-index: 79; pointer-events: none; border-radius: 22px;
+  border: 6px solid #ffd400; box-shadow: 0 0 0 4px var(--ink), 0 0 26px 8px rgba(255, 255, 255, .9);
+  animation: demo-ring .7s ease-in-out infinite;
+}
+@keyframes demo-ring { 50% { transform: scale(1.07); } }
+.demo-ripple {
+  position: absolute; z-index: 79; width: 70px; height: 70px; margin: -35px 0 0 -35px; pointer-events: none;
+  border: 6px solid var(--paper); border-radius: 50%; box-shadow: 0 0 0 3px var(--ink);
+  animation: demo-ripple .45s ease-out forwards;
+}
+@keyframes demo-ripple { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #roundPill.watch, .demo-ring, body.demo #stage::before { animation: none; }
 }

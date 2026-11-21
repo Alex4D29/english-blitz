@@ -43,10 +43,10 @@
   .mk-branch { position:absolute; left:4%; right:4%; height:10px; background:#8b5a2b; border:3px solid #111; border-radius:99px; z-index:2; }
   .mk-vine { position:absolute; left:0; top:0; width:0; z-index:3; }
   .mk-rope { position:absolute; left:-4px; top:0; width:8px; background:repeating-linear-gradient(180deg, #3e9a3a 0 10px, #2b7a28 10px 14px); border:2px solid #111; border-radius:4px; }
-  .mk-sign { position:absolute; left:0; transform:translate(-50%, 0); min-width:var(--sz); height:calc(var(--sz) * .8); padding:0 6px; border:4px solid #111; border-radius:12px;
-    background:#fff6d6; color:#111; font:inherit; font-size:calc(var(--sz) * .5); line-height:1; display:flex; align-items:center; justify-content:center; white-space:nowrap;
+  .mk-sign { position:absolute; left:0; transform:translate(-50%, 0); min-width:calc(var(--sz) * 1.1); height:calc(var(--sz) * .95); padding:0 6px; border:4px solid #111; border-radius:12px;
+    background:#fff6d6; color:#111; font:inherit; font-size:calc(var(--sz) * .62); line-height:1; display:flex; align-items:center; justify-content:center; white-space:nowrap;
     box-shadow:0 4px 0 #111; cursor:pointer; touch-action:manipulation; }
-  .mk-sign.pic { font-size:calc(var(--sz) * .48); }
+  .mk-sign.pic { font-size:calc(var(--sz) * .7); }
   .mk-vine.live .mk-sign { box-shadow:0 0 0 4px #fff, 0 4px 0 4px #111; animation:mk-live .8s ease-in-out infinite alternate; }
   .mk-vine.snap .mk-low { animation:mk-fall .6s ease-in forwards; }
   .mk-vine.right .mk-sign { background:#b8ffcf; box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; }
@@ -92,6 +92,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 10000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -142,9 +143,12 @@
       function layout() {
         W = jungle.clientWidth; H = jungle.clientHeight;
         topY = Math.max(96, H * 0.22);
-        groundY = H - 46;
+        // The monkey starts in its own space at the bottom, below the lowest vines, so it never
+        // covers an option.
+        const sz0 = Math.max(44, Math.min(W / (N + 0.8), 86));
+        groundY = H - (sz0 * 1.4 + 10);
         const gap = (groundY - topY) / (R + 0.3);
-        sz = Math.max(42, Math.min(W / (N + 1), gap * 0.5, 76));
+        sz = Math.max(42, Math.min(sz0, gap * 0.56));
         jungle.style.setProperty("--sz", `${sz}px`);
         jungle.style.setProperty("--mz", `${sz * 1.35}px`);
         jungle.style.setProperty("--bn", `${Math.min(W * 0.55, topY * 1.9, 210)}px`); // comically BIG
@@ -158,14 +162,14 @@
             v.el.style.left = `${v.ax}px`; v.el.style.top = `${v.ay}px`;
             v.rope.style.height = `${v.L}px`;
             v.sign.style.top = `${v.L}px`;
-            if (v.item.kind === "word") v.sign.style.fontSize = `${Math.min(sz * 0.42, (sz * 1.5) / (v.item.text.length * 0.6))}px`;
+            if (v.item.kind === "word") v.sign.style.fontSize = `${Math.min(sz * 0.5, (sz * 1.7) / (v.item.text.length * 0.6))}px`;
           });
         });
       }
       const swingAmp = reduceMotion ? 0 : 0.16 + 0.05 * (speed - 1);
       const swingRate = 0.0018 * (0.8 + 0.35 * speed);
       // The monkey hangs just under the sign, so the sign stays readable.
-      const handOf = (v) => { const l = v.L + sz * 0.8; return { x: v.ax + Math.sin(v.ang) * l, y: v.ay + Math.cos(v.ang) * l }; };
+      const handOf = (v) => { const l = v.L + sz * 0.95; return { x: v.ax + Math.sin(v.ang) * l, y: v.ay + Math.cos(v.ang) * l }; };
 
       let level = -1, onVine = null, jump = null, done = false, pos = { x: 0, y: 0 };
       function setLive() { vines.forEach((row, r) => row.forEach((v) => v.el.classList.toggle("live", !done && !jump && r === level + 1))); }
@@ -185,10 +189,11 @@
         ctx.raf(frame);
       }
       layout();
-      pos = { x: W / 2, y: groundY - sz * 0.9 };
+      const startPos = () => ({ x: W / 2, y: groundY + 4 + sz * 0.2 }); // sitting in the bush, below every sign
+      pos = startPos();
       setLive();
       ctx.raf(frame);
-      const ro = new ResizeObserver(() => { layout(); if (level < 0 && !jump) pos = { x: W / 2, y: groundY - sz * 0.9 }; });
+      const ro = new ResizeObserver(() => { layout(); if (level < 0 && !jump) pos = startPos(); });
       ro.observe(jungle);
 
       function grab(r, i) {
@@ -260,6 +265,17 @@
       }
       document.addEventListener("keydown", onKey);
       ctx.say(C.prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.reveal(card);
+
+      // Tutorial: point at the card, then grab the right (swinging) sign on each level in turn.
+      ctx.tutorial(C.target, async (f) => {
+        await f.point(card);
+        for (let r = 0; r < R; r++) {
+          await f.until(() => level === r - 1 && !jump, 4000);
+          await f.tap(vines[r].find((v) => v.item.right).sign);
+        }
+      });
       return () => { done = true; ro.disconnect(); document.removeEventListener("keydown", onKey); };
     },
   });

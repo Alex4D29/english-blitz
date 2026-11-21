@@ -179,7 +179,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000, // three or more taps, so a little longer than the others
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -194,7 +195,7 @@
       // ---------- Content ----------
       // engine: what the engine shows; needed: [{ text, say }] in order; extras: distractor carriages.
       // Phonics: any order — a right picture fills the next slot (see tap()).
-      let engine, needed, extras, prompt, finale;
+      let engine, needed, extras, prompt, finale, answerItem; // answerItem: the list item the round is about (tutorial)
       const extraCount = speed >= 2.25 ? 2 : speed >= 1.5 ? 1 : 0;
 
       if (isPhonics) {
@@ -203,6 +204,7 @@
         const head = ctx.items.find((it) => ctx.phonics.pics(it).length >= RUN) || ctx.items[0];
         const set = ctx.phonics.set(head, RUN, speed >= 1.5 ? 2 : 1);
         engine = { text: head.text, kind: "letter" };
+        answerItem = head;
         needed = set.right.map((p) => ({ text: p.emoji, say: p.word }));
         extras = set.wrong.map((p) => ({ text: p.emoji, say: p.word }));
         prompt = spoken(head);
@@ -215,6 +217,7 @@
         const seq = abc.slice(at + 1, at + 1 + run);
         const used = new Set([head, ...seq]);
         engine = { text: head.text, kind: "letter" };
+        answerItem = head;
         needed = seq.map((it) => ({ text: it.text, say: spoken(it) }));
         // Best distractors: the letter just after the run (jumping ahead), then look-alikes.
         const byText = new Map(abc.map((it) => [it.text, it]));
@@ -227,6 +230,7 @@
         const ok = (it) => /^[a-z]+$/i.test(it.text) && it.text.length >= 2 && it.text.length <= MAX_WORD;
         const target = ctx.items.find((it) => ok(it) && it.emoji) || ctx.items.find(ok) || ctx.items[0];
         const letters = target.text.slice(0, MAX_WORD).split("");
+        answerItem = target;
         engine = target.emoji ? { text: target.emoji, kind: "pic" } : { text: target.text, kind: "word" };
         needed = letters.map((ch) => ({ text: ch, say: letterSay(ch) }));
         // Distractors: letters from other words in the list that aren't in this word, tricky words first.
@@ -426,6 +430,18 @@
         wrap.classList.add("sad");
         slots.forEach((s) => s.classList.remove("next"));
         reveal();
+      });
+
+      // Tutorial: point at the engine, then tap the carriages in order.
+      ctx.tutorial(answerItem, async (f) => {
+        await f.point(engineEl);
+        for (let n = 0; n < 8 && pos < needed.length && !done; n++) {
+          const live = tiles.filter((t) => !t.disabled && !t.classList.contains("gone"));
+          const t = isPhonics ? live.find((x) => needed.slice(pos).some((c) => c.text === x.tbCard.text))
+            : live.find((x) => same(x.tbCard.text, needed[pos].text));
+          if (!t) break;
+          await f.tap(t);
+        }
       });
 
       // ---------- Sound effects ----------

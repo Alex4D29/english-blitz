@@ -123,6 +123,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 10000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -136,7 +137,7 @@
       const { tone, sweep, noise } = ctx.sfx;
 
       // ---------- Content: rows[r] = [{ text, kind, right, spoken }] (ABC: half the rounds are capital → lowercase) ----------
-      const { cardText, prompt, answer, rows } = ctx.choiceRows(R, N, { lowercase: true });
+      const { cardText, prompt, answer, rows, target } = ctx.choiceRows(R, N, { lowercase: true });
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -343,6 +344,18 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.reveal(card);
+
+
+      // Tutorial: point at the card, then hop onto the right pad of each row in turn.
+      ctx.tutorial(target, async (f) => {
+        await f.point(card);
+        for (let r = 0; r < R; r++) {
+          await f.until(() => row === r - 1 && !jump, 4000);
+          await f.tap(pads[r].find((p) => p.item.right).el);
+        }
+      });
 
       return function cleanup() {
         done = true;

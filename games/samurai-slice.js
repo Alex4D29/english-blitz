@@ -168,7 +168,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000,
-    input: "slice", // frame shows SLICE! under the instruction
+    input: "slice",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -182,9 +183,10 @@
 
       // ---------- Content: what the samurai shows and what each bandit holds ----------
       // foe: { text, kind: "letter" | "pic" | "word", right, spoken }
-      let samText, samKind, prompt, answer, foes;
+      let samText, samKind, prompt, answer, foes, answerItem; // answerItem: the list item this round is about
       if (type === "letter") {
         const target = ctx.items[0];
+        answerItem = target;
         const upper = Math.random() < 0.5; // samurai capital → bandits lowercase, and vice versa
         // I and l look the same across cases, so never put them together.
         const il = (a, b) => [a, b].map((x) => x.text.toUpperCase()).sort().join("") === "IL";
@@ -197,6 +199,7 @@
       } else if (type === "phonics") {
         const pool = ctx.items.filter((it) => ctx.phonics.pics(it).length);
         const target = pool[0];
+        answerItem = target;
         const set = ctx.phonics.set(target, 1, n - 1);
         const right = set.right[0];
         samText = target.text.toUpperCase();
@@ -207,6 +210,7 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const target = pool[0];
+        answerItem = target;
         const picks = [];
         for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
           if (picks.length >= n - 1) break;
@@ -218,6 +222,7 @@
         foes = [target, ...picks].map((o) => ({ text: o.emoji, kind: "pic", right: o === target, spoken: o.say || o.text }));
       } else { // hfw: the samurai only hears the word
         const target = ctx.items[0];
+        answerItem = target;
         samText = TEXT.listen;
         samKind = "listen";
         prompt = answer = target.say || target.text;
@@ -514,6 +519,21 @@
       const popSound = () => { [0, 0.06, 0.13].forEach((d) => noise(0.08, "bandpass", 1800, 600, 0.35, d)); };
       const clank = () => { tone(880, 0.07, "square", 0.12); tone(622, 0.16, "square", 0.1, 0.05); noise(0.06, "highpass", 3000, 2000, 0.25); };
       const sadSound = () => sweep(520, 220, 0.5, "triangle", 0.14);
+
+      // Tutorial: point at the samurai's plate, then swipe through the right bandit, straight out from
+      // the samurai. (Neighbours sit beside it on the ring, so a swipe across the ring can catch one first.)
+      const rightFoe = items.find((x) => x.right);
+      const across = (k) => () => { // a point on the swipe line, k = -1 (inner end) … 1 (outer end), in ctx.root px
+        const w = wrap.getBoundingClientRect(), g = ctx.root.getBoundingClientRect();
+        const dx = rightFoe.x - cx, dy = rightFoe.y - cy, len = Math.hypot(dx, dy) || 1;
+        const r = Math.max(rightFoe.hw, rightFoe.hh) * 1.4;
+        return { x: w.left - g.left + rightFoe.x + (dx / len) * r * k, y: w.top - g.top + rightFoe.y + (dy / len) * r * k };
+      };
+      ctx.tutorial(answerItem, async (f) => {
+        await f.point(sam.querySelector(".ss-plate"));
+        await f.point(rightFoe.el, 700);
+        await f.slice(across(-1), across(1));
+      });
 
       return function cleanup() {
         done = true;

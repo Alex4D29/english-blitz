@@ -194,7 +194,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc", "hfw"],
     duration: 12000, // cast, wait for a bite, maybe a wrong fish and a second cast
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -715,6 +716,21 @@
       measure();
       ctx.say(prompt);
       ctx.raf(frame);
+
+
+      // Tutorial: point at the monster and the fish it wants, cast right onto that fish, and tap it
+      // when it bites. (If another fish gets there first, let it swim off and cast again.)
+      ctx.tutorial(target, async (f) => {
+        const tf = fish.find((x) => x.item === target);
+        await f.point(mon, 900);
+        for (let n = 0; n < 4 && !done; n++) {
+          await f.point(tf.el, 700);
+          await f.tap(tf.el);
+          if (!(await f.until(() => active && active.state === "bite", 5000))) continue;
+          if (active !== tf) { await f.until(() => !active || active.state !== "bite", 3000); continue; }
+          await f.tap(tf.el);
+        }
+      });
 
       return function cleanup() {
         done = true;

@@ -137,6 +137,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 9000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -148,9 +149,10 @@
 
       // ---------- Content ----------
       // hidden: what's under the puzzle; opts: [{ text, right, spoken }]
-      let hidden, hiddenKind, answer, opts, optKind;
+      let hidden, hiddenKind, answer, opts, optKind, answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const pic = ctx.pick(ctx.phonics.pics(letter));
         hidden = pic.emoji; hiddenKind = "pic";
         answer = TEXT.answer(letterName(letter), pic.word);
@@ -158,18 +160,21 @@
         optKind = "letter";
       } else if (type === "cvc") {
         const target = ctx.items.find((it) => it.emoji) || ctx.items[0];
+        answerItem = target;
         hidden = target.emoji; hiddenKind = "pic";
         answer = target.say || target.text;
         opts = ctx.pickOptions(target, n).map((o) => ({ text: o.text, right: o === target }));
         optKind = "word";
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         hidden = target.text; hiddenKind = "word";
         answer = target.say || target.text;
         opts = ctx.pickOptions(target, n).map((o) => ({ text: o.text, right: o === target }));
         optKind = "word";
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         hidden = target.text; hiddenKind = "letter";
         answer = target.word ? TEXT.answer(letterName(target), target.word) : letterName(target);
         opts = ctx.pickOptions(target, n).map((o) => ({ text: o.text, right: o === target }));
@@ -247,7 +252,7 @@
 
       // ---------- Timeline ----------
       let done = false, locked = true;
-      const T = ctx.timeLimit;
+      const T = ctx.demo ? ctx.paceMs : ctx.timeLimit; // (a tutorial runs at the normal pace)
       const lockMs = Math.max(1000, Math.min(1500, T * 0.35));
       const order = ctx.shuffle(pieces.slice());
       const removable = order.slice(0, pieces.length - 1); // the last piece always stays on
@@ -315,6 +320,15 @@
         if (i >= 0 && i < buttons.length) { e.preventDefault(); choose(buttons[i]); }
       }
       document.addEventListener("keydown", onKey);
+
+
+      // Tutorial: watch the puzzle as pieces come off, then (once the answers wake up and enough
+      // shows) tap the right one.
+      ctx.tutorial(answerItem, async (f) => {
+        await f.point(board, Math.max(1200, T * 0.4));
+        await f.until(() => !locked, 3000);
+        await f.tap(buttons.find((b) => b.prOpt.right));
+      });
 
       return function cleanup() {
         done = true;

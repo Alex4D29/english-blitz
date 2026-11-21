@@ -174,7 +174,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc"], // needs a picture for every item
     duration: 9000, // two timed stops
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -492,6 +493,20 @@
       hover();
       ctx.say(prompt);
       ctx.raf(frame);
+
+
+      // Tutorial: point at the monster, then at the prize it wants, then STOP when the claw is level
+      // with it, and STOP again when it's right above it.
+      ctx.tutorial(target, async (f) => {
+        const ti = cells.indexOf(target), tr = Math.floor(ti / cols), tc = ti % cols;
+        await f.point(mon, 900);
+        await f.point(prizeEls[ti], 900);
+        await f.move(stopBtn, 500);
+        if (!(await f.until(() => phase === "y" && Math.abs(cy - (tr + 0.5)) < 0.12, 6000))) return;
+        await f.tapNow(stopBtn);
+        await f.until(() => phase === "x" && performance.now() - lastStop > STOP_GAP_MS + 50 && Math.abs(cx - (LANE + tc + 0.5)) < 0.12, 6000);
+        await f.tapNow(stopBtn);
+      });
 
       return function cleanup() {
         done = true;

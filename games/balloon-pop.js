@@ -121,7 +121,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 6000,
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -418,6 +419,15 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+      // Phonics shows the letter on the card: show it big for a moment first (ctx.reveal). Otherwise the
+      // card is only 🔊 and the target is spoken, so there's nothing to show.
+      if (isPhonics || !ctx.canSpeak) ctx.reveal(speaker);
+
+      // Tutorial: point at the 🔊 card, then pop the right balloon (the finger follows it as it drifts).
+      ctx.tutorial(isPhonics ? letterItem : target, async (f) => {
+        await f.point(speaker);
+        await f.tap(() => balloons.find((b) => b.item === target).el.querySelector(".bp-body"));
+      });
 
       return function cleanup() {
         done = true;

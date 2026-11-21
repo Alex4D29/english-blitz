@@ -152,7 +152,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000,
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -398,6 +399,17 @@
       const snipSound = () => { noise(0.05, "highpass", 3000, 6000, 0.5); noise(0.05, "highpass", 2500, 5000, 0.4, 0.07); };
       const popSound = () => { [0, 0.06, 0.13].forEach((d) => noise(0.08, "bandpass", 1800, 600, 0.35, d)); };
       const boomSound = () => { noise(0.9, "lowpass", 1500, 60, 0.9); sweep(120, 35, 0.7, "sine", 0.6); };
+
+      // Tutorial: point at both ends of the matching pair, then cut its wire in the middle.
+      const matchWire = wires.find((w) => w.pair.match);
+      ctx.tutorial(type === "phonics" ? pool[0] : matchWire.pair.left, async (f) => {
+        await f.point(matchWire.leftEl, 800);
+        await f.point(matchWire.rightEl, 800);
+        await f.tap(() => {
+          const m = geometry(matchWire).m, b = board.getBoundingClientRect(), g = ctx.root.getBoundingClientRect();
+          return { x: m.x + b.left - g.left, y: m.y + b.top - g.top };
+        });
+      });
 
       return function cleanup() {
         done = true;

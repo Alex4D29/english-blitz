@@ -12,12 +12,21 @@
   const START_DELAY_MS = 500;
   const SPEEDUP_MS = 1100;
   const ROUND_MS = 700;
-  const INSTRUCTION_MS = 1300;  // long enough to see the TAP! / DRAG! hint move
+  const INSTRUCTION_MS = 1300;  // the game's icon and instruction
+  const START_LOCK_MS = 500;    // taps are ignored this long when a game starts, so a child already tapping from the banner doesn't hit an answer by accident
+  const REVEAL_MS = 1400;       // ctx.reveal: the target card big in the middle, then back into place (touches locked, clock waiting)
   const COACH_MS = 2400;        // how long ctx.hint's in-game TAP! / DRAG! stays up
   const STAMP_DELAY_MS = 250;   // let the game's own win/lose effect land first
   const FEEDBACK_MS = 1400;
   const SPEECH_WAIT_MS = 2500;  // max extra wait for speech to finish after feedback
   const END_MS = 1500;
+  // Tutorial (see runDemo): WATCH! banner → the game plays itself → YOUR TURN! banner → the real round.
+  const WATCH_MS = 1300;
+  const TURN_MS = 1800;
+  const DEMO_AFTER_MS = 1500;   // after the demo's win, let the game's own celebration play
+  const DEMO_MAX_MS = 24000;    // give up on a demo that never reports (a script that missed)
+  const DEMO_POINTER = 4242;    // pointerId of the ghost finger's events
+  const TUTORIAL_KEY = "wwe.tutorial";               // localStorage: the tutorial toggle
   const CONTENT_TYPES = ["letter", "phonics", "cvc", "hfw"];   // content picker order
   const DEFAULT_TYPES = ["letter", "phonics"];
   const TYPES_KEY = "wwe.content.v2";                // localStorage: the last ticked types
@@ -47,15 +56,18 @@
     title: $("#title"), settings: $("#settings"), play: $("#play"), results: $("#results"),
     practice: $("#practice"), howto: $("#howto"), content: $("#content"),
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
+    tutorialBtn: $("#tutorialBtn"),
     funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
+    pickerTitle: $("#pickerTitle"), pickerNote: $("#pickerNote"),
+    tutorialsBtn: $("#tutorialsBtn"), howtoWatchBtn: $("#howtoWatchBtn"),
     howtoIcon: $("#howtoIcon"), howtoName: $("#howtoName"), howtoSteps: $("#howtoSteps"),
     howtoTipsBox: $("#howtoTipsBox"), howtoTips: $("#howtoTips"),
     howtoPlayBtn: $("#howtoPlayBtn"), howtoBackBtn: $("#howtoBackBtn"),
     status: $("#status"), roundPill: $("#roundPill"), bar: $("#bar"),
-    game: $("#game"), banner: $("#banner"), stamp: $("#stamp"), hint: $("#banner .hint"),
+    game: $("#game"), banner: $("#banner"), stamp: $("#stamp"),
     resTitle: $("#resTitle"), stars: $("#stars"), resStats: $("#resStats"), record: $("#record"),
     againBtn: $("#againBtn"), menuBtn: $("#menuBtn"),
   };
@@ -66,6 +78,10 @@
     practiceGame: null,         // the game Practice mode is playing
     types: loadTypes(),         // content types ticked on the picker: "letter", "phonics", "cvc", "hfw"
     pendingMode: null,          // the mode button pressed before the content picker
+    tutorial: C.storage.get(TUTORIAL_KEY, true) !== false, // show each game once before it's played (Fun, Challenge)
+    seen: new Set(),            // games whose tutorial this run has already shown
+    forceDemo: null,            // a game id whose tutorial the next round must show (Tutorials menu)
+    picker: "practice",         // what the game grid is for: "practice" or "tutorial"
     phase: "idle",              // idle | transition | playing | feedback | over | paused
     round: 0,
     lives: 0,
@@ -198,15 +214,6 @@
     if (r < 1) return 1;
     return Math.min(m.maxSpeed, 1 + Math.floor((r - 1) / m.speedUpEvery) * m.speedStep);
   }
-  // The TAP! / DRAG! hint under the instruction, from the game's `input`.
-  function setHint(game) {
-    const kind = T.input[game.input] ? game.input : "";   // "tap", "drag" or "slice"
-    els.hint.hidden = !kind;
-    if (!kind) return;
-    els.hint.className = "hint " + kind;
-    els.hint.querySelector(".hint-icon").textContent = T.inputIcon;
-    els.hint.querySelector(".hint-word").textContent = T.input[kind];
-  }
 
   // ---------- In-game coach (ctx.hint) ----------
   // A big 👆 TAP! / DRAG! shown for a moment over the game itself, where the
@@ -316,6 +323,11 @@
       els.status.setAttribute("aria-label", T.progressLabel(Math.max(1, state.round), m.totalGames));
       els.roundPill.hidden = true; // the pips already show progress
     }
+    if (state.phase === "demo") { // the game is playing itself: say so where the round number usually is
+      els.roundPill.hidden = false;
+      els.roundPill.textContent = T.watchPill;
+    }
+    els.roundPill.classList.toggle("watch", state.phase === "demo");
   }
 
   // ---------- Round loop ----------
@@ -335,6 +347,7 @@
     state.coach = null;
     els.game.innerHTML = "";
     els.game.classList.remove("locked");
+    document.body.classList.remove("demo");
   }
 
   function clearRound() {
@@ -372,6 +385,10 @@
     setBar(1);
     renderHud();
 
+    // Tutorial: the first time a run meets a game, it plays itself once before the child's turn.
+    const demo = !!game.tutorial && (state.forceDemo === game.id || (state.tutorial && !isPractice() && !state.seen.has(game.id)));
+    state.forceDemo = null;
+
     let t = 0;
     if (speedUp) {
       later(() => { shout(els.banner, T.speedUp, "speed"); C.sfx.speedUp(); }, t);
@@ -382,7 +399,6 @@
       t += ROUND_MS;
     }
     later(() => {
-      setHint(game);
       // The game's picture above its title, so non-readers can tell which game is coming.
       els.banner.querySelector(".banner-icon").textContent = game.icon || "";
       shout(els.banner, instructionFor(game, list), "instruction");
@@ -394,32 +410,335 @@
     later(() => {
       document.body.classList.remove("flash");
       els.banner.hidden = true;
-      startGame(game, list);
+      if (demo) runDemo(game, list); else startGame(game, list);
     }, t);
   }
 
-  function startGame(game, list) {
+  // ---------- Tutorial ----------
+  // WATCH! → the game starts at 1× with touches locked, and its `tutorial(ctx, f)` script drives a
+  // ghost finger (f) that points at the prompt and does the right move with real pointer events,
+  // so the game's own code wins the round → YOUR TURN! → the real round, with a different answer.
+  function runDemo(game, list) {
+    state.seen.add(game.id);
+    els.banner.querySelector(".banner-icon").textContent = "👀";
+    shout(els.banner, T.watch, "watch");
+    restartAnim(els.banner.querySelector(".banner-icon"));
+    C.sfx.whoosh();
+    C.say(T.spoken.watch);
+    later(() => {
+      els.banner.hidden = true;
+      startGame(game, list, { demo: true });
+    }, WATCH_MS);
+  }
+
+  function finishDemo(game, list, avoid) {
+    endGame();
+    state.phase = "transition";
+    renderHud();
+    setBar(1);
+    // A loud, obvious switch: 🙋 YOUR TURN! with a flash and a fanfare.
+    els.banner.querySelector(".banner-icon").textContent = "🙋";
+    shout(els.banner, T.yourTurn, "turn");
+    restartAnim(els.banner.querySelector(".banner-icon"));
+    document.body.classList.add("flash");
+    C.sfx.speedUp();
+    C.say(T.spoken.yourTurn);
+    later(() => document.body.classList.remove("flash"), 400);
+    later(() => {
+      els.banner.hidden = true;
+      startGame(game, list, { avoid });
+    }, TURN_MS);
+  }
+
+  // The ghost finger for one demo round. Targets are an element, { x, y } px inside #game,
+  // or a function returning either (read every frame, so the finger follows moving things).
+  function demoFinger(ctx) {
+    const finger = document.createElement("div");
+    finger.className = "demo-finger";
+    finger.setAttribute("aria-hidden", "true");
+    finger.innerHTML = `<span>${T.inputIcon}</span>`;
+    let at = null; // where the fingertip is, px inside #game
+    let ring = null, ringOn = null;
+
+    const gameBox = () => els.game.getBoundingClientRect();
+    const resolve = (t) => {
+      const v = typeof t === "function" ? t() : t;
+      if (!v) return null;
+      if (v.getBoundingClientRect) {
+        const r = v.getBoundingClientRect(), g = gameBox();
+        return { x: r.left + r.width / 2 - g.left, y: r.top + r.height / 2 - g.top };
+      }
+      return typeof v.x === "number" ? { x: v.x, y: v.y } : null;
+    };
+    const elementOf = (t) => { const v = typeof t === "function" ? t() : t; return v && v.getBoundingClientRect ? v : null; };
+    const place = () => {
+      if (!at) return;
+      if (!finger.isConnected) els.game.appendChild(finger);
+      finger.style.left = `${Math.round(at.x)}px`;
+      finger.style.top = `${Math.round(at.y)}px`;
+    };
+    // A glowing ring that hugs an element (and follows it).
+    const showRing = (t) => {
+      ringOn = t;
+      if (!ring) { ring = document.createElement("div"); ring.className = "demo-ring"; ring.setAttribute("aria-hidden", "true"); }
+      els.game.appendChild(ring);
+      const track = () => {
+        if (ringOn !== t || !ring.isConnected) return;
+        const el = elementOf(t);
+        if (el) {
+          const r = el.getBoundingClientRect(), g = gameBox();
+          Object.assign(ring.style, {
+            left: `${r.left - g.left - 8}px`, top: `${r.top - g.top - 8}px`,
+            width: `${r.width + 16}px`, height: `${r.height + 16}px`,
+          });
+        }
+        ctx.raf(track);
+      };
+      track();
+    };
+    const hideRing = () => { ringOn = null; if (ring) ring.remove(); };
+    const wait = (ms) => new Promise((done) => ctx.later(done, ms));
+    // Glide the fingertip to a (possibly moving) target over `ms`.
+    const glide = (t, ms) => new Promise((done) => {
+      const p0 = at || (() => { const g = gameBox(); return { x: g.width * 0.5, y: g.height + 40 }; })();
+      const t0 = performance.now();
+      const step = () => {
+        const p1 = resolve(t) || p0;
+        const k = Math.min(1, (performance.now() - t0) / ms);
+        const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // ease in-out
+        at = { x: p0.x + (p1.x - p0.x) * e, y: p0.y + (p1.y - p0.y) * e };
+        place();
+        if (k < 1) ctx.raf(step); else done();
+      };
+      step();
+    });
+    // Real pointer events, so the game reacts exactly as it would to a child. Like a real touch,
+    // every event goes to the element the press started on.
+    let down = null;
+    const fire = (type, el, p) => {
+      const g = gameBox();
+      el.dispatchEvent(new PointerEvent(type, {
+        bubbles: true, cancelable: true, composed: true, pointerId: DEMO_POINTER, pointerType: "touch", isPrimary: true,
+        clientX: g.left + p.x, clientY: g.top + p.y, button: 0, buttons: type === "pointerup" ? 0 : 1,
+        width: 20, height: 20, pressure: type === "pointerup" ? 0 : 0.5,
+      }));
+    };
+    const hitAt = (p, fallback) => {
+      const g = gameBox();
+      els.game.classList.remove("locked"); // a locked #game is invisible to elementFromPoint
+      finger.hidden = true;
+      if (ring) ring.hidden = true;
+      const el = document.elementFromPoint(g.left + p.x, g.top + p.y);
+      finger.hidden = false;
+      if (ring) ring.hidden = false;
+      els.game.classList.add("locked");
+      return el && els.game.contains(el) && el !== els.game ? el : fallback || el;
+    };
+    const press = (t) => {
+      at = resolve(t) || at;
+      place();
+      finger.classList.add("press");
+      const ripple = document.createElement("div");
+      ripple.className = "demo-ripple";
+      ripple.style.left = `${at.x}px`;
+      ripple.style.top = `${at.y}px`;
+      els.game.appendChild(ripple);
+      ctx.later(() => ripple.remove(), 500);
+      down = hitAt(at, elementOf(t));
+      if (down) fire("pointerdown", down, at);
+    };
+    const release = () => {
+      finger.classList.remove("press");
+      if (down) fire("pointerup", down, at);
+      down = null;
+    };
+    // Drag from where the finger is to t over ms, with a pointermove every frame.
+    const sweep = (t, ms) => new Promise((done) => {
+      const p0 = at, t0 = performance.now();
+      const step = () => {
+        const p1 = resolve(t) || p0;
+        const k = Math.min(1, (performance.now() - t0) / ms);
+        const e = k * k * (3 - 2 * k);
+        at = { x: p0.x + (p1.x - p0.x) * e, y: p0.y + (p1.y - p0.y) * e };
+        place();
+        if (down) fire("pointermove", down, at);
+        if (k < 1) ctx.raf(step); else done();
+      };
+      ctx.raf(step);
+    });
+
+    return {
+      wait,
+      // Point at something (the prompt, the answer) with a glowing ring around it.
+      async point(t, ms = 1100) {
+        await glide(t, 550);
+        if (elementOf(t)) showRing(t);
+        await wait(ms);
+        hideRing();
+      },
+      async tap(t) {
+        if (elementOf(t)) showRing(t);
+        await glide(t, 600);
+        await wait(250);
+        press(t);
+        await wait(140);
+        release();
+        hideRing();
+        await wait(300);
+      },
+      // Drag `from` onto `to` (a tile into a mouth, a letter into a box). `hold`: keep the finger
+      // down on `to` that long, still following it (Ghost Hunt's beam on a drifting ghost).
+      async drag(from, to, ms = 1000, hold = 150) {
+        if (elementOf(from)) showRing(from);
+        await glide(from, 600);
+        await wait(250);
+        press(from);
+        hideRing();
+        await wait(150);
+        await sweep(to, ms);
+        await sweep(to, hold);
+        release();
+        await wait(300);
+      },
+      // Press at the first point and drag through the rest (tracing a letter, scrubbing a window).
+      // `ms` per segment.
+      async path(points, ms = 300) {
+        if (!points.length) return;
+        await glide(points[0], 600);
+        await wait(200);
+        press(points[0]);
+        for (const p of points.slice(1)) await sweep(p, ms);
+        release();
+        await wait(250);
+      },
+      // Ride along on a moving target, ringed, until test() is true (or `max` ms): "watch this one".
+      async follow(t, test, max = 10000) {
+        await glide(t, 450);
+        if (elementOf(t)) showRing(t);
+        const t0 = performance.now();
+        await new Promise((done) => {
+          const step = () => {
+            const p = resolve(t);
+            if (p) { at = p; place(); }
+            let ok = false;
+            try { ok = !!test(); } catch (err) { ok = false; }
+            if (ok || performance.now() - t0 > max) done(); else ctx.raf(step);
+          };
+          step();
+        });
+        hideRing();
+      },
+      // Press right now, where the finger already is (move it there first): for timing (Claw Catch's STOP).
+      async tapNow(t) {
+        press(t);
+        await wait(120);
+        release();
+      },
+      // Glide somewhere without touching (to wait beside the action).
+      async move(t, ms = 500) { await glide(t, ms); },
+      // Wait until test() is true (checked every frame), or `max` ms. Resolves to whether it happened.
+      until(test, max = 8000) {
+        return new Promise((done) => {
+          const t0 = performance.now();
+          const check = () => {
+            let ok = false;
+            try { ok = !!test(); } catch (err) { ok = false; }
+            if (ok) done(true);
+            else if (performance.now() - t0 > max) done(false);
+            else ctx.raf(check);
+          };
+          check();
+        });
+      },
+      // A quick swipe from one point to another (Samurai Slice).
+      async slice(from, to, ms = 260) {
+        await glide(from, 600);
+        await wait(300);
+        press(from);
+        await sweep(to, ms);
+        release();
+        await wait(300);
+      },
+      hide() { hideRing(); finger.remove(); },
+    };
+  }
+
+  // ctx.reveal: zoom the target card up to the middle of #game, hold it, then fly it back.
+  // It animates the card itself (so the game's own styles stay), on top of its own transform,
+  // and a huge spread shadow dims everything else.
+  function revealCard(card, later) {
+    const g = els.game.getBoundingClientRect(), r = card.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const cs = getComputedStyle(card);
+    const base = cs.transform === "none" ? "" : cs.transform;
+    const s = Math.max(1, Math.min(3.2, (g.width * 0.62) / r.width, (g.height * 0.42) / r.height));
+    const dx = g.left + g.width / 2 - (r.left + r.width / 2);
+    const dy = g.top + g.height * 0.45 - (r.top + r.height / 2);
+    const big = (k) => `translate(${dx}px, ${dy}px) ${base} scale(${s * k})`;
+    const own = cs.boxShadow === "none" ? "" : `, ${cs.boxShadow}`;
+    const dim = `0 0 0 200vmax rgba(0, 0, 0, .55)${own}`, clear = `0 0 0 200vmax rgba(0, 0, 0, 0)${own}`;
+    if (cs.position === "static") card.style.position = "relative"; // so z-index applies
+    card.classList.add("fx-reveal");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const anim = card.animate([
+      { transform: big(reduce ? 1 : 0.4), boxShadow: clear, opacity: reduce ? 1 : 0, offset: 0 },
+      { transform: big(1.08), boxShadow: dim, opacity: 1, offset: 0.12 },
+      { transform: big(1), boxShadow: dim, offset: 0.2 },
+      { transform: big(1), boxShadow: dim, offset: 0.72 },
+      { transform: base || "none", boxShadow: clear, offset: 1 },
+    ], { duration: REVEAL_MS, easing: "ease-in-out" });
+    C.sfx.tone(660, 0.1, "triangle", 0.12);
+    C.sfx.tone(990, 0.12, "triangle", 0.1, 0.08);
+    // Ended on a timer, not the animation's finish event (which stalls in throttled tabs), so the
+    // card can never be left big or untappable.
+    later(() => { if (anim.playState !== "finished") anim.cancel(); card.classList.remove("fx-reveal"); }, REVEAL_MS + 30);
+  }
+
+  function startGame(game, list, opts = {}) {
     const token = ++state.token;
     const alive = () => token === state.token;
-    const paceMs = Math.round((game.duration || BASE_MS) / state.speed);
-    const timeLimit = Math.max(paceMs, warmupMsFor(state.round));
+    const demo = !!opts.demo;
+    const speed = demo ? 1 : state.speed; // demos always play at 1×, so they're easy to follow
+    const paceMs = Math.round((game.duration || BASE_MS) / speed);
+    const timeLimit = demo ? Math.max(paceMs, 20000) : Math.max(paceMs, warmupMsFor(state.round));
     state.reported = false;
     state.gameActive = true;
-    state.phase = "playing";
-    state.current = { game, timeLimit, t0: performance.now(), onTimeout: null };
+    state.phase = demo ? "demo" : "playing";
+    // The clock starts after the start lock, so the lock doesn't eat into the time limit.
+    state.current = { game, timeLimit, t0: performance.now() + START_LOCK_MS, onTimeout: null, demo };
 
     // Items with several pictures (`pics`) get one picked at random for this round,
     // so "A" can be apple, ant or arrow. pickOptions uses these same objects.
-    const items = C.shuffle(list.items.map((it) => (it.pics && it.pics.length ? { ...it, ...C.pick(it.pics) } : it)));
+    let items = C.shuffle(list.items.map((it) => (it.pics && it.pics.length ? { ...it, ...C.pick(it.pics) } : it)));
+    // After a demo, the demo's answer goes to the back, so the child's round has a different one
+    // (games take their target from the front of ctx.items).
+    if (opts.avoid && opts.avoid.size) items = [...items.filter((it) => !opts.avoid.has(it.text)), ...items.filter((it) => opts.avoid.has(it.text))];
     const ctx = {
       root: els.game,
       items,
       list: { id: list.id, type: list.type },
-      speed: state.speed,
+      speed,
       timeLimit,
+      demo,         // true while the game plays itself in the tutorial
       // Show 👆 TAP! / DRAG! over the game for a moment (see showCoach). Drag games pass a target too.
-      hint: (from, to, opts) => { if (alive() && !state.reported) showCoach(game, from, to, opts, ctx.later); },
+      // Never during a demo: the ghost finger does the showing.
+      hint: (from, to, opts) => { if (alive() && !state.reported && !demo) showCoach(game, from, to, opts, ctx.later); },
       paceMs,       // the normal time limit; only differs from timeLimit in the Challenge warm-up
+      // Tutorial script (games with `tutorial: true` call it at the end of start; it does nothing
+      // outside a demo). `answer`: the item (or items) this round is about, so the child's round
+      // gets a different one. `run(f)`: async, drives the ghost finger: f.point(t), f.tap(t),
+      // f.drag(from, to), f.slice(from, to), f.wait(ms). See demoFinger.
+      tutorial: (answer, run) => { if (demo && alive()) demoScript = { answer, run }; },
+      // For games with one target shown in a card: call once at the end of start with that card.
+      // The card zooms up big in the middle (everything else dimmed), holds, then flies back into
+      // place. Touches stay locked and the clock waits until it's done. Returns its length in ms,
+      // so the game can hold back anything that would start moving (the first shot, mole, mouse).
+      reveal: (card) => {
+        if (!alive() || revealMs || !card) return 0;
+        revealMs = REVEAL_MS;
+        ctx.raf(() => revealCard(card, ctx.later));
+        return REVEAL_MS;
+      },
       audio: C.audioCtx(),
       canSpeak: C.canSpeak,
       get ended() { return !alive() || state.reported; },
@@ -461,6 +780,11 @@
       },
     };
 
+    // Start lock (see START_LOCK_MS): the game is on screen but ignores touches for a moment
+    // (longer when it reveals its target). A demo stays locked throughout: only the ghost finger plays.
+    els.game.classList.add("locked");
+
+    let demoScript = null, revealMs = 0;
     try {
       state.cleanup = game.start(ctx) || null;
     } catch (err) {
@@ -472,13 +796,37 @@
       later(nextRound, 300);
       return;
     }
+    const lockMs = Math.max(START_LOCK_MS, revealMs ? revealMs + 60 : 0); // the reveal starts a frame late and ends on a timer
+    state.current.t0 = performance.now() + lockMs; // the clock starts once the lock (and reveal) is over
+    if (!demo) ctx.later(() => { if (!state.reported) els.game.classList.remove("locked"); }, lockMs);
+
+    if (demo) {
+      // The demo's answer (by text) is kept out of the front of the child's round.
+      const answers = demoScript ? [].concat(demoScript.answer || []) : [];
+      const avoid = new Set(answers.filter(Boolean).map((it) => it.text));
+      state.current.finish = () => finishDemo(game, list, avoid);
+      if (!demoScript) { // the game has no script after all: straight to the child's turn
+        console.error(`${game.id} tutorial: no script`);
+        return state.current.finish();
+      }
+      document.body.classList.add("demo");
+      renderHud();
+      setBar(1);
+      const f = demoFinger(ctx);
+      ctx.later(async () => {
+        try { await demoScript.run(f); } catch (err) { console.error(`${game.id} tutorial:`, err); }
+        if (alive() && !state.reported) ctx.later(() => report(token, false), 3500); // the script missed (or the outcome is still animating)
+      }, Math.max(450, revealMs + 200));
+      ctx.later(() => report(token, false), DEMO_MAX_MS);
+      return; // no clock in a demo
+    }
     if (state.reported) return; // the game reported straight away
 
     let lastSec = Infinity;
     const tick = () => {
       if (!alive() || state.reported || state.current.frozenAt) return;
       const elapsed = performance.now() - state.current.t0;
-      setBar(1 - elapsed / timeLimit);
+      setBar(Math.min(1, 1 - elapsed / timeLimit));
       const secs = Math.ceil((timeLimit - elapsed) / 1000);
       if (secs < lastSec && secs <= 2 && secs > 0) C.sfx.tick();
       lastSec = secs;
@@ -494,8 +842,14 @@
     state.phase = "feedback";
     cancelAnimationFrame(state.timerRaf);
     hideCoach();
+    if (state.current.demo) { // a demo round: no score, no lives, no stamp
+      const finish = state.current.finish;
+      if (won) C.sfx.happy();
+      later(() => whenQuiet(finish), won ? DEMO_AFTER_MS : 300);
+      return;
+    }
     const { game, timeLimit, t0, onTimeout } = state.current;
-    const timeMs = Math.round(Math.min((state.current.frozenAt || performance.now()) - t0, timeLimit));
+    const timeMs = Math.max(0, Math.round(Math.min((state.current.frozenAt || performance.now()) - t0, timeLimit)));
     els.game.classList.add("locked");
     state.results.push({ gameId: game.id, won, timedOut, timeMs, timeLimit, speed: state.speed });
     if (timedOut) {
@@ -588,7 +942,7 @@
     clearRound();
     const mode = window.MODES[id];
     Object.assign(state, {
-      mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition",
+      mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(),
     });
     showScreen("play");
     setBar(1);
@@ -633,6 +987,22 @@
       b.addEventListener("click", () => toggleType(type, b));
       els.contentGrid.appendChild(b);
     });
+    // The tutorial toggle: Fun and Challenge only (Practice has its How to play card).
+    const tb = els.tutorialBtn, info = T.tutorial;
+    tb.hidden = state.pendingMode === "practice";
+    tb.setAttribute("aria-pressed", String(state.tutorial));
+    tb.setAttribute("aria-label", `${info.name}: ${info.label}`);
+    tb.querySelector(".nm").textContent = info.name;
+    tb.querySelector(".lbl").textContent = info.label;
+    tb.querySelector(".sample").textContent = info.sample;
+  }
+
+  function toggleTutorial() {
+    C.unlock();
+    state.tutorial = !state.tutorial;
+    els.tutorialBtn.setAttribute("aria-pressed", String(state.tutorial));
+    C.sfx.tone(state.tutorial ? 660 : 440, 0.08);
+    C.storage.set(TUTORIAL_KEY, state.tutorial);
   }
 
   function toggleType(type, btn) {
@@ -652,17 +1022,22 @@
   }
 
   function contentGo() {
-    if (state.pendingMode === "practice") showPractice();
+    if (state.pendingMode === "practice") showPractice("practice");
     else startMode(state.pendingMode || "fun");
   }
 
   // ---------- Practice: pick a game, read how to play, then play it on repeat ----------
-  function showPractice() {
+  // The game grid, for Practice (then the How to play card) or for Tutorials (straight to the demo).
+  function showPractice(kind = state.picker) {
     clearRound();
     state.phase = "idle";
-    setTheme(2);
+    state.picker = kind;
+    const tut = kind === "tutorial";
+    setTheme(tut ? 5 : 2);
+    els.pickerTitle.textContent = tut ? T.tutorials : T.practice;
+    els.pickerNote.textContent = tut ? T.pickTutorial : T.pickGame;
     els.practiceGrid.innerHTML = "";
-    C.MICROGAMES.filter((g) => !state.broken.has(g.id) && listsFor(g).length).forEach((game) => {
+    C.MICROGAMES.filter((g) => !state.broken.has(g.id) && listsFor(g).length && (!tut || g.tutorial)).forEach((game) => {
       const b = document.createElement("button");
       b.className = "game-card";
       const ico = document.createElement("span");
@@ -672,10 +1047,19 @@
       const name = document.createElement("span");
       name.textContent = nameFor(game);
       b.append(ico, name);
-      b.addEventListener("click", () => showHowTo(game));
+      b.addEventListener("click", () => (tut ? watchTutorial(game) : showHowTo(game)));
       els.practiceGrid.appendChild(b);
     });
     showScreen("practice");
+  }
+
+  // Play a game's tutorial right now (Tutorials menu, or 👀 WATCH on the How to play card),
+  // then let the child carry on with it in Practice. ✕ goes back to the grid it came from.
+  function watchTutorial(game) {
+    C.unlock();
+    state.practiceGame = game.id;
+    state.forceDemo = game.id;
+    startMode("practice");
   }
 
   function showHowTo(game) {
@@ -706,6 +1090,7 @@
       li.textContent = tip;
       els.howtoTips.appendChild(li);
     });
+    els.howtoWatchBtn.hidden = !game.tutorial;
     showScreen("howto");
   }
 
@@ -721,7 +1106,7 @@
   document.addEventListener("visibilitychange", () => {
     if (state.screen !== "play") return;
     if (document.hidden) {
-      if (state.phase === "transition" || state.phase === "playing") {
+      if (state.phase === "transition" || state.phase === "playing" || state.phase === "demo") {
         clearRound();
         if (state.round > state.results.length) state.round--;
         state.phase = "paused";
@@ -738,10 +1123,16 @@
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
   els.contentGoBtn.addEventListener("click", contentGo);
+  els.tutorialBtn.addEventListener("click", toggleTutorial);
   els.contentBackBtn.addEventListener("click", goTitle);
-  els.practiceBackBtn.addEventListener("click", () => (listParam ? goTitle() : chooseContent("practice")));
+  els.practiceBackBtn.addEventListener("click", () => (listParam || state.picker === "tutorial" ? goTitle() : chooseContent("practice")));
+  els.tutorialsBtn.addEventListener("click", () => { C.unlock(); showPractice("tutorial"); });
+  els.howtoWatchBtn.addEventListener("click", () => {
+    const game = C.MICROGAMES.find((g) => g.id === state.practiceGame);
+    if (game) watchTutorial(game);
+  });
   els.howtoPlayBtn.addEventListener("click", () => startMode("practice"));
-  els.howtoBackBtn.addEventListener("click", showPractice);
+  els.howtoBackBtn.addEventListener("click", () => showPractice());
   els.helpBtn.addEventListener("click", practiceHelp);
   els.settingsBtn.addEventListener("click", () => showScreen("settings"));
   els.backBtn.addEventListener("click", () => showScreen("title"));
@@ -757,7 +1148,7 @@
       els.loading.hidden = false;
       return;
     }
-    els.funBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = false;
+    els.funBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = false;
   }
   const files = window.GAME_FILES || [];
   let pending = files.length;

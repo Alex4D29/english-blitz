@@ -123,6 +123,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 8000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -136,9 +137,10 @@
 
       // ---------- Content ----------
       // ball: what the ball shows ("" = plain silver). slots: [{ text, right }]
-      let ball, prompt, answer, slots, slotKind = "letter";
+      let ball, prompt, answer, slots, slotKind = "letter", answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const pic = ctx.pick(ctx.phonics.pics(letter));
         ball = pic.emoji;
         prompt = pic.word;
@@ -146,18 +148,21 @@
         slots = ctx.pickOptions(letter, n).map((o) => ({ text: o.text.toUpperCase(), right: o === letter }));
       } else if (type === "cvc") {
         const target = ctx.items.find((it) => it.emoji) || ctx.items[0];
+        answerItem = target;
         ball = target.emoji;
         prompt = answer = target.say || target.text;
         slots = ctx.pickOptions(target, n).map((o) => ({ text: o.text, right: o === target }));
         slotKind = "word";
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         ball = "";
         prompt = answer = target.say || target.text;
         slots = ctx.pickOptions(target, n).map((o) => ({ text: o.text, right: o === target }));
         slotKind = "word";
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         const il = (o) => [o, target].map((x) => x.text.toUpperCase()).sort().join("") !== "IL";
         ball = target.text.toLowerCase();
         prompt = letterName(target);
@@ -452,6 +457,17 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+
+
+      // Tutorial: point at the ball, then the matching slot, trace its tube up to its funnel, and tap it.
+      ctx.tutorial(answerItem, async (f) => {
+        const rs = slots.findIndex((s) => s.right), fi = slotOfFunnel.indexOf(rs);
+        await f.point(ballEl, 900);
+        await f.point(slotEls[rs], 900);
+        await f.point(pathEls[fi], 900);
+        await f.tap(funnels[fi]);
+        await f.until(() => done, 4000); // the ball rides the tube for a couple of seconds
+      });
 
       return function cleanup() {
         done = true;

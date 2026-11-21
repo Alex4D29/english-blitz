@@ -127,6 +127,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 10000,
     input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -139,9 +140,10 @@
 
       // ---------- Content ----------
       // tags: { text, kind: "letter" | "pic" | "word", right }
-      let cardText, prompt, answer, tags;
+      let cardText, prompt, answer, tags, answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const set = ctx.phonics.set(letter, 1, n - 1);
         const right = set.right[0];
         cardText = letter.text.toUpperCase();
@@ -151,6 +153,7 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const target = pool[0];
+        answerItem = target;
         const picks = [];
         for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
           if (picks.length >= n - 1) break;
@@ -161,12 +164,14 @@
         tags = [target, ...picks].map((o) => ({ text: o.emoji, kind: "pic", right: o === target }));
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = ctx.canSpeak ? TEXT.listen : target.text;
         prompt = answer = target.say || target.text;
         const others = ctx.pickOptions(target, n + 1).filter((o) => o !== target).slice(0, n - 1);
         tags = [target, ...others].map((o) => ({ text: o.text, kind: "word", right: o === target }));
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = target.text;
         prompt = letterName(target);
         answer = target.word ? TEXT.answer(letterName(target), target.word) : prompt;
@@ -461,6 +466,21 @@
       });
 
       ctx.say(prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.reveal(card);
+
+
+      // Tutorial: point at the card, then drag the beam onto the right ghost and hold it there until
+      // it pops. (On touch the beam sits half a beam above the finger, so the finger aims below it.)
+      ctx.tutorial(answerItem, async (f) => {
+        const tg = ghosts.find((g) => g.tag.right);
+        const at = (p) => () => {
+          const r = room.getBoundingClientRect(), g0 = ctx.root.getBoundingClientRect();
+          return { x: r.left - g0.left + p().x, y: r.top - g0.top + p().y + R * 0.5 };
+        };
+        await f.point(card);
+        await f.drag(at(() => light), at(() => tg), 1300, 2600);
+      });
 
       return function cleanup() {
         done = true;

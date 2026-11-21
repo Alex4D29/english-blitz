@@ -147,6 +147,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 9000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -189,9 +190,10 @@
         }
         return best ? [best[0], best[1]] : [pool[0], lookAlike(pool[0])];
       }
-      let signText, signKind = "", prompt, oddSpoken, walkers;
+      let signText, signKind = "", prompt, oddSpoken, walkers, answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const set = ctx.phonics.set(letter, N - 1, 1);
         const pics = ctx.phonics.pics(letter);
         const good = [...Array(N - 1)].map((_, i) => (set.right[i] || pics[i % pics.length]));
@@ -203,12 +205,14 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const [target, odd] = twins(pool.length ? pool : ctx.items, ctx.items);
+        answerItem = odd;
         signText = target.emoji || target.text;
         prompt = target.say || target.text;
         oddSpoken = odd.say || odd.text;
         walkers = [...Array(N - 1)].map(() => ({ text: target.text, kind: "word", odd: false })).concat({ text: odd.text, kind: "word", odd: true });
       } else if (type === "hfw") {
         const [target, odd] = twins(ctx.items, ctx.items);
+        answerItem = odd;
         signText = target.text;
         signKind = "word";
         prompt = target.say || target.text;
@@ -216,6 +220,7 @@
         walkers = [...Array(N - 1)].map(() => ({ text: target.text, kind: "word", odd: false })).concat({ text: odd.text, kind: "word", odd: true });
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         const il = (o) => [o, target].map((x) => x.text.toUpperCase()).sort().join("") !== "IL";
         // The imposter must look different in lowercase too.
         // Lowercase shapes that look alike (a/o, b/d, m/n…); fall back to the list's own look-alikes.
@@ -419,6 +424,15 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+
+
+      // Tutorial: point at the WANTED poster, then tap the imposter once it's well on screen.
+      ctx.tutorial(answerItem, async (f) => {
+        const imp = ws.find((x) => x.w.odd);
+        await f.point(badSign, 1100);
+        await f.until(() => imp.x > W * 0.2 && imp.x < W * 0.7, 8000);
+        await f.tap(imp.el);
+      });
 
       return function cleanup() {
         done = true;

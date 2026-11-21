@@ -17,6 +17,7 @@
     <button class="mode-btn fun" id="funBtn" disabled><span class="ico" aria-hidden="true">🎈</span><span data-text="fun"></span></button>
     <button class="mode-btn challenge" id="challengeBtn" disabled><span class="ico" aria-hidden="true">🔥</span><span data-text="challenge"></span></button>
     <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span data-text="practice"></span></button>
+    <button class="mode-btn tutorials" id="tutorialsBtn" disabled><span class="ico" aria-hidden="true">👀</span><span data-text="tutorials"></span></button>
     <button class="chunky" id="settingsBtn">⚙️ <span data-text="settings"></span></button>
   </div>
   <p id="loading" data-text="loading"></p>
@@ -27,6 +28,8 @@
   <h1 class="shout" data-text="whatToPlay"></h1>
   <p class="card" data-text="pickContent"></p>
   <div id="contentGrid" role="group"></div>
+  <!-- Fun and Challenge only: show each new game once (the game plays itself), then "YOUR TURN!" -->
+  <button class="content-btn tutorial long" id="tutorialBtn" aria-pressed="true"><span class="tick" aria-hidden="true">✔</span><span class="what"><span class="nm"></span><span class="lbl"></span></span><span class="sample" aria-hidden="true"></span></button>
   <div class="buttons">
     <button class="chunky hot" id="contentGoBtn">▶️ <span data-text="play"></span></button>
     <button class="chunky" id="contentBackBtn">⬅️ <span data-text="back"></span></button>
@@ -35,8 +38,8 @@
 
 <!-- Practice: pick one game -->
 <section id="practice" class="screen scroll" hidden>
-  <h1 class="shout" data-text="practice"></h1>
-  <p class="card" data-text="pickGame"></p>
+  <h1 class="shout" id="pickerTitle" data-text="practice"></h1>
+  <p class="card" id="pickerNote" data-text="pickGame"></p>
   <div id="practiceGrid"></div>
   <button class="chunky" id="practiceBackBtn">⬅️ <span data-text="back"></span></button>
 </section>
@@ -55,6 +58,7 @@
   </div>
   <div class="buttons">
     <button class="chunky hot" id="howtoPlayBtn">▶️ <span data-text="play"></span></button>
+    <button class="chunky" id="howtoWatchBtn" hidden>👀 <span data-text="watch"></span></button>
     <button class="chunky" id="howtoBackBtn">⬅️ <span data-text="back"></span></button>
   </div>
 </section>
@@ -77,7 +81,7 @@
   <div id="timer" role="progressbar" aria-hidden="true"><div id="bar"></div></div>
   <main id="stage">
     <div id="game"></div>
-    <div id="banner" hidden><div class="banner-icon" aria-hidden="true"></div><div class="shout"></div><div class="hint" hidden><span class="hint-icon" aria-hidden="true"></span><span class="hint-word"></span></div></div>
+    <div id="banner" hidden><div class="banner-icon" aria-hidden="true"></div><div class="shout"></div></div>
     <div id="stamp" hidden><div class="shout"></div></div>
   </main>
 </div>

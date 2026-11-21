@@ -137,7 +137,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
     duration: 10000,
-    input: "drag", // frame shows DRAG! under the instruction
+    input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -461,6 +462,16 @@
       };
       const sweepSound = () => { noise(0.5, "bandpass", 800, 3500, 0.25); noise(0.35, "bandpass", 3000, 900, 0.2, 0.3); };
       const happySound = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, "triangle", 0.12, i * 0.07));
+
+      // Tutorial: point at the box, then drag each of its letters in (the first slowly, the rest quicker).
+      ctx.tutorial(boxItems, async (f) => {
+        await f.point(boxes[0].el.querySelector(".cr-front"));
+        let first = true;
+        for (const l of letters.filter((x) => x.item === boxes[0].item)) {
+          await f.drag(l.el, boxes[0].el.querySelector(".cr-hole"), first ? 1000 : 650);
+          first = false;
+        }
+      });
 
       return function cleanup() {
         done = true;

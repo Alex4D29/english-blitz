@@ -172,6 +172,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 12000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -185,9 +186,10 @@
 
       // ---------- Content ----------
       // goods / bads: [{ text, kind, spoken }]
-      let cardText, prompt, goods, bads, kind;
+      let cardText, prompt, goods, bads, kind, answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length >= K) || ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const set = ctx.phonics.set(letter, K, ND);
         cardText = letter.text.toUpperCase();
         prompt = letterName(letter);
@@ -197,6 +199,7 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const target = pool[0];
+        answerItem = target;
         const picks = [];
         for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
           if (picks.length >= ND) break;
@@ -209,6 +212,7 @@
         bads = picks.map((o) => ({ text: o.emoji, spoken: o.say || o.text }));
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = ctx.canSpeak ? TEXT.listen : target.text;
         prompt = target.say || target.text;
         kind = "word";
@@ -216,6 +220,7 @@
         bads = ctx.pickOptions(target, ND + 2).filter((o) => o !== target).slice(0, ND).map((o) => ({ text: o.text, spoken: o.say || o.text }));
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = target.text;
         prompt = letterName(target);
         kind = "letter";
@@ -257,7 +262,7 @@
       const sackV = 3.2 + 0.4 * (speed - 1);              // tiles per second
       const snipV = 1.15 + 1.45 * (speed - 1);             // 1.15 at 1× … 3.3 at 2.5×
       const wander = Math.max(0, 0.5 - 0.35 * (speed - 1)); // chance to take a random turn
-      const snipDelay = 1200 / Math.min(speed, 1.6);
+      let snipDelay = 1200 / Math.min(speed, 1.6); // + the reveal, below
 
       // Place targets as a short tour from the start, each within reach of the last.
       const reach = Math.max(3, Math.floor((sackV * (ctx.paceMs / 1000) * 0.55) / K));
@@ -602,6 +607,20 @@
       });
 
       ctx.say(prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      snipDelay += ctx.reveal(card); // the scissors wait for it
+      if (ctx.demo) snipDelay = Infinity; // in a tutorial the scissors only watch, so the demo is calm and always finishes
+
+
+      // Tutorial: point at the card, then tap each target in turn and let the sack walk there and eat it.
+      ctx.tutorial(answerItem, async (f) => {
+        await f.point(card);
+        for (const t of tiles.filter((x) => x.good)) {
+          if (done) break;
+          await f.tap(t.el);
+          await f.until(() => t.gone || done, 7000);
+        }
+      });
 
       return function cleanup() {
         done = true;

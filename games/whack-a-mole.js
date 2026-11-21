@@ -184,7 +184,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 11000,
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -584,7 +585,20 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
-      ctx.later(spawn, 450);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.later(spawn, 450 + ctx.reveal(card)); // the first mole waits for it
+
+
+      // Tutorial: point at the card, then whack 3 target moles as they pop up.
+      ctx.tutorial(target, async (f) => {
+        await f.point(card);
+        await f.move(field, 400);
+        const upTarget = () => holes.find((h) => isUp(h) && isTarget(h.item));
+        for (let n = 0; n < 8 && hits < 3 && !done; n++) { // (a mole can duck before the finger lands)
+          if (!(await f.until(upTarget, 6000))) break;
+          await f.tap(upTarget().el);
+        }
+      });
 
       return function cleanup() {
         done = true;

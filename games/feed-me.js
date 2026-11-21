@@ -120,7 +120,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc"], // needs a picture for every item
     duration: 6000,
-    input: "drag", // frame shows DRAG! under the instruction
+    input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -368,6 +369,15 @@
       const crunchSound = () => [0, 0.1, 0.2, 0.3].forEach((d) => noise(0.07, "bandpass", 2600, 700, 0.6, d));
       const yumSound = () => { sweep(330, 440, 0.18, "sine", 0.25); sweep(440, 660, 0.25, "sine", 0.25, 0.2); };
       const blehSound = () => { sweep(280, 70, 0.5, "sawtooth", 0.18); noise(0.25, "highpass", 1500, 5000, 0.4, 0.15); };
+
+      // Tutorial: point at the hungry picture, then drag the right tile into its mouth.
+      ctx.tutorial(target, async (f) => {
+        await f.point(wrap.querySelector(".fm-emoji"));
+        await f.drag(tiles.find((t) => t.fmItem === target), () => {
+          const m = mouthCenter(), g = ctx.root.getBoundingClientRect();
+          return { x: m.x - g.left, y: m.y - g.top };
+        }, 1100);
+      });
 
       return function cleanup() {
         done = true;

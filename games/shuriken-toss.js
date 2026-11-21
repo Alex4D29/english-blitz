@@ -179,7 +179,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 13000, // needs 3 hits, and targets have to be fired first
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -588,8 +589,23 @@
       };
 
       ctx.say(prompt);
-      ctx.later(fire, 500);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.later(fire, 500 + ctx.reveal(card)); // the first shot waits for it
       ctx.raf(frame);
+
+
+      // Tutorial: point at the card, then tap 3 target balls in flight (early enough to catch them).
+      ctx.tutorial(target, async (f) => {
+        await f.point(card);
+        await f.move(field, 400);
+        const live = () => flyers.find((b) => !b.gone && !b.claimed && rights.includes(b.item) && b.x > fw * 0.12 && b.x < fw * 0.55);
+        for (let n = 0; n < 8 && hits < 3 && !done; n++) {
+          if (!(await f.until(live, 7000))) break;
+          const b = live(), before = hits;
+          await f.tap(() => (b.gone ? null : b.el));
+          await f.until(() => hits > before || b.gone, 2000); // let the shuriken land
+        }
+      });
 
       return function cleanup() {
         done = true;

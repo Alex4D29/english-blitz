@@ -1,7 +1,8 @@
 // PIZZA CHEF — a hungry monster is waiting for its pizza. Each step there's a row of topping boxes, each
-// with a sign. Tap the right box: it pops open and a handful of toppings (tomato, mushroom, pepper,
-// olive…) fly onto the pizza. A wrong box has a smelly sock in it: the sock lands on the pizza, the
-// monster goes green ("EWW!"), the round is lost and the right box glows. After the last topping the
+// with a sign. Tap the right box: it pops open and copies of what's on its sign — the letters, words or
+// pictures themselves — fly onto the pizza as toppings (letters and words in a colour per step). A wrong
+// box's thing lands on the pizza in sickly olive, the monster goes green ("EWW!"), the round is lost and
+// the right box glows. After the last topping the
 // monster gobbles the whole pizza in one bite (BURP!). Content comes from ctx.choiceRows (ABC: half the
 // rounds are capital → lowercase). 3 toppings, 4 from 1.5×; 4 boxes from 2×.
 (function () {
@@ -11,12 +12,12 @@
     howTo: (list) => ({ en: {
       steps: [
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],
-        ["📦", "Tap the box with the same one. Toppings fly onto the pizza!"],
+        ["📦", "Tap the box with the same one. It goes on the pizza as a topping!"],
         ["🍕", "Topping by topping, make the pizza for the hungry monster!"],
       ],
       tips: [
         "Tap the card to hear it again.",
-        "A wrong box has a smelly sock in it… EWW! The right one glows.",
+        "Put a wrong one on the pizza and the monster says EWW! The right one glows.",
         "When the game speeds up, the pizza needs more toppings.",
       ],
     } }),
@@ -26,7 +27,8 @@
     cardLabel: "Hear it again",
     boxLabel: (t) => `Open the box ${t}`,
   };
-  const TOPPINGS = ["🍅", "🍄", "🫑", "🫒", "🌶️", "🧅", "🍍", "🌽"];
+  // Letters and words go on the pizza as toppings, one colour per step (pepperoni red, basil green…).
+  const SAUCE = ["#e8173c", "#1f9d3a", "#ff8a00", "#8a2be2"];
 
   const CSS = `
   .pz { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:10px; }
@@ -57,7 +59,10 @@
   .pz-pizza::before { content:""; position:absolute; inset:9%; border-radius:50%; background:#d9372a; }
   .pz-pizza::after { content:""; position:absolute; inset:15%; border-radius:46% 54% 50% 50%; background:#ffe08a; opacity:.9; }
   .pz-pizza.gone { transform:translateY(-120%) scale(.2); opacity:0; }
-  .pz-top-piece { position:absolute; font-size:calc(var(--pz) * .13); line-height:1; transform:translate(-50%, -50%); z-index:2; }
+  .pz-top-piece { position:absolute; font-size:calc(var(--pz) * .13); line-height:1; transform:translate(-50%, -50%); z-index:2; white-space:nowrap; }
+  .pz-top-piece.letter, .pz-fly.letter { font-size:calc(var(--pz) * .17); font-weight:900; color:var(--tc); -webkit-text-stroke:3px #111; paint-order:stroke fill; }
+  .pz-top-piece.word, .pz-fly.word { font-size:calc(var(--pz) * .085); font-weight:900; color:var(--tc); -webkit-text-stroke:2px #111; paint-order:stroke fill; }
+  .pz-fly.letter { font-size:2.4rem; } .pz-fly.word { font-size:1.3rem; }
   .pz-tray { flex:none; display:flex; gap:10px; justify-content:center; width:100%; padding:0 10px; }
   .pz-box { position:relative; width:var(--bx); height:calc(var(--bx) * .86); padding:0; border:5px solid #111; border-radius:8px; background:#e2b878; font:inherit; color:#111;
     box-shadow:0 6px 0 #111; cursor:pointer; touch-action:manipulation; display:flex; align-items:center; justify-content:center; animation:pz-in .3s cubic-bezier(.2,1.8,.4,1) both; }
@@ -94,6 +99,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 10000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -102,7 +108,6 @@
       const R = speed >= 1.5 ? 4 : 3, N = speed >= 2 ? 4 : 3;
       const { tone, sweep, noise } = ctx.sfx;
       const C = ctx.choiceRows(R, N, { lowercase: true });
-      const toppings = ctx.shuffle(TOPPINGS.slice()).slice(0, R);
 
       const wrap = document.createElement("div");
       wrap.className = "pz";
@@ -155,8 +160,11 @@
         });
       }
 
-      // Throw `emoji` from the box onto the pizza `count` times; each lands somewhere on the cheese.
-      function throwOnto(fromEl, emoji, count, then) {
+      // Throw copies of `item` (its letter, word or picture) from the box onto the pizza `count` times;
+      // each lands somewhere on the cheese. Letters and words are "sauce" coloured: a colour per step.
+      function throwOnto(fromEl, item, count, color, then) {
+        const emoji = item.text;
+        const style = (el) => { el.classList.add(item.kind); el.style.setProperty("--tc", color); };
         const fr = fromEl.getBoundingClientRect(), pr = pizza.getBoundingClientRect();
         let landed = 0;
         for (let k = 0; k < count; k++) {
@@ -165,6 +173,7 @@
           const f = document.createElement("div");
           f.className = "pz-fly";
           f.textContent = emoji;
+          style(f);
           f.style.left = `${fr.left + fr.width / 2}px`; f.style.top = `${fr.top + fr.height / 2}px`;
           document.body.appendChild(f);
           const dx = pr.left + pr.width * tx - (fr.left + fr.width / 2), dy = pr.top + pr.height * ty - (fr.top + fr.height / 2);
@@ -179,8 +188,9 @@
             const p = document.createElement("div");
             p.className = "pz-top-piece";
             p.textContent = emoji;
+            style(p);
             p.style.left = `${tx * 100}%`; p.style.top = `${ty * 100}%`;
-            p.style.transform = `translate(-50%, -50%) rotate(${(Math.random() - 0.5) * 120}deg)`;
+            p.style.transform = `translate(-50%, -50%) rotate(${(Math.random() - 0.5) * (item.kind === "pic" ? 120 : 50)}deg)`; // letters stay readable
             pizza.appendChild(p);
             noise(0.04, "bandpass", 1200, 800, 0.15); // plop
             if (++landed === count && then) then();
@@ -197,7 +207,7 @@
         noise(0.08, "highpass", 1500, 3000, 0.2); // box flap
         if (b.item.right) {
           if (b.item.kind === "pic") ctx.say(b.item.spoken);
-          throwOnto(b.el, toppings[step], 4, () => {
+          throwOnto(b.el, b.item, b.item.kind === "word" ? 3 : 4, SAUCE[step % SAUCE.length], () => {
             if (done || ctx.ended) return; // time ran out mid-throw
             step++;
             busy = false;
@@ -207,7 +217,7 @@
         } else {
           done = true;
           ctx.lose();
-          throwOnto(b.el, "🧦", 1, () => {
+          throwOnto(b.el, b.item, 2, "#7f8c3a", () => { // the wrong one, in a sickly olive
             mon.classList.add("eww");
             say(TEXT.eww);
             sweep(500, 200, 0.4, "sawtooth", 0.12); // eww
@@ -255,6 +265,17 @@
 
       showStep();
       ctx.say(C.prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.reveal(card);
+
+      // Tutorial: point at the card, then at each step tap the right one once the game is ready for it.
+      ctx.tutorial(C.target, async (f) => {
+        await f.point(card);
+        for (let r = 0; r < R; r++) {
+          await f.until(() => !busy && step === r && boxes.length && C.rows[r].includes(boxes[0].item) && boxes[0].el.isConnected, 5000);
+          await f.tap(() => boxes.find((o) => o.item.right).el);
+        }
+      });
       return () => { done = true; document.querySelectorAll(".pz-fly").forEach((f) => f.remove()); document.removeEventListener("keydown", onKey); };
     },
   });

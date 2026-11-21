@@ -218,7 +218,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
     duration: 7000, // tracing takes longer than a tap
-    input: "drag", // frame shows DRAG! under the instruction
+    input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -333,7 +334,7 @@
       })();
 
       // ---------- Ghost finger: shows the first stroke once ----------
-      if (speed < 1.5 && !reduceMotion) {
+      if (speed < 1.5 && !reduceMotion && !ctx.demo) { // (a tutorial has its own finger)
         const path = dots[0];
         const ghost = svgEl("text", { class: "tl-ghost", x: 0, y: 0 }, svg);
         ghost.textContent = "👆";
@@ -579,6 +580,22 @@
         for (let i = 0; i < 3; i++) noise(0.08, "bandpass", 1800, 600, 0.45, i * 0.09);
         tone(90, 0.2, "square", 0.15);
       }
+
+
+      // Tutorial: point at the monster, then trace each stroke through its dots.
+      ctx.tutorial(item, async (f) => {
+        const at = (dt) => () => { // a letter-box point → px in ctx.root
+          const m = svg.getScreenCTM(), g = ctx.root.getBoundingClientRect();
+          const p = svg.createSVGPoint(); p.x = dt.x; p.y = dt.y;
+          const q = p.matrixTransform(m);
+          return { x: q.x - g.left, y: q.y - g.top };
+        };
+        await f.point(svg, 900);
+        for (const stroke of dots) {
+          if (done) break;
+          await f.path(stroke.map(at), Math.max(30, 900 / stroke.length));
+        }
+      });
 
       return function cleanup() {
         done = true;

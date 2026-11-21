@@ -139,6 +139,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 11000,
     input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -151,9 +152,10 @@
       const { sweep, noise, tone } = ctx.sfx;
 
       // ---------- Content ----------
-      let cardText, prompt, answer, tags;
+      let cardText, prompt, answer, tags, answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const set = ctx.phonics.set(letter, 1, n - 1);
         const right = set.right[0];
         cardText = letter.text.toUpperCase();
@@ -163,6 +165,7 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const target = pool[0];
+        answerItem = target;
         const picks = [];
         for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
           if (picks.length >= n - 1) break;
@@ -173,12 +176,14 @@
         tags = [target, ...picks].map((o) => ({ text: o.emoji, kind: "pic", right: o === target }));
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = ctx.canSpeak ? TEXT.listen : target.text;
         prompt = answer = target.say || target.text;
         const others = ctx.pickOptions(target, n + 1).filter((o) => o !== target).slice(0, n - 1);
         tags = [target, ...others].map((o) => ({ text: o.text, kind: "word", right: o === target }));
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = target.text;
         prompt = letterName(target);
         answer = target.word ? TEXT.answer(letterName(target), target.word) : prompt;
@@ -463,6 +468,26 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.reveal(card);
+
+
+      // Tutorial: point at the card, then scrub the right pane back and forth until it's clean.
+      ctx.tutorial(answerItem, async (f) => {
+        const rp = panes.find((p) => p.tag.right);
+        const at = (fx, fy) => () => {
+          const gr = glass.getBoundingClientRect(), g0 = ctx.root.getBoundingClientRect();
+          return { x: gr.left - g0.left + rp.r.x + rp.r.w * fx, y: gr.top - g0.top + rp.r.y + rp.r.h * fy };
+        };
+        await f.point(card);
+        for (let pass = 0; pass < 3 && rp.state === "dirty" && !done; pass++) {
+          const zig = [];
+          for (let k = 0; k <= 8; k++) zig.push(at(k % 2 ? 0.85 : 0.15, 0.2 + (0.6 * k) / 8));
+          for (let k = 8; k >= 0; k--) zig.push(at(k % 2 ? 0.15 : 0.85, 0.25 + (0.5 * k) / 8));
+          await f.path(zig, 110);
+          await f.until(() => rp.state !== "dirty" || done, 400);
+        }
+      });
 
       return function cleanup() {
         done = true;

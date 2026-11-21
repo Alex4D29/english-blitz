@@ -168,7 +168,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "cvc", "hfw"],
     duration: 10000,
-    input: "tap",  // frame shows TAP! under the instruction
+    input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -466,6 +467,15 @@
         if (p) choose(p);
       }
       document.addEventListener("keydown", onKey);
+
+
+      // Tutorial: point at the card, ride along on the target's egg through the shuffle, then tap it.
+      ctx.tutorial(target, async (f) => {
+        const tp = pods.find((p) => p.item === target);
+        await f.point(card, 800);
+        await f.follow(tp.el, () => phase === "choose", 15000);
+        await f.tap(tp.el);
+      });
 
       return function cleanup() {
         phase = "done";

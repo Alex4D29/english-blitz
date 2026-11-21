@@ -154,6 +154,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 8000,
     input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -167,9 +168,10 @@
       // ---------- Content ----------
       // sign: HTML for the monster's sign. tissues: [{ text, kind, right }]. fill: the CVC blank's letter.
       const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-      let sign, prompt, answer, tissues, fill = null;
+      let sign, prompt, answer, tissues, fill = null, answerItem = null; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const set = ctx.phonics.set(letter, 1, n - 1);
         const right = set.right[0];
         sign = `<span class="big">${esc(letter.text.toUpperCase())}</span>`;
@@ -179,6 +181,7 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => /[aeiou]/.test(it.text));
         const target = pool.find((it) => it.emoji) || pool[0] || ctx.items[0];
+        answerItem = target;
         const vi = target.text.search(/[aeiou]/);
         fill = target.text[vi];
         const before = esc(target.text.slice(0, vi)), after = esc(target.text.slice(vi + 1));
@@ -189,6 +192,7 @@
         tissues = [fill, ...others].map((v) => ({ text: v, kind: "letter", right: v === fill }));
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         sign = `<span class="big">${esc(ctx.canSpeak ? TEXT.listen : target.text)}</span>`;
         if (!ctx.canSpeak) sign = `<span class="word">${esc(target.text)}</span>`;
         prompt = answer = target.say || target.text;
@@ -196,6 +200,7 @@
         tissues = [target, ...others].map((o) => ({ text: o.text, kind: "word", right: o === target }));
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         const il = (a, b) => [a, b].map((x) => x.text.toUpperCase()).sort().join("") === "IL";
         const others = ctx.pickOptions(target, n + 2).filter((o) => o !== target && !il(o, target)).slice(0, n - 1);
         sign = `<span class="big">${esc(target.text.toUpperCase())}</span>`;
@@ -467,6 +472,13 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+
+
+      // Tutorial: point at the monster's sign, then drag the right tissue onto its nose.
+      ctx.tutorial(answerItem, async (f) => {
+        await f.point(mon.querySelector(".sn-sign") || mon, 1000);
+        await f.drag(tEls.find((x) => x.snT.right), nose, 1000);
+      });
 
       return function cleanup() {
         done = true;

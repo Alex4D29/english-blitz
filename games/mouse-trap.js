@@ -125,6 +125,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 11000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -136,9 +137,10 @@
       const { tone, sweep, noise } = ctx.sfx;
 
       // ---------- Content ----------
-      let cardText, prompt, answer, signs;
+      let cardText, prompt, answer, signs, answerItem; // answerItem: the list item the round is about (tutorial)
       if (type === "phonics") {
         const letter = ctx.items.find((it) => ctx.phonics.pics(it).length) || ctx.items[0];
+        answerItem = letter;
         const set = ctx.phonics.set(letter, 1, nWrong);
         const right = set.right[0];
         cardText = letter.text.toUpperCase();
@@ -148,6 +150,7 @@
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const target = pool[0];
+        answerItem = target;
         const picks = [];
         for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
           if (picks.length >= nWrong) break;
@@ -158,12 +161,14 @@
         signs = [target, ...picks].map((o) => ({ text: o.emoji, kind: "pic", right: o === target }));
       } else if (type === "hfw") {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = ctx.canSpeak ? TEXT.listen : target.text;
         prompt = answer = target.say || target.text;
         const others = ctx.pickOptions(target, nWrong + 2).filter((o) => o !== target).slice(0, nWrong);
         signs = [target, ...others].map((o) => ({ text: o.text, kind: "word", right: o === target }));
       } else {
         const target = ctx.items[0];
+        answerItem = target;
         cardText = target.text;
         prompt = letterName(target);
         answer = target.word ? TEXT.answer(letterName(target), target.word) : prompt;
@@ -394,6 +399,21 @@
       document.addEventListener("keydown", onKey);
 
       ctx.say(prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      nextSpawn = performance.now() + 250 + ctx.reveal(card); // the first mouse waits for it
+
+
+      // Tutorial: point at the card, wait by the button, and press it when the right mouse is under the cage.
+      ctx.tutorial(answerItem, async (f) => {
+        await f.point(card);
+        await f.move(btn, 500);
+        const under = () => mice.find((m) => !m.caught && m.phase !== "gone" && m.sign.right && Math.abs(m.x - W / 2) < cw * 0.12);
+        for (let n = 0; n < 3 && !done; n++) {
+          if (!(await f.until(under, 12000))) break;
+          await f.tapNow(btn);
+          await f.wait(900);
+        }
+      });
 
       return function cleanup() {
         done = true;

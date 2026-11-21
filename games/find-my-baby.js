@@ -146,7 +146,8 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
     duration: 7000,
-    input: "drag", // frame shows DRAG! under the instruction
+    input: "drag",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -429,6 +430,13 @@
       // ---------- Sound effects ----------
       const hugSound = () => { [523, 659, 784].forEach((f, i) => tone(f, 0.16, "triangle", 0.12, i * 0.09)); sweep(784, 1175, 0.3, "sine", 0.15, 0.28); };
       const noSound = () => { tone(200, 0.16, "square", 0.12); tone(150, 0.25, "square", 0.12, 0.18); noise(0.15, "lowpass", 900, 200, 0.2); };
+
+
+      // Tutorial: point at the big monster's letter, then drag the right baby up to it.
+      ctx.tutorial(target, async (f) => {
+        await f.point(mon);
+        await f.drag(babies.find((b) => b.item === target).el, mon, 1100);
+      });
 
       return function cleanup() {
         done = true;

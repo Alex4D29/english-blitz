@@ -102,6 +102,7 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 10000,
     input: "tap",
+    tutorial: true, // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -251,6 +252,17 @@
       buildDoors(0);
       setBunny(W / 2, homeY, 0);
       ctx.say(C.prompt);
+      // Show the target big in the middle for a moment before play starts (ctx.reveal).
+      ctx.reveal(card);
+
+      // Tutorial: point at the card, then at each step tap the right one once the game is ready for it.
+      ctx.tutorial(C.target, async (f) => {
+        await f.point(card);
+        for (let r = 0; r < R; r++) {
+          await f.until(() => !busy && step === r && doors.length && C.rows[r].includes(doors[0].item) && doors[0].el.isConnected, 5000);
+          await f.tap(() => doors.find((o) => o.item.right).el);
+        }
+      });
       return () => { done = true; document.removeEventListener("keydown", onKey); };
     },
   });

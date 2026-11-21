@@ -103,6 +103,7 @@
   // R rows of N options, each row with exactly one right option, for a target from the pool.
   // Returns { cardText, listen, prompt, answer, rows }, where rows[r] is a shuffled array of
   // { text, kind: "letter" | "pic" | "word", right, spoken }.
+  // Also `target`: the list item the round is about (for ctx.tutorial).
   //   letter:  same-case look-alikes, or (when opts.lowercase and a coin flip) capital card → lowercase options
   //   phonics: the card is a letter; each row has a different picture that starts with it
   //   cvc:     the card is the word; the options are pictures
@@ -116,6 +117,7 @@
       const letter = pool.find((it) => startPics(it).length) || pool[0];
       const set = phonicsSet(pool, letter, R, (N - 1) * R);
       const rights = [...Array(R)].map((_, i) => set.right[i % set.right.length]);
+      out.target = letter;
       out.cardText = letter.text.toUpperCase();
       out.prompt = letterName(letter);
       out.answer = forWord(letterName(letter), rights[0].word);
@@ -127,6 +129,7 @@
     } else if (type === "cvc") {
       const pics = pool.filter((it) => it.emoji);
       const target = pics[0] || pool[0];
+      out.target = target;
       out.cardText = target.text;
       out.prompt = out.answer = target.say || target.text;
       const others = shuffle(pics.filter((o) => o !== target && o.emoji !== target.emoji));
@@ -138,6 +141,7 @@
       }
     } else if (type === "letter" && opts.lowercase && Math.random() < 0.5) {
       const target = pool[0];
+      out.target = target;
       out.cardText = target.text.toUpperCase();
       out.prompt = letterName(target);
       out.answer = target.word ? forWord(letterName(target), target.word) : out.prompt;
@@ -154,6 +158,7 @@
       const target = pool[0];
       const isHfw = type === "hfw";
       out.listen = isHfw && !!opts.canSpeak;
+      out.target = target;
       out.cardText = out.listen ? "🔊" : target.text;
       out.prompt = isHfw ? target.say || target.text : letterName(target);
       out.answer = !isHfw && target.word ? forWord(letterName(target), target.word) : out.prompt;
