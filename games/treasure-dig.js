@@ -33,12 +33,42 @@
     spotLabel: (t) => `Dig at ${t}`,
     answer: (spoken, word) => (word ? `${spoken} for ${word}` : spoken),
     boom: "BOOM!",
+    arr: "ARRR!",
+    pirateLabel: "Hear it again",
   };
 
   const CSS = `
   .td { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:8px; }
   /* The treasure map: parchment, a dotted path to a red X, and a big 🔊 */
-  .td-map { flex:none; position:relative; width:min(78%, 260px); height:78px; padding:0; border:5px solid #111; border-radius:12px; cursor:pointer; touch-action:manipulation;
+  /* The pirate: a silly teal monster beside the map. One big googly eye and an eye patch, a black tricorn
+     with a skull, a curly moustache, and a grin with a gold tooth. */
+  .td-top { flex:none; display:flex; align-items:flex-end; justify-content:center; gap:10px; width:100%; }
+  .td-pirate { position:relative; flex:none; width:96px; height:110px; transform-origin:50% 100%; }
+  .td-pbody { position:absolute; left:4%; right:4%; top:30%; bottom:0; background:#2bb5a0; border:4px solid #111; border-radius:46% 46% 34% 34%; }
+  .td-phat { position:absolute; left:-6%; right:-6%; top:6%; height:34%; background:#222; border:4px solid #111; border-radius:50% 50% 12% 12% / 70% 70% 12% 12%; z-index:2;
+    transform-origin:50% 100%; transition:transform .4s cubic-bezier(.3,1.5,.5,1); }
+  .td-phat::after { content:""; position:absolute; left:50%; top:22%; width:22%; aspect-ratio:1; margin-left:-11%; background:#fff; border:2px solid #111; border-radius:50% 50% 40% 40%; }
+  .td-peye { position:absolute; left:14%; top:42%; width:36%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
+  .td-peye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:td-goggle 1.1s ease-in-out infinite; }
+  .td-ppatch { position:absolute; right:14%; top:46%; width:28%; height:22%; background:#111; border-radius:40% 40% 50% 50%; z-index:1; }
+  .td-ppatch::before { content:""; position:absolute; left:-140%; right:-30%; top:-36%; height:14%; background:#111; transform:rotate(-14deg); }   /* the strap */
+  .td-pstache { position:absolute; left:22%; right:22%; top:68%; height:10%; z-index:2; border:4px solid #111; border-top:0; border-radius:0 0 50% 50%; background:#7a4a1c; }
+  .td-pmouth { position:absolute; left:28%; right:28%; top:76%; height:14%; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; overflow:hidden; z-index:1; }
+  .td-pmouth::after { content:""; position:absolute; left:30%; top:0; width:22%; height:46%; background:#ffd400; border:1px solid #111; }   /* a gold tooth */
+  .td-pirate.dig { animation:td-bob .14s ease-out; }
+  .td-pirate.yay { animation:td-hop .4s cubic-bezier(.2,1.6,.4,1) 3; }
+  .td-pirate.sooty .td-pbody, .td-pirate.sooty .td-peye { filter:brightness(.25); }
+  .td-pirate.sooty .td-peye i { animation:td-dizzy .45s linear infinite; }
+  .td-pirate.sooty .td-phat { transform:translate(30%, -90%) rotate(40deg); }   /* blown off */
+  .td-pirate.sad .td-pmouth { border-radius:999px 999px 4px 4px; height:9%; top:80%; }
+  .td-say { position:absolute; left:70%; top:-14px; z-index:5; padding:2px 8px; background:#fff; border:3px solid #111; border-radius:12px; font-size:1.1rem; white-space:nowrap;
+    animation:td-saypop .3s cubic-bezier(.2,1.8,.4,1) both; }
+  @keyframes td-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
+  @keyframes td-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
+  @keyframes td-bob { 50% { transform:translateY(3px) scaleY(.94); } }
+  @keyframes td-hop { 50% { transform:translateY(-22%); } }
+  @keyframes td-saypop { from { transform:scale(.2); } }
+  .td-map { flex:none; position:relative; width:min(62%, 240px); height:78px; padding:0; border:5px solid #111; border-radius:12px; cursor:pointer; touch-action:manipulation;
     background:#f3d9a4; background-image:radial-gradient(circle at 20% 30%, rgba(160,110,50,.25) 0 10%, transparent 11%), radial-gradient(circle at 80% 70%, rgba(160,110,50,.2) 0 12%, transparent 13%);
     box-shadow:0 6px 0 #111; transform:rotate(-2deg); font:inherit; }
   .td-map svg { position:absolute; inset:6px; width:calc(100% - 12px); height:calc(100% - 12px); }
@@ -144,6 +174,7 @@
     duration: 9000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    listening: true, // the target is only ever spoken: left out when listening games are off (Settings)
 
     start(ctx) {
       injectCss();
@@ -197,7 +228,25 @@
       const fx = document.createElement("div");
       fx.className = "td-fx";
       beach.appendChild(fx);
-      wrap.append(map, beach);
+      // The pirate stands beside the map (tap it to hear the target again, too).
+      const top = document.createElement("div");
+      top.className = "td-top";
+      const pirate = document.createElement("button");
+      pirate.className = "td-pirate";
+      pirate.style.cssText = "padding:0;border:0;background:none;font:inherit;cursor:pointer;touch-action:manipulation;";
+      pirate.setAttribute("aria-label", TEXT.pirateLabel);
+      pirate.innerHTML = '<div class="td-pbody"></div><div class="td-phat"></div><div class="td-peye"><i></i></div><div class="td-ppatch"></div>' +
+        '<div class="td-pstache"></div><div class="td-pmouth"></div>';
+      pirate.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
+      top.append(pirate, map);
+      wrap.append(top, beach);
+      function pirateSays(text) {
+        pirate.querySelector(".td-say")?.remove();
+        const s = document.createElement("div");
+        s.className = "td-say";
+        s.textContent = text;
+        pirate.appendChild(s);
+      }
       ctx.root.appendChild(wrap);
 
       const tilts = ["-4deg", "3deg", "-2deg", "4deg"];
@@ -250,6 +299,7 @@
         noise(0.05, "bandpass", 500 + d * 900, 800, 0.35);
         tone(200 + d * 500, 0.05, "square", 0.05);
         shovel(h);
+        pirate.classList.remove("dig"); void pirate.offsetWidth; pirate.classList.add("dig"); // it bobs along with the digging
         if (!reduceMotion) sand(h, 4);
         if (h.depth >= TAPS) found(h);
       }
@@ -285,6 +335,8 @@
       }
 
       function treasure(h) {
+        pirate.classList.add("yay");
+        pirateSays(TEXT.arr);
         ctx.win();
         const chest = document.createElement("div");
         chest.className = "td-chest rise";
@@ -361,6 +413,7 @@
         fx.appendChild(t);
         if (!reduceMotion) { beach.classList.add("flash"); wrap.classList.add("shake"); sand(h, 14); }
         h.el.classList.add("sooty");
+        pirate.classList.add("sooty"); // blackened, dizzy, hat blown off
         noise(0.9, "lowpass", 1500, 60, 0.9); sweep(120, 35, 0.7, "sine", 0.6); // BOOM
       }
       function showRight() {
@@ -368,7 +421,7 @@
       }
       function replay() { if (!done) ctx.say(prompt); }
 
-      ctx.onTimeout(() => { done = true; holes.forEach((x) => { x.el.classList.remove("live"); x.el.disabled = true; }); showRight(); ctx.say(answer); });
+      ctx.onTimeout(() => { done = true; pirate.classList.add("sad"); holes.forEach((x) => { x.el.classList.remove("live"); x.el.disabled = true; }); showRight(); ctx.say(answer); });
       function onKey(e) {
         const i = parseInt(e.key, 10) - 1;
         if (i >= 0 && i < holes.length) { e.preventDefault(); dig(holes[i]); }

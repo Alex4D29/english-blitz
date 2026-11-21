@@ -8,6 +8,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
+/* No accidental zooming (iPad Safari ignores user-scalable=no; see the gesture listeners in frame.js) */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   font-family: var(--font); font-weight: 900; color: var(--ink); background: var(--bg);
   overflow: hidden; touch-action: manipulation; overscroll-behavior: none;
@@ -347,3 +349,29 @@ body.demo #stage::before {
 .ask-buttons .chunky.hot { animation: pulse 1s ease-in-out infinite; } /* the last answer */
 .ask-yes.hot { background: #9c6bff; }
 @media (prefers-reduced-motion: reduce) { .ask-icon, .ask-buttons .chunky.hot { animation: none; } }
+
+/* ---------- A scroll bar you can see (updateScrollbar in frame.js) ---------- */
+.scrollbar { position: fixed; z-index: 50; top: max(14px, env(safe-area-inset-top)); bottom: max(14px, env(safe-area-inset-bottom)); right: 5px; width: 14px;
+  background: rgba(255, 255, 255, .55); border: 3px solid var(--ink); border-radius: 99px; pointer-events: none; }
+.scrollbar[hidden], .scrollhint[hidden] { display: none; }
+.scrollthumb { width: 100%; background: var(--ink); border-radius: 99px; }
+.scrollhint { position: fixed; z-index: 50; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); width: 54px; height: 54px; margin-left: -27px; padding: 0;
+  border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 4px 0 var(--ink); font-size: 1.6rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; animation: scroll-bob 1s ease-in-out infinite; }
+@keyframes scroll-bob { 50% { transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .scrollhint { animation: none; } }
+
+/* ---------- Settings ---------- */
+.set-card { width: min(100%, 440px); display: flex; flex-direction: column; gap: 14px; }
+.set-row { display: flex; align-items: center; gap: 12px; }
+.set-ico { font-size: 2rem; line-height: 1; }
+.set-ico.small { font-size: 1.4rem; }
+.set-name { flex: 1; font-size: clamp(1.2rem, 6vw, 1.6rem); }
+.set-toggle { min-width: 96px; padding: 10px 16px; border: 5px solid var(--ink); border-radius: 999px; box-shadow: 0 5px 0 var(--ink); font: inherit;
+  font-size: 1.3rem; cursor: pointer; touch-action: manipulation; background: #ddd; color: var(--ink); }
+.set-toggle[aria-pressed="true"] { background: var(--good); color: var(--paper); -webkit-text-stroke: 1px var(--ink); }
+.set-toggle:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.set-vol { display: flex; align-items: center; gap: 10px; padding-left: 44px; }
+.set-vol input { flex: 1; height: 36px; accent-color: #9c6bff; }
+.set-vol input:disabled { opacity: .4; }
+.set-note { margin: -4px 0 0; font-size: .95rem; font-weight: 700; line-height: 1.35; color: #444; }

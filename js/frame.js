@@ -21,12 +21,17 @@
   const SPEECH_WAIT_MS = 2500;  // max extra wait for speech to finish after feedback
   const END_MS = 1500;
   // Tutorial (see runDemo): WATCH! banner → the game plays itself → YOUR TURN! banner → the real round.
-  const WATCH_MS = 1300;
-  const TURN_MS = 1800;
-  const DEMO_AFTER_MS = 1500;   // after the demo's win, let the game's own celebration play
+  // The teacher found tutorials slow in Challenge, so everything a tutorial controls runs 1.5× faster:
+  // these banners, and every glide, pause, drag and swipe of the ghost finger (DEMO_PACE, in demoFinger).
+  // The games' own animations keep their normal speed.
+  const DEMO_PACE = 1.5;
+  const WATCH_MS = 870;
+  const TURN_MS = 1200;
+  const DEMO_AFTER_MS = 1000;   // after the demo's win, let the game's own celebration play
   const DEMO_MAX_MS = 24000;    // give up on a demo that never reports (a script that missed)
   const DEMO_POINTER = 4242;    // pointerId of the ghost finger's events
   const TUTORIAL_KEY = "wwe.tutorial";               // localStorage: the last 👀 Watch first? answer
+  const LISTENING_KEY = "wwe.listening";             // localStorage: listening games on/off (Settings)
   const CONTENT_TYPES = ["letter", "phonics", "cvc", "hfw"];   // content picker order
   const DEFAULT_TYPES = ["letter", "phonics"];
   const TYPES_KEY = "wwe.content.v2";                // localStorage: the last ticked types
@@ -82,6 +87,7 @@
     seen: new Set(),            // games whose tutorial this run has already shown
     forceDemo: null,            // a game id whose tutorial the next round must show (Tutorials menu)
     picker: "practice",         // what the game grid is for: "practice" or "tutorial"
+    listening: C.storage.get(LISTENING_KEY, true) !== false, // listening games on (Settings)
     phase: "idle",              // idle | transition | playing | feedback | over | paused
     round: 0,
     lives: 0,
@@ -126,7 +132,41 @@
     els.askWatch.hidden = true;
     state.screen = name;
     if (name !== "play") els[name].scrollTop = 0;
+    requestAnimationFrame(updateScrollbar);
+    if (name !== "play" && window.Music) Music.play("menu"); // in play, each game starts its own loop (startGame)
   }
+
+  // ---------- A scroll bar you can see ----------
+  // iPad Safari hides scroll bars until you scroll, so menu screens that scroll get their own: a track
+  // and thumb down the right edge, and a bouncing ⬇️ at the bottom while there's more below (tap it
+  // to scroll down a screenful).
+  const scrollbar = document.createElement("div");
+  scrollbar.className = "scrollbar";
+  scrollbar.setAttribute("aria-hidden", "true");
+  scrollbar.innerHTML = '<div class="scrollthumb"></div>';
+  const scrollHint = document.createElement("button");
+  scrollHint.className = "scrollhint";
+  scrollHint.textContent = "⬇️";
+  scrollHint.setAttribute("aria-label", "Scroll down");
+  document.body.append(scrollbar, scrollHint);
+  function updateScrollbar() {
+    const el = els[state.screen];
+    const can = !!el && el.classList.contains("scroll") && !el.hidden && el.scrollHeight > el.clientHeight + 4;
+    scrollbar.hidden = !can;
+    scrollHint.hidden = !can || el.scrollTop >= el.scrollHeight - el.clientHeight - 24;
+    if (!can) return;
+    const track = scrollbar.clientHeight, thumbH = Math.max(40, (track * el.clientHeight) / el.scrollHeight);
+    const y = ((track - thumbH) * el.scrollTop) / (el.scrollHeight - el.clientHeight);
+    const thumb = scrollbar.firstChild;
+    thumb.style.height = `${thumbH}px`;
+    thumb.style.transform = `translateY(${y.toFixed(1)}px)`;
+  }
+  document.querySelectorAll(".screen.scroll").forEach((s) => s.addEventListener("scroll", updateScrollbar, { passive: true }));
+  window.addEventListener("resize", updateScrollbar);
+  scrollHint.addEventListener("click", () => {
+    const el = els[state.screen];
+    if (el) el.scrollBy({ top: el.clientHeight * 0.7, behavior: "smooth" });
+  });
   function restartAnim(el) {
     el.style.animation = "none";
     void el.offsetWidth;
@@ -168,11 +208,13 @@
     return listsInPlay().filter((l) => types.includes(l.type));
   }
   const isPractice = () => !!state.mode && state.mode.id === "practice";
+  // Listening games off (Settings): games whose target is only ever spoken are left out everywhere.
+  const allowed = (g) => state.listening || !g.listening;
   // Pick the content type first, so each ticked type comes up about equally often,
   // then a game that can use it (never the same game twice in a row when there's a choice).
   function chooseRound() {
     const only = isPractice() ? state.practiceGame : onlyGame;
-    const usable = (g) => (!only || g.id === only) && !state.broken.has(g.id);
+    const usable = (g) => (!only || g.id === only) && !state.broken.has(g.id) && allowed(g);
     const gamesFor = (list) => C.MICROGAMES.filter((g) => usable(g) && (g.contentTypes || []).includes(list.type));
     const lists = listsInPlay().filter((l) => gamesFor(l).length);
     if (!lists.length) return null;
@@ -396,7 +438,10 @@
       t += SPEEDUP_MS;
     }
     if (!isPractice()) { // round numbers mean nothing when replaying one game
-      later(() => { shout(els.banner, T.round(state.round), "round"); C.sfx.whoosh(); }, t);
+      // Between rounds the game's loop stops and a quick "get ready" jingle plays with the ROUND banner
+      // (the next game's loop starts with the round, in startGame).
+      if (window.Music) Music.play(null);
+      later(() => { shout(els.banner, T.round(state.round), "round"); if (window.Music) Music.jingle(state.round - 1); else C.sfx.whoosh(); }, t);
       t += ROUND_MS;
     }
     later(() => {
@@ -498,9 +543,10 @@
       track();
     };
     const hideRing = () => { ringOn = null; if (ring) ring.remove(); };
-    const wait = (ms) => new Promise((done) => ctx.later(done, ms));
+    const wait = (ms) => new Promise((done) => ctx.later(done, ms / DEMO_PACE));
     // Glide the fingertip to a (possibly moving) target over `ms`.
     const glide = (t, ms) => new Promise((done) => {
+      ms /= DEMO_PACE;
       const p0 = at || (() => { const g = gameBox(); return { x: g.width * 0.5, y: g.height + 40 }; })();
       const t0 = performance.now();
       const step = () => {
@@ -559,6 +605,7 @@
     };
     // Drag from where the finger is to t over ms, with a pointermove every frame.
     const sweep = (t, ms) => new Promise((done) => {
+      ms /= DEMO_PACE;
       const p0 = at, t0 = performance.now();
       const step = () => {
         const p1 = resolve(t) || p0;
@@ -709,6 +756,7 @@
     state.reported = false;
     state.gameActive = true;
     state.phase = demo ? "demo" : "playing";
+    if (window.Music) Music.play(game.id); // its own chiptune loop (js/music.js)
     // The clock starts after the start lock, so the lock doesn't eat into the time limit.
     state.current = { game, timeLimit, t0: performance.now() + START_LOCK_MS, onTimeout: null, demo };
 
@@ -745,7 +793,7 @@
         return REVEAL_MS;
       },
       audio: C.audioCtx(),
-      canSpeak: C.canSpeak,
+      canSpeak: C.canSpeak && state.listening, // listening games off (Settings): games show their target instead of only saying it
       get ended() { return !alive() || state.reported; },
       say: (text) => { if (alive()) C.say(text); },
       sfx: C.sfx,
@@ -771,13 +819,16 @@
         state.gameRafs.push(id);
         return id;
       },
+      // The power bar (js/power.js): press and hold (or tap, tap) to shoot with short / medium / strong power.
+      // opts: { parent, press, onRelease(zone, level), onStart, icon }. Cleared with the round (ctx.raf).
+      powerBar: (o) => window.PowerBar.create({ raf: ctx.raf, sfx: C.sfx, speed, ended: () => ctx.ended, ...o }),
       confetti: C.confetti,
       shuffle: C.shuffle,
       pick: C.pick,
       pickOptions: (target, n) => C.pickOptions(items, target, n),
       lowerLookalikes: (target) => C.lowerLookalikes(items, target), // letters whose lowercase looks like target's (b → d, p, h)
       // R rows of N options, one right per row (sequence games). See Core.choiceRows.
-      choiceRows: (R, N, opts = {}) => C.choiceRows(items, list.type, R, N, { canSpeak: C.canSpeak, ...opts }),
+      choiceRows: (R, N, opts = {}) => C.choiceRows(items, list.type, R, N, { canSpeak: C.canSpeak && state.listening, ...opts }),
       // Phonics: pictures that start with a letter, and wrong pictures from other letters.
       phonics: {
         pics: C.startPics,                                     // (item) => [{ word, emoji }] starting with item.text
@@ -821,7 +872,7 @@
       ctx.later(async () => {
         try { await demoScript.run(f); } catch (err) { console.error(`${game.id} tutorial:`, err); }
         if (alive() && !state.reported) ctx.later(() => report(token, false), 3500); // the script missed (or the outcome is still animating)
-      }, Math.max(450, revealMs + 200));
+      }, Math.max(300, revealMs + 150));
       ctx.later(() => report(token, false), DEMO_MAX_MS);
       return; // no clock in a demo
     }
@@ -1046,7 +1097,7 @@
     els.pickerTitle.textContent = tut ? T.tutorials : T.practice;
     els.pickerNote.textContent = tut ? T.pickTutorial : T.pickGame;
     els.practiceGrid.innerHTML = "";
-    C.MICROGAMES.filter((g) => !state.broken.has(g.id) && listsFor(g).length && (!tut || g.tutorial)).forEach((game) => {
+    C.MICROGAMES.filter((g) => !state.broken.has(g.id) && allowed(g) && listsFor(g).length && (!tut || g.tutorial)).forEach((game) => {
       const b = document.createElement("button");
       b.className = "game-card";
       const ico = document.createElement("span");
@@ -1128,6 +1179,8 @@
   });
 
   els.game.addEventListener("pointerdown", hideCoach, true); // the first touch clears the in-game hint
+  // Any tap unlocks (or resumes) audio: iOS needs a real tap, and can suspend audio in the background.
+  document.addEventListener("pointerdown", () => C.unlock(), { capture: true });
   els.funBtn.addEventListener("click", () => chooseContent("fun"));
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
@@ -1144,12 +1197,49 @@
   els.howtoPlayBtn.addEventListener("click", () => startMode("practice"));
   els.howtoBackBtn.addEventListener("click", () => showPractice());
   els.helpBtn.addEventListener("click", practiceHelp);
-  els.settingsBtn.addEventListener("click", () => showScreen("settings"));
+  // ---------- Settings: music on/off and volume, listening games on/off ----------
+  const musicBtn = $("#musicBtn"), musicVol = $("#musicVol"), listeningBtn = $("#listeningBtn");
+  function renderSettings() {
+    const musicOn = !(window.Music && Music.muted);
+    musicBtn.setAttribute("aria-pressed", String(musicOn));
+    musicBtn.textContent = musicOn ? T.on : T.off;
+    musicVol.value = String(Math.round((window.Music ? Music.volume : 0.4) * 100));
+    musicVol.disabled = !musicOn;
+    listeningBtn.setAttribute("aria-pressed", String(state.listening));
+    listeningBtn.textContent = state.listening ? T.on : T.off;
+  }
+  musicBtn.addEventListener("click", () => {
+    C.unlock();
+    if (window.Music) Music.setMuted(!Music.muted);
+    C.sfx.tone(660, 0.08);
+    renderSettings();
+  });
+  musicVol.addEventListener("input", () => { if (window.Music) Music.setVolume(Number(musicVol.value) / 100); });
+  listeningBtn.addEventListener("click", () => {
+    state.listening = !state.listening;
+    C.storage.set(LISTENING_KEY, state.listening);
+    C.sfx.tone(state.listening ? 660 : 440, 0.08);
+    renderSettings();
+  });
+  els.settingsBtn.addEventListener("click", () => { renderSettings(); showScreen("settings"); });
   els.backBtn.addEventListener("click", () => showScreen("title"));
   els.quitBtn.addEventListener("click", quitPlay);
   els.againBtn.addEventListener("click", () => (state.mode.id === "practice" ? startMode("practice") : askWatch(state.mode.id)));
   els.menuBtn.addEventListener("click", goTitle);
 
+
+  // ---------- No accidental zooming ----------
+  // iPad Safari ignores user-scalable=no, so block its pinch gestures, double-tap zoom and
+  // two-finger zoom in code (touch-action: manipulation in the CSS covers the rest).
+  ["gesturestart", "gesturechange", "gestureend"].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
+  document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+  document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 300 && !e.target.closest("input, select, textarea")) e.preventDefault(); // a quick second tap: no zoom
+    lastTouchEnd = now;
+  }, { passive: false });
   // ---------- Boot: load the games listed in games/manifest.js ----------
   function ready() {
     els.loading.hidden = true;

@@ -156,7 +156,7 @@
       } else if (type === "hfw") {
         const target = ctx.items[0];
         answerItem = target;
-        ball = "";
+        ball = ctx.canSpeak ? "" : target.text; // a plain silver ball that only speaks, or (listening games off) the word on the ball
         prompt = answer = target.say || target.text;
         slots = ctx.pickOptions(target, n).map((o) => ({ text: o.text, right: o === target }));
         slotKind = "word";
@@ -230,6 +230,7 @@
       const ballEl = document.createElement("div");
       ballEl.className = "pk-ball" + (ball ? " content" : "");
       ballEl.textContent = ball;
+      if (/^[a-z]{3,}$/i.test(ball)) ballEl.style.fontSize = `calc(var(--bs) * ${(1.3 / ball.length).toFixed(2)})`; // a word on the ball
       wrap.appendChild(ballEl);
 
       const funnels = [...Array(n)].map((_, i) => {

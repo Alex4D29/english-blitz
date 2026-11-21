@@ -32,4 +32,8 @@ window.GAME_FILES = [
   "hoop-shot",
   "penalty-kick",
   "monster-boxing",
+  "archery",
+  "monster-golf",
+  "strength-test",
+  "maze-run",
 ];

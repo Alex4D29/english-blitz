@@ -157,6 +157,7 @@
     duration: 12000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    listening: true, // the target is only ever spoken: left out when listening games are off (Settings)
 
     start(ctx) {
       injectCss();

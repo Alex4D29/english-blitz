@@ -223,8 +223,8 @@
       } else { // hfw: the samurai only hears the word
         const target = ctx.items[0];
         answerItem = target;
-        samText = TEXT.listen;
-        samKind = "listen";
+        samText = ctx.canSpeak ? TEXT.listen : target.text; // listening games off: show the word
+        samKind = ctx.canSpeak ? "listen" : "word";
         prompt = answer = target.say || target.text;
         foes = [target, ...ctx.pickOptions(target, n + 1).filter((o) => o !== target).slice(0, n - 1)].map((o) => ({ text: o.text, kind: "word", right: o === target, spoken: o.say || o.text }));
       }

@@ -240,15 +240,17 @@
       dock.className = "fi-dock";
 
       const mon = document.createElement("button");
-      mon.className = "fi-mon" + (isHfw ? " blob" : isLetter ? "" : " word");
+      mon.className = "fi-mon" + (isLetter ? "" : " word"); // HFW holds its word too (it used to be listening-only)
       mon.style.setProperty("--mc", ctx.pick(MONSTER_COLORS));
       mon.setAttribute("aria-label", TEXT.monsterLabel);
       mon.innerHTML =
-        '<div class="fi-body">' + (isHfw ? '<div class="fi-blob"></div>' : '<div class="fi-glyph"></div>') +
+        '<div class="fi-body"><div class="fi-glyph"></div>' +
         '<div class="fi-eyes"><div class="fi-eye"></div><div class="fi-eye"></div></div>' +
         '<div class="fi-tear l"></div><div class="fi-tear r"></div>' +
         '<div class="fi-mouth"></div><div class="fi-bubble"></div></div>';
-      if (!isHfw) mon.querySelector(".fi-glyph").textContent = target.text;
+      const glyph = mon.querySelector(".fi-glyph");
+      glyph.textContent = target.text;
+      if (!isLetter && target.text.length > 4) glyph.style.fontSize = `${(2.2 / target.text.length).toFixed(2)}em`; // long sight words shrink to fit
       const bubble = mon.querySelector(".fi-bubble");
       const restBubble = isHfw ? TEXT.bubbleListen : TEXT.bubble;
       bubble.textContent = restBubble;

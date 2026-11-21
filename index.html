@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#ffd400">
 <title>English Blitz!</title>
 <link rel="stylesheet" href="css/frame.css">
@@ -61,10 +61,25 @@
   </div>
 </section>
 
-<!-- Settings (placeholder) -->
-<section id="settings" class="screen" hidden>
+<!-- Settings: music (on/off and volume) and listening games (on/off) -->
+<section id="settings" class="screen scroll" hidden>
   <h1 class="shout" data-text="settings"></h1>
-  <p class="card" data-text="settingsSoon"></p>
+  <div class="card set-card">
+    <div class="set-row">
+      <span class="set-ico" aria-hidden="true">🎵</span>
+      <span class="set-name" data-text="musicLabel"></span>
+      <button class="set-toggle" id="musicBtn" aria-pressed="true"></button>
+    </div>
+    <label class="set-vol"><span class="set-ico small" aria-hidden="true">🔈</span>
+      <input type="range" id="musicVol" min="0" max="100" step="5" data-label="musicVolLabel">
+      <span class="set-ico small" aria-hidden="true">🔊</span></label>
+    <div class="set-row">
+      <span class="set-ico" aria-hidden="true">🎧</span>
+      <span class="set-name" data-text="listeningLabel"></span>
+      <button class="set-toggle" id="listeningBtn" aria-pressed="true"></button>
+    </div>
+    <p class="set-note" data-text="listeningNote"></p>
+  </div>
   <button class="chunky" id="backBtn">⬅️ <span data-text="back"></span></button>
 </section>
 
@@ -112,6 +127,8 @@
      The frame then loads every game listed in games/manifest.js. -->
 <script src="js/text.js"></script>
 <script src="js/core.js"></script>
+<script src="js/music.js"></script>
+<script src="js/power.js"></script>
 <script src="data/lists.js"></script>
 <script src="js/modes.js"></script>
 <script src="games/manifest.js"></script>

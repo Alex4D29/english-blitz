@@ -479,7 +479,7 @@
           return { x: r.left - g0.left + p().x, y: r.top - g0.top + p().y + R * 0.5 };
         };
         await f.point(card);
-        await f.drag(at(() => light), at(() => tg), 1300, 2600);
+        await f.drag(at(() => light), at(() => tg), 1300, 3600); // (finger times run 1.5× fast: this holds about 2.4 s)
       });
 
       return function cleanup() {

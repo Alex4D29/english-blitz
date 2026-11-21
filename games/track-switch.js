@@ -52,6 +52,12 @@
     background:repeating-linear-gradient(45deg, #e8173c 0 8px, #fff 8px 16px); animation:tk-in .25s cubic-bezier(.2,1.8,.4,1); }
   .tk-station { position:absolute; transform:translate(-50%, -100%); padding:6px 16px; background:#fff3d6; border:5px solid #111; border-radius:12px 12px 0 0;
     font-size:1.6rem; line-height:1; z-index:2; box-shadow:0 5px 0 #111; white-space:nowrap; }
+  /* The big trophy at the end of the line, in the space above the station, in front of spinning rays */
+  .tk-rays { position:absolute; width:calc(var(--ty) * 1.9); height:calc(var(--ty) * 1.9); transform:translate(-50%, -50%); border-radius:50%; z-index:1; pointer-events:none;
+    background:repeating-conic-gradient(#ffe066 0 12deg, #fff7c2 12deg 24deg); border:5px solid #111; opacity:.9; animation:tk-spin 9s linear infinite; }
+  .tk-trophy { position:absolute; transform:translate(-50%, -50%); font-size:var(--ty); line-height:1; z-index:2; pointer-events:none; filter:drop-shadow(0 6px 0 rgba(0,0,0,.3)); }
+  .tk-trophy.yay { animation:tk-trophy .5s cubic-bezier(.2,1.8,.4,1) 3; }
+  .tk-sparkle { position:absolute; font-size:1.6rem; pointer-events:none; z-index:7; animation:tk-sparkle .8s ease-out forwards; }
   .tk-station::before { content:""; position:absolute; left:-14px; right:-14px; top:-16px; height:14px; background:#e8173c; border:4px solid #111; border-radius:8px 8px 0 0; }
 
   /* The engine: front view, a big silly face. --tz is its width. Its anchor is the track point under it. */
@@ -83,6 +89,9 @@
 
   @keyframes tk-wiggle { 25% { transform:translate(-50%, -100%) rotate(-7deg); } 75% { transform:translate(-50%, -100%) rotate(7deg); } }
   @keyframes tk-in { from { transform:translate(-50%, -50%) scale(.2); } }
+  @keyframes tk-spin { to { transform:translate(-50%, -50%) rotate(360deg); } }
+  @keyframes tk-trophy { 50% { transform:translate(-50%, -62%) scale(1.15) rotate(-6deg); } }
+  @keyframes tk-sparkle { from { opacity:1; transform:scale(.4); } to { opacity:0; transform:scale(1.6) translateY(-30px); } }
   @keyframes tk-goggle { 0%, 100% { transform:translate(-18%, 0); } 50% { transform:translate(18%, -10%); } }
   @keyframes tk-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
   @keyframes tk-chug { 50% { transform:translate(-50%, -91%) scaleY(1.04); } }
@@ -90,7 +99,7 @@
   @keyframes tk-hop { 40% { transform:translate(-50%, -120%) rotate(-6deg); } }
   @keyframes tk-puff { from { opacity:.9; transform:translate(-50%, -50%) scale(.5); } to { opacity:0; transform:translate(-50%, -160%) scale(1.8); } }
   @media (prefers-reduced-motion: reduce) {
-    .tk-sign.right, .tk-puff, .tk-train .tk-eng, .tk-eye i { animation:none !important; }
+    .tk-sign.right, .tk-puff, .tk-train .tk-eng, .tk-eye i, .tk-rays, .tk-trophy.yay { animation:none !important; }
   }`;
 
   function injectCss() {
@@ -206,6 +215,16 @@
       station.style.left = `${W / 2}px`;
       station.style.top = `${rootY(R) - tz * 1.05}px`;
       world.appendChild(station);
+      // A big trophy fills the empty space above the station (at the finish the engine sits at the
+      // bottom of the view, so everything above the station would be bare grass).
+      const topOfView = rootY(R) - JY, stationTop = rootY(R) - tz * 1.05 - 56;
+      const room = Math.max(60, stationTop - topOfView);
+      const ty = Math.max(56, Math.min(room * 0.6, W * 0.42, 190));
+      const cy = topOfView + room * 0.5;
+      const rays = document.createElement("div"), trophy = document.createElement("div");
+      rays.className = "tk-rays"; trophy.className = "tk-trophy";
+      trophy.textContent = "🏆";
+      [rays, trophy].forEach((el) => { el.style.left = `${W / 2}px`; el.style.top = `${cy}px`; el.style.setProperty("--ty", `${ty}px`); world.appendChild(el); });
 
       let cam = 0;
       function setCam(c) { cam = c; world.style.transform = `translateY(${c.toFixed(1)}px)`; }
@@ -275,7 +294,15 @@
         ctx.win();
         train.classList.add("yay");
         [0, 0.35].forEach((d) => { tone(587, 0.25, "square", 0.08, d); tone(740, 0.25, "square", 0.06, d); }); // toot toot
-        ctx.later(() => ctx.confetti(fx, W / 2, rootY(R) - tz), 200);
+        trophy.classList.add("yay");
+        ctx.later(() => ctx.confetti(fx, W / 2, cy, { count: 110 }), 200);
+        for (let k = 0; k < 6; k++) {
+          const s = document.createElement("div");
+          s.className = "tk-sparkle"; s.textContent = "✨";
+          s.style.left = `${W / 2 + (Math.random() - 0.5) * ty * 1.6}px`; s.style.top = `${cy + (Math.random() - 0.5) * ty * 1.2}px`;
+          s.style.animationDelay = `${k * 80}ms`;
+          fx.appendChild(s);
+        }
         ctx.say(C.answer);
       }
 

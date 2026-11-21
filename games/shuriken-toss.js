@@ -114,8 +114,25 @@
   .st-smoke { position:absolute; left:0; top:0; border-radius:50%; background:#eee; border:4px solid #111; pointer-events:none; }
 
   /* ---- the ninja ---- */
-  .st-ninja { position:absolute; right:3%; bottom:5%; font-size:calc(var(--d) * 1.15); line-height:1; transform-origin:50% 100%;
+  /* The ninja, drawn in CSS so it can have silly googly eyes: a black hood with a skin-coloured eye slit,
+     big mismatched rolling eyes, a red headband with two flapping tails. */
+  .st-ninja { position:absolute; right:3%; bottom:5%; width:calc(var(--d) * 1.45); height:calc(var(--d) * 1.6); transform-origin:50% 100%;
     pointer-events:none; filter:drop-shadow(0 4px 0 rgba(0,0,0,.35)); }
+  .st-nbody { position:absolute; inset:0; background:#2a2a35; border:4px solid #111; border-radius:46% 46% 30% 30%; }
+  .st-nslit { position:absolute; left:6%; right:6%; top:24%; height:40%; background:#ffcf9e; border:3px solid #111; border-radius:40%; }
+  .st-neye { position:absolute; top:18%; width:46%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
+  .st-neye.l { left:4%; } .st-neye.r { right:6%; width:37%; top:23%; }
+  .st-neye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:st-goggle 1.1s ease-in-out infinite; }
+  .st-neye.r i { animation-delay:-.45s; }
+  .st-nband { position:absolute; left:-2%; right:-2%; top:12%; height:12%; background:#e8173c; border:3px solid #111; border-radius:6px; z-index:2; }
+  .st-ntail { position:absolute; left:-30%; top:13%; width:34%; height:9%; background:#e8173c; border:3px solid #111; border-radius:6px; transform-origin:100% 50%;
+    animation:st-flap .5s ease-in-out infinite alternate; z-index:0; }
+  .st-ntail.b { top:20%; width:28%; animation-delay:-.25s; }
+  .st-ninja.dazed .st-neye i { display:none; }
+  .st-ninja.dazed .st-neye::before, .st-ninja.dazed .st-neye::after { content:""; position:absolute; left:14%; right:14%; top:42%; height:16%; background:#111; border-radius:9px; }
+  .st-ninja.dazed .st-neye::before { transform:rotate(45deg); } .st-ninja.dazed .st-neye::after { transform:rotate(-45deg); }
+  @keyframes st-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
+  @keyframes st-flap { from { transform:rotate(-14deg); } to { transform:rotate(10deg); } }
   .st-ninja.throw { animation:st-throw .2s ease-out; }
   .st-ninja.cheer { animation:st-cheer .45s cubic-bezier(.2,1.8,.4,1) 3; }
   .st-ninja.ko { animation:st-ko .6s ease-out forwards; }
@@ -159,7 +176,7 @@
   @keyframes st-shake   { 0%,100% { transform:none; } 15% { transform:translate(-10px,6px); } 30% { transform:translate(9px,-8px); }
     45% { transform:translate(-7px,-5px); } 60% { transform:translate(6px,7px); } 80% { transform:translate(-3px,2px); } }
   @media (prefers-reduced-motion: reduce) {
-    .st-target, .st-pip.on, .st-bad .st-icon, .st-cannon.fire .st-barrel, .st-ninja.throw, .st-ninja.cheer,
+    .st-target, .st-pip.on, .st-bad .st-icon, .st-cannon.fire .st-barrel, .st-ninja.throw, .st-ninja.cheer, .st-neye i, .st-ntail,
     .st.shake, .st-star svg { animation:none; }
   }`;
 
@@ -268,11 +285,12 @@
       field.innerHTML =
         '<div class="st-moon"></div><div class="st-ground"></div>' +
         '<div class="st-cannon"><div class="st-barrel"><div class="st-muzzle"></div></div><div class="st-wheel"></div></div>' +
-        '<div class="st-ninja" aria-hidden="true"></div>';
+        '<div class="st-ninja" aria-hidden="true"><div class="st-ntail"></div><div class="st-ntail b"></div><div class="st-nbody"></div><div class="st-nslit"></div>' +
+        '<div class="st-nband"></div><div class="st-neye l"><i></i></div><div class="st-neye r"><i></i></div></div>';
       const cannon = field.querySelector(".st-cannon");
       const muzzle = field.querySelector(".st-muzzle");
       const ninja = field.querySelector(".st-ninja");
-      ninja.textContent = TEXT.ninja;
+
 
       wrap.append(top, field);
       ctx.root.appendChild(wrap);
@@ -528,7 +546,7 @@
         p.style.cssText = `left:${at.x}px;top:${at.y}px;--s:${d * 2}px;`;
         field.insertBefore(p, ninja);
         ctx.later(() => p.remove(), 400);
-        ninja.textContent = TEXT.ninjaKo;
+        ninja.classList.add("dazed"); // X eyes
         ninja.classList.add("ko");
         if (!reduceMotion) wrap.classList.add("shake");
         flyers.forEach((x) => { if (!x.gone) drop(x); });

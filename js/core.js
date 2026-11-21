@@ -283,10 +283,15 @@
     speechSynthesis.addEventListener?.("voiceschanged", pickVoice);
   }
 
+  // iOS Safari often silently drops an utterance that's spoken right after cancel(), so when
+  // something is still speaking (the last answer, "Your turn!") the new line waits a moment.
+  let sayToken = 0;
   function say(text) {
     if (!canSpeak || !text) return;
     try {
+      const busy = speechSynthesis.speaking || speechSynthesis.pending;
       speechSynthesis.cancel();
+      const token = ++sayToken;
       // Some voices (iOS especially) read a lone capital as "capital E", so send single
       // letters in lowercase. Not "A": a lone "a" is read as "uh" (letters spell it "Ay").
       const u = new SpeechSynthesisUtterance(String(text).replace(/\b[B-Z]\b/g, (c) => c.toLowerCase()));
@@ -297,7 +302,8 @@
       u.onerror = (e) => {
         if (e.error !== "interrupted" && e.error !== "canceled") console.error("speech:", e.error);
       };
-      speechSynthesis.speak(u);
+      const go = () => { if (token === sayToken) speechSynthesis.speak(u); }; // a newer say() wins
+      if (busy) setTimeout(go, 90); else go();
     } catch (err) {
       console.error("speech:", err);
     }
