@@ -49,10 +49,22 @@
   .sw-stack.alive .sw-face { opacity:1; }
   .sw-lbl { transition:opacity .3s; }
   .sw-stack.alive .sw-lbl { opacity:0; }   /* the labels melt away so the face shows */
-  .sw-eye { position:absolute; top:26%; width:12%; height:12%; background:#111; border-radius:50%; }
-  .sw-eye.l { left:28%; } .sw-eye.r { right:28%; }
-  .sw-nose { position:absolute; left:50%; top:44%; font-size:calc(var(--hs) * .32); transform:translate(-20%, -50%) rotate(-45deg); }
-  .sw-smile { position:absolute; left:30%; right:30%; top:62%; height:16%; border-bottom:5px dotted #111; border-radius:0 0 50% 50%; }
+  /* A really silly face: big googly eyes (one bigger), a GIANT carrot sticking way out past the head,
+     rosy cheeks and a huge open grin with teeth and a tongue. */
+  .sw-face::before, .sw-face::after { content:""; position:absolute; top:56%; width:16%; height:10%; background:#ff8fab; border-radius:50%; opacity:.75; }
+  .sw-face::before { left:6%; } .sw-face::after { right:6%; }
+  .sw-eye { position:absolute; top:7%; width:38%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50%; }
+  .sw-eye.l { left:8%; } .sw-eye.r { right:9%; width:31%; top:12%; }
+  .sw-eye::after { content:""; position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:sw-goggle 1.2s ease-in-out infinite; }
+  .sw-eye.r::after { animation-delay:-.5s; }
+  .sw-nose { position:absolute; left:42%; top:38%; width:115%; height:24%; z-index:2; transform-origin:0 50%; transform:rotate(6deg);
+    background:repeating-linear-gradient(90deg, #ff8a1f 0 16%, #e86a00 16% 19%); clip-path:polygon(0 0, 100% 46%, 100% 54%, 0 100%);
+    filter:drop-shadow(2px 0 0 #111) drop-shadow(-2px 0 0 #111) drop-shadow(0 2px 0 #111) drop-shadow(0 -2px 0 #111); animation:sw-boop 1.6s ease-in-out infinite; }
+  .sw-smile { position:absolute; left:20%; right:20%; top:64%; height:25%; background:#6b1020; border:4px solid #111; border-radius:0 0 999px 999px; overflow:hidden; }
+  .sw-smile::before { content:""; position:absolute; left:0; right:0; top:0; height:30%; background:#fff; border-bottom:2px solid #111; }
+  .sw-smile::after { content:""; position:absolute; left:28%; right:28%; bottom:-25%; height:60%; background:#ff6f91; border-radius:50%; }
+  @keyframes sw-goggle { 0%, 100% { transform:translate(-14%, 0); } 50% { transform:translate(16%, -12%); } }
+  @keyframes sw-boop { 0%, 100% { transform:rotate(6deg); } 50% { transform:rotate(0deg) scaleX(1.06); } }
   .sw-arm { position:absolute; width:calc(var(--bs) * .8); height:7px; background:#6b3f1d; border:2px solid #111; border-radius:99px; top:0; opacity:0; transition:opacity .3s; }
   .sw-stack.alive .sw-arm { opacity:1; }
   .sw-arm.l { right:calc(var(--bs) * .3); transform-origin:100% 50%; transform:rotate(20deg); }
@@ -79,7 +91,7 @@
   @keyframes sw-hop { 50% { transform:translateY(-10%); } }
   @keyframes sw-in { from { transform:scale(.4); opacity:0; } }
   @keyframes sw-wiggle { 25% { transform:rotate(-8deg) scale(1.06); } 75% { transform:rotate(8deg) scale(1.06); } }
-  @media (prefers-reduced-motion: reduce) { .sw-flake, .sw-stack.alive, .sw-opt, .sw-opt.right, .sw-arm.r { animation:none !important; } }`;
+  @media (prefers-reduced-motion: reduce) { .sw-flake, .sw-stack.alive, .sw-opt, .sw-opt.right, .sw-arm.r, .sw-eye::after, .sw-nose { animation:none !important; } }`;
 
   function injectCss() {
     if (document.getElementById("sw-css")) return;
@@ -195,7 +207,7 @@
           el.className = "sw-ball" + (item.kind === "pic" ? " pic" : "");
           el.innerHTML = '<span class="sw-lbl"></span>';
           el.firstChild.textContent = item.text;
-          if (s === 2) el.insertAdjacentHTML("beforeend", '<div class="sw-face"><div class="sw-eye l"></div><div class="sw-eye r"></div><div class="sw-nose">🥕</div><div class="sw-smile"></div></div>');
+          if (s === 2) el.insertAdjacentHTML("beforeend", '<div class="sw-face"><div class="sw-eye l"></div><div class="sw-eye r"></div><div class="sw-nose"></div><div class="sw-smile"></div></div>');
         }
         stack.appendChild(el);
         const p = { el, item, step: s };
