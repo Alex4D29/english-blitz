@@ -39,10 +39,10 @@
   .ts-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:8; }
   /* The tower: a tall post with three bands, a bell on top, a pad at the bottom */
   .ts-tower { position:absolute; width:var(--tw); transform:translateX(-50%); z-index:2; pointer-events:none; }
-  .ts-post { position:absolute; left:20%; right:20%; top:var(--bell); bottom:0; background:#fff; border:5px solid #111; border-radius:10px; display:flex; flex-direction:column-reverse; overflow:hidden; }
+  .ts-post { position:absolute; left:12%; right:12%; top:var(--bell); bottom:0; background:#fff; border:5px solid #111; border-radius:10px; display:flex; flex-direction:column-reverse; overflow:hidden; }
   .ts-band { flex:1; position:relative; border-top:4px solid #111; display:flex; align-items:center; justify-content:center; }
   .ts-band:first-child { border-top:0; }
-  .ts-sign { padding:2px 6px; min-width:70%; background:#fff; border:4px solid #111; border-radius:10px; font-size:calc(var(--tw) * .36); line-height:1.05; color:#111; white-space:nowrap; text-align:center; }
+  .ts-sign { padding:2px 4px; min-width:80%; max-width:96%; box-sizing:border-box; background:#fff; border:4px solid #111; border-radius:10px; font-size:calc(var(--tw) * .36); line-height:1.05; color:#111; white-space:nowrap; text-align:center; }
   .ts-band.lit { filter:brightness(1.25); box-shadow:inset 0 0 0 6px #fff; }
   .ts-band.right .ts-sign { box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; }
   .ts-band.dim { opacity:.5; }
@@ -64,11 +64,14 @@
   .ts-brow { position:absolute; top:17%; width:22%; height:4%; background:#111; border-radius:9px; z-index:3; }
   .ts-brow.l { left:28%; transform:rotate(-10deg); } .ts-brow.r { right:28%; transform:rotate(10deg); }
   .ts-mouth { position:absolute; left:36%; right:36%; top:36%; height:8%; z-index:2; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; }
-  .ts-mallet { position:absolute; right:-40%; top:-20%; width:16%; height:80%; z-index:4; transform-origin:50% 100%; transform:rotate(30deg); transition:transform .15s; }
-  .ts-mallet::before { content:""; position:absolute; left:30%; right:30%; top:20%; bottom:0; background:#8b5a2b; border:3px solid #111; }
-  .ts-mallet::after { content:""; position:absolute; left:-120%; right:-120%; top:0; height:24%; background:#e8173c; border:4px solid #111; border-radius:8px; }
-  .ts-mon.raise .ts-mallet { transform:rotate(-40deg); transition:transform .5s; }
-  .ts-mon.slam .ts-mallet { transform:rotate(95deg); }
+  /* The mallet, in the monster's hands (its pivot, at the bottom: 64% across, 48% up). At rest it leans back over the
+     shoulder, charging raises it further back, and the slam swings it over onto the pad at the foot of the tower
+     (the monster is placed so the mallet head lands there), so it never sits over the answers. */
+  .ts-mallet { position:absolute; left:58%; bottom:48%; width:13%; height:80%; z-index:4; transform-origin:50% 100%; transform:rotate(-30deg); transition:transform .2s; }
+  .ts-mallet::before { content:""; position:absolute; left:32%; right:32%; top:18%; bottom:0; background:#8b5a2b; border:3px solid #111; border-radius:3px; }
+  .ts-mallet::after { content:""; position:absolute; left:-110%; right:-110%; top:0; height:22%; background:#e8173c; border:4px solid #111; border-radius:8px; }
+  .ts-mon.raise .ts-mallet { transform:rotate(-75deg); transition:transform .5s; }
+  .ts-mon.slam .ts-mallet { transform:rotate(130deg); transition:transform .14s ease-in; }
   .ts-mon.flex { animation:ts-flex .3s ease-in-out infinite alternate; }
   .ts-mon.flex .ts-arm { transform:translateY(-40%) scale(1.25); }
   .ts-mon.oops .ts-mouth { border-radius:999px 999px 4px 4px; height:5%; top:40%; }
@@ -142,15 +145,18 @@
       let W = 0, H = 0, tw = 90, th = 300, bellH = 40, tx = 0;
       function layout() {
         W = fair.clientWidth; H = fair.clientHeight;
-        tw = Math.max(80, Math.min(W * 0.26, 130));
+        tw = Math.max(86, Math.min(W * 0.3, 150));
         bellH = tw * 0.42;
         th = H * 0.86 - 16;
         tx = W * 0.62;
         tower.style.cssText = `left:${tx}px;top:${H * 0.86 - th}px;height:${th}px;--tw:${tw}px;--bell:${bellH}px;`;
         const mz = Math.max(100, Math.min(H * 0.42, 170));
         fair.style.setProperty("--mz", `${mz}px`);
-        mon.style.transform = `translate(${Math.max(mz * 0.5, tx - tw * 0.95 - mz * 0.45)}px, ${H * 0.86 + 2}px)`;
-        bands.forEach((b) => { b.sign.style.fontSize = b.opt.kind === "word" ? `${Math.min(tw * 0.24, (tw * 0.75) / (b.opt.text.length * 0.6))}px` : ""; });
+        // Its mallet pivots 0.13 mz right of its middle and the head lands 0.675 mz to the right at the slam,
+        // so stand it there to bring the mallet down on the pad (the tower's middle).
+        mon.style.transform = `translate(${Math.max(mz * 0.5, tx - mz * 0.675)}px, ${H * 0.86 + 2}px)`;
+        // Words are sized to the post (76% of the tower), so long sight words fit.
+        bands.forEach((b) => { b.sign.style.fontSize = b.opt.kind === "word" ? `${Math.min(tw * 0.3, (tw * 0.76 * 0.86) / (b.opt.text.length * 0.62))}px` : ""; });
         setPuck(0);
       }
       // The puck's height: 0 = on the pad, 1 = up at the bell. Band i spans (i/3 .. (i+1)/3) of the post.

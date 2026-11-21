@@ -60,8 +60,10 @@
   .mg-mouth { position:absolute; left:28%; right:28%; top:60%; height:13%; z-index:1; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; }
   .mg-club { position:absolute; left:60%; top:40%; width:8px; height:80%; background:#999; border:2px solid #111; transform-origin:50% 0; transform:rotate(-20deg); z-index:3; transition:transform .12s; }
   .mg-club::after { content:""; position:absolute; left:-6px; bottom:-6px; width:24px; height:12px; background:#555; border:2px solid #111; border-radius:3px; }
-  .mg-golfer.wind .mg-club { transform:rotate(-140deg); transition:transform .5s; }
-  .mg-golfer.swing .mg-club { transform:rotate(40deg); }
+  /* The holes are to the right: the backswing lifts the club up behind (left), the swing comes down
+     through the ball and follows through high towards the flags (right). */
+  .mg-golfer.wind .mg-club { transform:rotate(150deg); transition:transform .5s; }
+  .mg-golfer.swing .mg-club { transform:rotate(-115deg); transition:transform .14s ease-in; }
   .mg-golfer.yay { animation:mg-hop .4s cubic-bezier(.2,1.6,.4,1) 3; }
   .mg-golfer.bonked .mg-eye i { animation:mg-dizzy .45s linear infinite; }
   .mg-golfer.bonked .mg-mouth { left:40%; right:40%; border-radius:50%; height:10%; top:64%; }
