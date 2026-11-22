@@ -16,6 +16,7 @@ window.TEXT = {
   tutorials: "TUTORIALS",
   pickTutorial: "Pick a game to watch!",
   pickGame: "Tap a game to play it!",
+  bossSection: "👑 BOSS BATTLE",       // PICK A GAME: a section with one card per boss (its final battle)
   whatToPlay: "WHAT TO\nPLAY?",
   pickContent: "Pick one or more!",
   // Content picker: one toggle per list type, in this order.

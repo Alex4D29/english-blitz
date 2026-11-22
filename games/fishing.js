@@ -717,6 +717,8 @@
 
       measure();
       ctx.say(prompt);
+      // Show the monster (and what it wants) big in the middle first, so the target is clear before fishing starts.
+      ctx.reveal(mon);
       ctx.raf(frame);
 
 

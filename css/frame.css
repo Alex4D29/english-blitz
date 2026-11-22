@@ -398,3 +398,9 @@ body.demo #stage::before {
 .mode-txt { display: flex; flex-direction: column; gap: 4px; }
 .mode-desc { font-size: clamp(.9rem, 4vw, 1.15rem); line-height: 1.15; -webkit-text-stroke: 0; color: var(--paper); opacity: .95; white-space: normal;
   text-shadow: 0 2px 0 rgba(0,0,0,.35); }
+
+/* PICK A GAME: the Boss Battle section (one card per boss, drawn in CSS) */
+.grid-head { grid-column: 1 / -1; margin: 14px 0 0; text-align: center; font-size: clamp(1.4rem, 6vw, 1.9rem); color: var(--paper);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); }
+.game-card.boss-card { background: var(--bc); }
+.game-card.boss-card .bx-boss { margin: 2px auto; }

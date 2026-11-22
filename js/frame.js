@@ -92,6 +92,7 @@
     forceDemo: null,            // a game id whose tutorial the next round must show (Tutorials menu)
     picker: "practice",         // what the game grid is for: "practice" or "tutorial"
     practiceSpeed: Number(C.storage.get(PRACTICE_SPEED_KEY, 1)) || 1, // Practice difficulty (1, 1.75 or 2.5)
+    bossPick: null,             // a boss picked in PICK A GAME (its final battle only); null = the full run
     boss: null,                 // Boss Battle: { id, phase: levels | showdown | battle, you, them, stage, hp, hearts, last, done, scened }
     listening: C.storage.get(LISTENING_KEY, true) !== false, // listening games on (Settings)
     phase: "idle",              // idle | transition | playing | feedback | over | paused
@@ -519,7 +520,10 @@
     const last = b.last;
     b.last = null;
     const out = [];
-    if (b.phase === "levels" && state.results.length >= b.levels) {
+    if (b.picked && !b.introDone) { // picked from PICK A GAME: it appears, then FINAL BATTLE!
+      b.introDone = true;
+      out.push((r) => Bs.intro(r, B, env), (r) => Bs.battleStart(r, B, env));
+    } else if (b.phase === "levels" && state.results.length >= b.levels) {
       b.phase = "showdown";
       out.push((r) => Bs.intro(r, B, env));
     } else if (last && last.phase === "showdown") {
@@ -1100,7 +1104,7 @@
       els.resTitle.textContent = won ? T.bossResWin(B.name) : T.bossResLose;
       const shelf = window.Boss.IDS.map((id) => (beaten.has(id) ? window.Boss.BOSSES[id].icon : "❔")).join("");
       els.resStats.innerHTML =
-        statRow("✅", T.stats.levels, `${levels} / ${b.levels}`) +
+        (b.picked ? "" : statRow("✅", T.stats.levels, `${levels} / ${b.levels}`)) +
         (b.you + b.them ? statRow("⚔️", T.stats.showdown, `${b.you} – ${b.them}`) : "") +
         statRow("👑", T.stats.bosses, `<span class="res-bosses">${shelf}</span>`);
       if (won) later(C.sfx.fanfare, 400);
@@ -1146,6 +1150,8 @@
       you: 0, them: 0, stage: Math.min(2, Math.max(0, (parseInt(q.get("stage"), 10) || 1) - 1)), hp: 0,  hearts: window.Boss.HEARTS, last: null, done: null, scened: false,
     };
     if (state.boss) state.boss.hp = window.Boss.HP - state.boss.stage; // (a battle started at stage 2 has already lost one)
+    // PICK A GAME → BOSS BATTLE: that boss, straight into its final battle (no levels, no showdown).
+    if (state.boss && state.bossPick) Object.assign(state.boss, { id: state.bossPick, phase: "battle", stage: 0, hp: window.Boss.HP, picked: true });
     showScreen("play");
     setBar(1);
     renderHud();
@@ -1256,6 +1262,26 @@
       b.addEventListener("click", () => (tut ? watchTutorial(game) : showHowTo(game)));
       els.practiceGrid.appendChild(b);
     });
+    // PICK A GAME: a Boss Battle section, one card per boss, straight into that boss's final battle.
+    if (!tut && window.Boss) {
+      const head = document.createElement("h2");
+      head.className = "grid-head";
+      head.textContent = T.bossSection;
+      els.practiceGrid.appendChild(head);
+      window.Boss.IDS.forEach((id) => {
+        const B = window.Boss.BOSSES[id];
+        const b = document.createElement("button");
+        b.className = "game-card boss-card";
+        b.style.setProperty("--bc", B.color);
+        const ico = window.Boss.el(id, 64);
+        ico.classList.add("mini");
+        const name = document.createElement("span");
+        name.textContent = B.name;
+        b.append(ico, name);
+        b.addEventListener("click", () => { state.bossPick = id; startMode("boss"); });
+        els.practiceGrid.appendChild(b);
+      });
+    }
     showScreen("practice");
   }
 
@@ -1323,7 +1349,7 @@
     });
   }
   function quitPlay() {
-    if (isPractice()) showPractice(); else goTitle();
+    if (isPractice() || (isBoss() && state.boss.picked)) showPractice("practice"); else goTitle();
   }
   function practiceHelp() {
     const game = C.MICROGAMES.find((g) => g.id === state.practiceGame);
@@ -1350,7 +1376,7 @@
   // Any tap unlocks (or resumes) audio: iOS needs a real tap, and can suspend audio in the background.
   document.addEventListener("pointerdown", () => C.unlock(), { capture: true });
   els.funBtn.addEventListener("click", () => chooseContent("fun"));
-  els.bossBtn.addEventListener("click", () => chooseContent("boss"));
+  els.bossBtn.addEventListener("click", () => { state.bossPick = null; chooseContent("boss"); }); // the full run, with a random boss
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
   els.contentGoBtn.addEventListener("click", contentGo);
