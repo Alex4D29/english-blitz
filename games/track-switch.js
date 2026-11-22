@@ -9,7 +9,7 @@
 (function () {
   const TEXT = {
     name: { en: "Train Tracks" },
-    icon: "🚂",
+    icon: "🛤️", // (Train Builder is 🚂)
     howTo: (list) => ({ en: {
       steps: [
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],

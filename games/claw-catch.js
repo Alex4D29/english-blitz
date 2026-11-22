@@ -315,9 +315,10 @@
         });
       }
 
+      let holdUntil = 0; // the claw waits while the monster is shown big (ctx.reveal)
       function frame(ts) {
         if (phase === "y" || phase === "x") {
-          const dt = lastTs == null ? 0 : Math.min(50, ts - lastTs);
+          const dt = lastTs == null || performance.now() < holdUntil ? 0 : Math.min(50, ts - lastTs); // still while the target is shown big
           lastTs = ts;
           if (phase === "y") {
             cy += dir * vy * dt;
@@ -492,6 +493,8 @@
       placeClaw();
       hover();
       ctx.say(prompt);
+      // Show the monster (and what it wants) big in the middle first, so the target is clear before the claw moves.
+      holdUntil = performance.now() + ctx.reveal(mon);
       ctx.raf(frame);
 
 

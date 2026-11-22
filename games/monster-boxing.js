@@ -39,110 +39,113 @@
   };
 
   const CSS = `
-  .mb { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:4px; }
-  .mb-top { flex:none; display:flex; align-items:center; gap:12px; }
-  .mb-bell { width:66px; height:66px; border-radius:50%; padding:0; background:#ffd400; border:5px solid #111; box-shadow:0 5px 0 #111; font-size:2rem; line-height:1;
+  .box { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:4px; }
+  .box-top { flex:none; display:flex; align-items:center; gap:12px; }
+  .box-bell { width:66px; height:66px; border-radius:50%; padding:0; background:#ffd400; border:5px solid #111; box-shadow:0 5px 0 #111; font-size:2rem; line-height:1;
     display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:manipulation; font-family:inherit; }
-  .mb-bell.ring { animation:mb-ring .3s ease-in-out 2; }
-  .mb-pips { display:flex; flex-direction:column; gap:6px; }
-  .mb-row { display:flex; gap:5px; }
-  .mb-pip { width:24px; height:24px; border:3px solid #111; border-radius:50%; background:#fff; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; }
-  .mb-pip.on { background:#ff4d6d; } .mb-pip.on::after { content:"🥊"; }
-  .mb-pip.miss { background:#444; } .mb-pip.miss::after { content:"✕"; color:#fff; font-weight:900; }
+  .box-bell.ring { animation:box-ring .3s ease-in-out 2; }
+  .box-pips { display:flex; flex-direction:column; gap:6px; }
+  .box-row { display:flex; gap:5px; }
+  .box-pip { width:24px; height:24px; border:3px solid #111; border-radius:50%; background:#fff; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .box-pip.on { background:#ff4d6d; } .box-pip.on::after { content:"🥊"; }
+  .box-pip.miss { background:#444; } .box-pip.miss::after { content:"✕"; color:#fff; font-weight:900; }
 
   /* The ring: ropes at the back, a canvas floor */
-  .mb-ring { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
+  .box-ring { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
     background:linear-gradient(180deg, #2b1d4a 0 18%, #54308a 18% 62%, #e9e2cf 62%); touch-action:manipulation; }
-  .mb-rope { position:absolute; left:0; right:0; height:7px; background:#e8173c; border-top:2px solid #111; border-bottom:2px solid #111; }
-  .mb-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:9; }
+  .box-rope { position:absolute; left:0; right:0; height:7px; background:#e8173c; border-top:2px solid #111; border-bottom:2px solid #111; }
+  .box-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:9; }
 
   /* The opponent: a big green monster boxer. --mz is its height; anchor: feet centre */
-  .mb-mon { position:absolute; left:0; top:0; width:calc(var(--mz) * .9); height:var(--mz); margin:calc(var(--mz) * -1) 0 0 calc(var(--mz) * -.45); z-index:3;
+  .box-mon { position:absolute; left:0; top:0; width:calc(var(--mz) * .9); height:var(--mz); margin:calc(var(--mz) * -1) 0 0 calc(var(--mz) * -.45); z-index:3;
     transform-origin:50% 90%; will-change:transform; }
-  .mb-body { position:absolute; left:8%; right:8%; top:4%; bottom:6%; background:#5fd932; border:5px solid #111; border-radius:46% 46% 38% 38%;
+  .box-body { position:absolute; left:8%; right:8%; top:4%; bottom:6%; background:#5fd932; border:5px solid #111; border-radius:46% 46% 38% 38%;
     background-image:radial-gradient(ellipse at 50% 80%, #a8f07e 0 30%, transparent 31%); }
-  .mb-shorts { position:absolute; left:14%; right:14%; bottom:0; height:16%; background:#1e6bff; border:4px solid #111; border-radius:6px 6px 14px 14px; }
-  .mb-eye { position:absolute; top:27%; width:24%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50%; z-index:1; }
-  .mb-eye.l { left:22%; } .mb-eye.r { right:22%; width:20%; top:29%; }
-  .mb-eye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:mb-goggle 1s ease-in-out infinite; }
-  .mb-brow { position:absolute; top:24%; width:22%; height:4%; background:#111; border-radius:99px; z-index:2; }
-  .mb-brow.l { left:22%; transform:rotate(16deg); } .mb-brow.r { right:22%; transform:rotate(-16deg); }
-  .mb-mouth { position:absolute; left:32%; right:32%; top:44%; height:9%; z-index:1; background:#6b1020; border:4px solid #111; border-radius:4px 4px 999px 999px; overflow:hidden; }
-  .mb-mouth::before { content:""; position:absolute; left:10%; right:10%; top:0; height:40%; background:repeating-linear-gradient(90deg, #fff 0 22%, #111 22% 28%); }
-  .mb-mglove { position:absolute; top:42%; width:28%; aspect-ratio:1; background:#1e6bff; border:5px solid #111; border-radius:50% 50% 44% 44%; z-index:2;
+  .box-shorts { position:absolute; left:14%; right:14%; bottom:0; height:16%; background:#1e6bff; border:4px solid #111; border-radius:6px 6px 14px 14px; }
+  .box-eye { position:absolute; top:27%; width:24%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50%; z-index:1; }
+  .box-eye.l { left:22%; } .box-eye.r { right:22%; width:20%; top:29%; }
+  .box-eye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:box-goggle 1s ease-in-out infinite; }
+  .box-brow { position:absolute; top:24%; width:22%; height:4%; background:#111; border-radius:99px; z-index:2; }
+  .box-brow.l { left:22%; transform:rotate(16deg); } .box-brow.r { right:22%; transform:rotate(-16deg); }
+  .box-mouth { position:absolute; left:32%; right:32%; top:44%; height:9%; z-index:1; background:#6b1020; border:4px solid #111; border-radius:4px 4px 999px 999px; overflow:hidden; }
+  .box-mouth::before { content:""; position:absolute; left:10%; right:10%; top:0; height:40%; background:repeating-linear-gradient(90deg, #fff 0 22%, #111 22% 28%); }
+  .box-mglove { position:absolute; top:42%; width:28%; aspect-ratio:1; background:#1e6bff; border:5px solid #111; border-radius:50% 50% 44% 44%; z-index:2;
     transition:transform .15s ease-out; }
-  .mb-mglove.l { left:-14%; } .mb-mglove.r { right:-14%; }
-  .mb-mon.block .mb-mglove.l { transform:translate(70%, -60%) rotate(20deg); }
-  .mb-mon.block .mb-mglove.r { transform:translate(-70%, -60%) rotate(-20deg); }
-  .mb-mon.hit { animation:mb-hit .3s ease-out; }
-  .mb-mon.hit .mb-eye i { animation:mb-dizzy .4s linear infinite; }
-  .mb-mon.hit .mb-mouth { left:40%; right:40%; border-radius:50%; }
-  .mb-mon.ko { transform-origin:50% 100%; }
-  .mb-mon.ko.landed .mb-body { animation:mb-thud .35s ease-out; }   /* one bounce on the canvas */
-  .mb-dizzy.small { transform:translate(-50%, -50%); }
-  .mb-dizzy.small span { font-size:1.6rem; }
-  .mb-mon.ko .mb-eye i { display:none; }
-  .mb-mon.ko .mb-eye::before, .mb-mon.ko .mb-eye::after { content:""; position:absolute; left:15%; right:15%; top:44%; height:12%; background:#111; border-radius:9px; }
-  .mb-mon.ko .mb-eye::before { transform:rotate(45deg); } .mb-mon.ko .mb-eye::after { transform:rotate(-45deg); }
-  .mb-mon.gloat .mb-mouth { height:15%; } .mb-mon.gloat .mb-mouth::after { content:""; position:absolute; left:24%; right:24%; bottom:-40%; height:80%; background:#ff6f91; border-radius:50%; }
-  .mb-mon.gloat .mb-mglove.l { transform:translate(10%, -90%) rotate(-30deg); } .mb-mon.gloat .mb-mglove.r { transform:translate(-10%, -90%) rotate(30deg); }
-  .mb-mon.gloat { animation:mb-flex .35s ease-in-out infinite alternate; }
+  .box-mglove.l { left:-14%; } .box-mglove.r { right:-14%; }
+  .box-mon.block .box-mglove.l { transform:translate(70%, -60%) rotate(20deg); }
+  .box-mon.block .box-mglove.r { transform:translate(-70%, -60%) rotate(-20deg); }
+  .box-mon.hit { animation:box-hit .3s ease-out; }
+  .box-mon.hit .box-eye i { animation:box-dizzy .4s linear infinite; }
+  .box-mon.hit .box-mouth { left:40%; right:40%; border-radius:50%; }
+  .box-mon.ko { transform-origin:50% 100%; }
+  .box-mon.ko.landed .box-body { animation:box-thud .35s ease-out; }   /* one bounce on the canvas */
+  .box-dizzy.small { transform:translate(-50%, -50%); }
+  .box-dizzy.small span { font-size:1.6rem; }
+  .box-mon.ko .box-eye i { display:none; }
+  .box-mon.ko .box-eye::before, .box-mon.ko .box-eye::after { content:""; position:absolute; left:15%; right:15%; top:44%; height:12%; background:#111; border-radius:9px; }
+  .box-mon.ko .box-eye::before { transform:rotate(45deg); } .box-mon.ko .box-eye::after { transform:rotate(-45deg); }
+  .box-mon.gloat .box-mouth { height:15%; } .box-mon.gloat .box-mouth::after { content:""; position:absolute; left:24%; right:24%; bottom:-40%; height:80%; background:#ff6f91; border-radius:50%; }
+  .box-mon.gloat .box-mglove.l { transform:translate(10%, -90%) rotate(-30deg); } .box-mon.gloat .box-mglove.r { transform:translate(-10%, -90%) rotate(30deg); }
+  .box-mon.gloat { animation:box-flex .35s ease-in-out infinite alternate; }
 
   /* The pads: round targets worn on the monster */
-  .mb-pad { position:absolute; transform:translate(-50%, -50%); width:var(--pd); height:var(--pd); padding:0; border-radius:50%; background:#fff; color:#111; font:inherit;
+  /* Boss Battle: the boss replaces the monster's drawing (centred on the monster box, feet on the canvas) */
+  .box-mon.bossy > :not(.box-boss) { display:none; }
+  .box-boss { position:absolute; left:50%; bottom:0; transform:translateX(-50%); }
+  .box-pad { position:absolute; transform:translate(-50%, -50%); width:var(--pd); height:var(--pd); padding:0; border-radius:50%; background:#fff; color:#111; font:inherit;
     border:5px solid #111; box-shadow:0 0 0 5px #e8173c, 0 0 0 9px #111; font-size:calc(var(--pd) * .46); line-height:1; display:flex; align-items:center; justify-content:center;
     cursor:pointer; touch-action:manipulation; z-index:4; white-space:nowrap; }
-  .mb-pad.pic { font-size:calc(var(--pd) * .5); }
-  .mb-pad.flip { animation:mb-flip .3s ease-out; }
-  .mb-pad.right { background:#b8ffcf; box-shadow:0 0 0 5px #00b86b, 0 0 0 9px #111; animation:mb-wiggle .4s ease-in-out 3; }
-  .mb-pad.dim { opacity:.45; }
+  .box-pad.pic { font-size:calc(var(--pd) * .5); }
+  .box-pad.flip { animation:box-flip .3s ease-out; }
+  .box-pad.right { background:#b8ffcf; box-shadow:0 0 0 5px #00b86b, 0 0 0 9px #111; animation:box-wiggle .4s ease-in-out 3; }
+  .box-pad.dim { opacity:.45; }
 
   /* Your gloves (first person): big red gloves at the bottom corners */
-  .mb-glove { position:absolute; bottom:calc(var(--gz) * -.3); width:var(--gz); height:calc(var(--gz) * 1.15); z-index:6; pointer-events:none; will-change:transform; }
-  .mb-glove.l { left:2%; } .mb-glove.r { right:2%; }
-  .mb-gfist { position:absolute; inset:0 0 22%; background:radial-gradient(circle at 35% 30%, #ff7a7a 0 18%, #e8173c 50%, #b30f2c 100%); border:6px solid #111;
+  .box-glove { position:absolute; bottom:calc(var(--gz) * -.3); width:var(--gz); height:calc(var(--gz) * 1.15); z-index:6; pointer-events:none; will-change:transform; }
+  .box-glove.l { left:2%; } .box-glove.r { right:2%; }
+  .box-gfist { position:absolute; inset:0 0 22%; background:radial-gradient(circle at 35% 30%, #ff7a7a 0 18%, #e8173c 50%, #b30f2c 100%); border:6px solid #111;
     border-radius:48% 52% 40% 40%; }
-  .mb-gfist::before { content:""; position:absolute; top:22%; width:34%; height:36%; background:#e8173c; border:5px solid #111; border-radius:50%; }
-  .mb-glove.l .mb-gfist::before { right:-10%; } .mb-glove.r .mb-gfist::before { left:-10%; }   /* thumbs */
-  .mb-gcuff { position:absolute; left:12%; right:12%; bottom:0; height:30%; background:#fff; border:6px solid #111; border-radius:8px 8px 14px 14px;
+  .box-gfist::before { content:""; position:absolute; top:22%; width:34%; height:36%; background:#e8173c; border:5px solid #111; border-radius:50%; }
+  .box-glove.l .box-gfist::before { right:-10%; } .box-glove.r .box-gfist::before { left:-10%; }   /* thumbs */
+  .box-gcuff { position:absolute; left:12%; right:12%; bottom:0; height:30%; background:#fff; border:6px solid #111; border-radius:8px 8px 14px 14px;
     background-image:linear-gradient(180deg, transparent 40%, #e8173c 40% 60%, transparent 60%); }
-  .mb-glove { animation:mb-guard 1.4s ease-in-out infinite; }
-  .mb-glove.r { animation-delay:-.7s; }
+  .box-glove { animation:box-guard 1.4s ease-in-out infinite; }
+  .box-glove.r { animation-delay:-.7s; }
 
-  .mb-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:10; pointer-events:none; font-size:2.4rem; color:#ffd400; -webkit-text-stroke:3px #111;
-    paint-order:stroke fill; text-shadow:0 5px 0 #111; white-space:nowrap; animation:mb-word .8s ease-out forwards; }
-  .mb-word.bad { color:#fff; font-size:1.7rem; }
-  .mb-word.big { font-size:3.6rem; animation:mb-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
-  .mb-star { position:absolute; font-size:1.6rem; pointer-events:none; z-index:8; }
-  .mb-ring.koed { animation:mb-shake .07s linear 8; }
-  .mb-ring.koed::after { content:""; position:absolute; inset:0; z-index:11; pointer-events:none; background:radial-gradient(circle, transparent 30%, rgba(160,0,20,.75) 100%);
-    animation:mb-red .6s ease-out both; }
-  .mb-dizzy { position:absolute; left:50%; top:50%; width:60%; aspect-ratio:1; transform:translate(-50%, -50%); z-index:12; pointer-events:none; animation:mb-spin 1.2s linear infinite; }
-  .mb-dizzy span { position:absolute; font-size:2.4rem; }
+  .box-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:10; pointer-events:none; font-size:2.4rem; color:#ffd400; -webkit-text-stroke:3px #111;
+    paint-order:stroke fill; text-shadow:0 5px 0 #111; white-space:nowrap; animation:box-word .8s ease-out forwards; }
+  .box-word.bad { color:#fff; font-size:1.7rem; }
+  .box-word.big { font-size:3.6rem; animation:box-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
+  .box-star { position:absolute; font-size:1.6rem; pointer-events:none; z-index:8; }
+  .box-ring.koed { animation:box-shake .07s linear 8; }
+  .box-ring.koed::after { content:""; position:absolute; inset:0; z-index:11; pointer-events:none; background:radial-gradient(circle, transparent 30%, rgba(160,0,20,.75) 100%);
+    animation:box-red .6s ease-out both; }
+  .box-dizzy { position:absolute; left:50%; top:50%; width:60%; aspect-ratio:1; transform:translate(-50%, -50%); z-index:12; pointer-events:none; animation:box-spin 1.2s linear infinite; }
+  .box-dizzy span { position:absolute; font-size:2.4rem; }
 
-  @keyframes mb-ring { 25% { rotate:-14deg; } 75% { rotate:14deg; } }
-  @keyframes mb-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
-  @keyframes mb-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
-  @keyframes mb-hit { 30% { scale:1.15 .85; rotate:-6deg; } }
-  @keyframes mb-flex { from { rotate:-6deg; } to { rotate:6deg; } }
-  @keyframes mb-flip { from { transform:translate(-50%, -50%) rotateY(90deg); } }
-  @keyframes mb-wiggle { 25% { rotate:-8deg; } 75% { rotate:8deg; } }
-  @keyframes mb-guard { 50% { translate:0 -5%; } }
-  @keyframes mb-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.5); } 25% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.2); }
+  @keyframes box-ring { 25% { rotate:-14deg; } 75% { rotate:14deg; } }
+  @keyframes box-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
+  @keyframes box-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
+  @keyframes box-hit { 30% { scale:1.15 .85; rotate:-6deg; } }
+  @keyframes box-flex { from { rotate:-6deg; } to { rotate:6deg; } }
+  @keyframes box-flip { from { transform:translate(-50%, -50%) rotateY(90deg); } }
+  @keyframes box-wiggle { 25% { rotate:-8deg; } 75% { rotate:8deg; } }
+  @keyframes box-guard { 50% { translate:0 -5%; } }
+  @keyframes box-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.5); } 25% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.2); }
     to { opacity:0; transform:translate(-50%, -100%) rotate(-8deg) scale(1); } }
-  @keyframes mb-pop { from { transform:translate(-50%, -50%) rotate(-8deg) scale(.2); } }
-  @keyframes mb-shake { 25% { translate:-8px 3px; } 75% { translate:8px -3px; } }
-  @keyframes mb-red { from { opacity:0; } 30% { opacity:1; } to { opacity:.7; } }
-  @keyframes mb-spin { to { transform:translate(-50%, -50%) rotate(360deg); } }
-  @keyframes mb-thud { 40% { transform:translateX(-6%) scaleX(.92); } 70% { transform:translateX(2%); } }
+  @keyframes box-pop { from { transform:translate(-50%, -50%) rotate(-8deg) scale(.2); } }
+  @keyframes box-shake { 25% { translate:-8px 3px; } 75% { translate:8px -3px; } }
+  @keyframes box-red { from { opacity:0; } 30% { opacity:1; } to { opacity:.7; } }
+  @keyframes box-spin { to { transform:translate(-50%, -50%) rotate(360deg); } }
+  @keyframes box-thud { 40% { transform:translateX(-6%) scaleX(.92); } 70% { transform:translateX(2%); } }
   @media (prefers-reduced-motion: reduce) {
-    .mb-eye i, .mb-glove, .mb-mon.hit, .mb-mon.gloat, .mb-pad.right, .mb-word, .mb-ring.koed, .mb-dizzy, .mb-bell.ring { animation:none !important; }
+    .box-eye i, .box-glove, .box-mon.hit, .box-mon.gloat, .box-pad.right, .box-word, .box-ring.koed, .box-dizzy, .box-bell.ring { animation:none !important; }
   }`;
 
   function injectCss() {
-    if (document.getElementById("mb-css")) return;
+    if (document.getElementById("box-css")) return;
     const style = document.createElement("style");
-    style.id = "mb-css";
+    style.id = "box-css";
     style.textContent = CSS;
     document.head.appendChild(style);
   }
@@ -156,10 +159,12 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 12000,
     input: "tap",
-    tutorial: true, // has a ctx.tutorial script
+    tutorial: true,
+    bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
     listening: true, // the target is only ever spoken: left out when listening games are off (Settings)
 
     start(ctx) {
+      const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: you box the boss itself
       injectCss();
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -170,32 +175,36 @@
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
-      wrap.className = "mb";
+      wrap.className = "box";
       const top = document.createElement("div");
-      top.className = "mb-top";
+      top.className = "box-top";
       const bell = document.createElement("button");
-      bell.className = "mb-bell";
+      bell.className = "box-bell";
       bell.textContent = "🔔";
       bell.setAttribute("aria-label", TEXT.bellLabel);
       bell.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       const pips = document.createElement("div");
-      pips.className = "mb-pips";
-      pips.innerHTML = `<div class="mb-row hits">${'<span class="mb-pip"></span>'.repeat(GOAL)}</div>` +
-        `<div class="mb-row misses">${'<span class="mb-pip"></span>'.repeat(MISSES)}</div>`;
+      pips.className = "box-pips";
+      pips.innerHTML = `<div class="box-row hits">${'<span class="box-pip"></span>'.repeat(GOAL)}</div>` +
+        `<div class="box-row misses">${'<span class="box-pip"></span>'.repeat(MISSES)}</div>`;
       top.append(bell, pips);
       const ring = document.createElement("div");
-      ring.className = "mb-ring";
-      ring.innerHTML = '<div class="mb-rope" style="top:24%"></div><div class="mb-rope" style="top:38%"></div><div class="mb-rope" style="top:52%"></div><div class="mb-fx"></div>';
-      const fx = ring.querySelector(".mb-fx");
+      ring.className = "box-ring";
+      ring.innerHTML = '<div class="box-rope" style="top:24%"></div><div class="box-rope" style="top:38%"></div><div class="box-rope" style="top:52%"></div><div class="box-fx"></div>';
+      const fx = ring.querySelector(".box-fx");
       const mon = document.createElement("div");
-      mon.className = "mb-mon";
-      mon.innerHTML = '<div class="mb-body"></div><div class="mb-shorts"></div><div class="mb-brow l"></div><div class="mb-brow r"></div>' +
-        '<div class="mb-eye l"><i></i></div><div class="mb-eye r"><i></i></div><div class="mb-mouth"></div><div class="mb-mglove l"></div><div class="mb-mglove r"></div>';
+      mon.className = "box-mon";
+      mon.innerHTML = '<div class="box-body"></div><div class="box-shorts"></div><div class="box-brow l"></div><div class="box-brow r"></div>' +
+        '<div class="box-eye l"><i></i></div><div class="box-eye r"><i></i></div><div class="box-mouth"></div><div class="box-mglove l"></div><div class="box-mglove r"></div>';
+      // Boss Battle: the opponent is the boss (the monster's own body is hidden; the pads, falls and K.O. stay).
+      let boss = null;
+      if (bossId) { mon.classList.add("bossy"); boss = window.Boss.el(bossId, "var(--mz)"); boss.classList.add("box-boss"); mon.appendChild(boss); }
+      const bossMood = (m) => { if (boss) window.Boss.setMood(boss, m); };
       ring.appendChild(mon);
       const gloves = ["l", "r"].map((s) => {
         const g = document.createElement("div");
-        g.className = `mb-glove ${s}`;
-        g.innerHTML = '<div class="mb-gfist"></div><div class="mb-gcuff"></div>';
+        g.className = `box-glove ${s}`;
+        g.innerHTML = '<div class="box-gfist"></div><div class="box-gcuff"></div>';
         ring.appendChild(g);
         return g;
       });
@@ -206,7 +215,7 @@
       const SPOTS = [{ fx: 0.5, fy: 0.07 }, { fx: 0.27, fy: 0.72 }, { fx: 0.73, fy: 0.72 }];
       const pads = SPOTS.map((s, i) => {
         const b = document.createElement("button");
-        b.className = "mb-pad";
+        b.className = "box-pad";
         b.addEventListener("pointerdown", (e) => { e.preventDefault(); punch(p); });
         b.addEventListener("click", (e) => { if (e.detail === 0) punch(p); });
         ring.appendChild(b);
@@ -273,6 +282,7 @@
       function hit(p) {
         noise(0.12, "lowpass", 1800, 300, 0.7); tone(140, 0.1, "square", 0.15); // POW
         mon.classList.remove("hit"); void mon.offsetWidth; mon.classList.add("hit");
+        bossMood("hurt");
         word(p, TEXT.pow[step % TEXT.pow.length], false);
         stars(p);
         if (p.opt.kind === "pic") ctx.say(p.opt.spoken);
@@ -287,6 +297,7 @@
         const blockIt = p.i === 0 || Math.random() < 0.5;
         if (blockIt) {
           mon.classList.add("block");
+          bossMood("laugh");
           tone(300, 0.06, "square", 0.1); noise(0.06, "bandpass", 900, 600, 0.3); // thud on its gloves
         } else {
           dodgeDir = p.i === 1 ? 1 : -1;
@@ -306,6 +317,7 @@
         state = "ko";
         mon.classList.remove("hit");
         mon.classList.add("ko");
+        bossMood("dead");
         // TIMBER: it topples onto its side (the frame loop stops placing it, so place it once here),
         // its pads fade away, it bounces once on the canvas, and stars circle its head.
         mon.style.transition = reduceMotion ? "" : "transform .55s cubic-bezier(.55,0,.9,.55)";
@@ -314,7 +326,7 @@
         ctx.later(() => {
           mon.classList.add("landed");
           const s = document.createElement("div");
-          s.className = "mb-dizzy small";
+          s.className = "box-dizzy small";
           s.style.left = `${mx - mz * 0.24}px`; s.style.top = `${H * 0.95 - mz * 0.58}px`; s.style.width = `${mz * 0.42}px`;
           s.innerHTML = [0, 120, 240].map((a) => `<span style="left:${50 + 40 * Math.cos(a * Math.PI / 180)}%;top:${50 + 40 * Math.sin(a * Math.PI / 180)}%">⭐</span>`).join("");
           fx.appendChild(s);
@@ -334,11 +346,12 @@
         noise(0.3, "lowpass", 1200, 100, 0.8); tone(90, 0.3, "square", 0.15);
         gloves.forEach((g) => { g.getAnimations().forEach((a) => a.cancel()); g.style.transition = "transform .4s ease-in"; g.style.transform = "translateY(70%) rotate(20deg)"; });
         const d = document.createElement("div");
-        d.className = "mb-dizzy";
+        d.className = "box-dizzy";
         d.innerHTML = [0, 72, 144, 216, 288].map((a) => `<span style="left:${50 + 42 * Math.cos(a * Math.PI / 180)}%;top:${50 + 42 * Math.sin(a * Math.PI / 180)}%">⭐</span>`).join("");
         fx.appendChild(d);
         // …while it flexes and gloats.
         mon.classList.add("gloat");
+        bossMood("laugh");
         ctx.later(() => {
           bigWord(TEXT.haha, "#ff4d6d");
           [0, 0.18, 0.36].forEach((t) => { tone(330, 0.1, "square", 0.08, t); tone(262, 0.1, "square", 0.06, t + 0.09); }); // ha-ha-ha
@@ -348,7 +361,7 @@
 
       function word(p, text, bad) {
         const w = document.createElement("div");
-        w.className = "mb-word" + (bad ? " bad" : "");
+        w.className = "box-word" + (bad ? " bad" : "");
         w.textContent = text;
         const r = p.el.getBoundingClientRect(), b = ring.getBoundingClientRect();
         w.style.left = `${Math.max(70, Math.min(W - 70, r.left + r.width / 2 - b.left))}px`;
@@ -358,7 +371,7 @@
       }
       function bigWord(text, color) {
         const w = document.createElement("div");
-        w.className = "mb-word big";
+        w.className = "box-word big";
         w.style.color = color;
         w.textContent = text;
         w.style.left = `${W / 2}px`; w.style.top = `${H * 0.3}px`;
@@ -369,7 +382,7 @@
         const r = p.el.getBoundingClientRect(), b = ring.getBoundingClientRect();
         for (let k = 0; k < 5; k++) {
           const s = document.createElement("div");
-          s.className = "mb-star";
+          s.className = "box-star";
           s.textContent = k % 2 ? "💥" : "⭐";
           s.style.left = `${r.left + r.width / 2 - b.left}px`; s.style.top = `${r.top + r.height / 2 - b.top}px`;
           fx.appendChild(s);

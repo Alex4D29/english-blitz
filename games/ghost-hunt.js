@@ -79,6 +79,9 @@
   .gh-g.pop .gh-in, .gh-f.pop .gh-in { animation:gh-pop .35s ease-in forwards; }
 
   .gh-f { position:absolute; left:0; top:0; width:var(--gw); height:calc(var(--gw) * 1.15); will-change:transform; }
+  /* The eyes only show in the beam, or once the lights are on: glowing eyes in the dark gave the ghosts away */
+  .gh-f .gh-eye { opacity:0; transition:opacity .15s; }
+  .gh-f.seen .gh-eye, .gh-dark.on ~ .gh-faces .gh-eye, .gh-room.eyes .gh-eye { opacity:1; }
   .gh-eye { position:absolute; top:22%; width:16%; height:20%; border-radius:50%; background:#111;
     box-shadow:0 0 0 3px #fff8c4, 0 0 14px 6px rgba(255,248,196,.75); }
   .gh-eye::after { content:""; position:absolute; left:22%; top:16%; width:38%; height:34%; border-radius:50%; background:#fff; }
@@ -191,7 +194,7 @@
       card.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       card.addEventListener("click", (e) => { if (e.detail === 0) replay(); });
       const room = document.createElement("div");
-      room.className = "gh-room";
+      room.className = "gh-room" + ((ctx.speed || 1) >= 1.75 ? " eyes" : ""); // eyes glow in the dark again when it's fast (too tricky without)
       room.innerHTML = '<div class="gh-wall"></div><div class="gh-floor"></div><div class="gh-window"></div><div class="gh-frame"></div>' +
         '<div class="gh-ghosts"></div><div class="gh-dark"></div><div class="gh-faces"></div><div class="gh-fx"></div>';
       const dark = room.querySelector(".gh-dark");
@@ -220,8 +223,8 @@
       function measure() {
         const r = room.getBoundingClientRect();
         w = r.width; h = r.height;
-        const k = n >= 5 ? [0.23, 0.19] : n >= 4 ? [0.25, 0.2] : [0.28, 0.22];
-        gw = Math.max(56, Math.min(w * k[0], h * k[1]));
+        const k = n >= 5 ? [0.2, 0.16] : n >= 4 ? [0.22, 0.17] : [0.24, 0.19]; // (a bit smaller than at first: the teacher found it too easy)
+        gw = Math.max(48, Math.min(w * k[0], h * k[1]));
         gh = gw * 1.15;
         R = Math.max(70, gw * 0.95);
         room.style.setProperty("--gw", `${gw}px`);
@@ -315,6 +318,7 @@
           g.stateT += dt;
           const lit = active && !done && Math.hypot(g.x - light.x, g.y - light.y) < R * 0.72;
           g.face.classList.toggle("lit", lit && g.tag.right);
+          g.face.classList.toggle("seen", lit); // eyes show only in the beam
 
           if (g.state === "flee") {
             g.x += g.vx * dt; g.y += g.vy * dt;

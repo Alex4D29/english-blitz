@@ -9,7 +9,7 @@
 (function () {
   const TEXT = {
     name: { en: "Test Your Strength" },
-    icon: "🔨",
+    icon: "💪", // (Whack-a-Mole is 🔨)
     howTo: (list) => ({ en: {
       steps: [
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],
@@ -27,7 +27,7 @@
     flop: "OOPS!",
   };
 
-  const BANDS = ["#2fd15b", "#ffd400", "#ff4d6d"]; // bottom, middle, top
+  // (band colours are the power bar's: PowerBar.colors, bottom to top)
   const CSS = `
   .ts { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:8px; }
   .ts-card { flex:none; min-width:84px; height:72px; padding:0 18px; border-radius:18px; font:inherit; font-size:2.6rem; line-height:1; background:#fff; color:#111;
@@ -50,12 +50,20 @@
     border-radius:50% 50% 10% 10% / 70% 70% 10% 10%; }
   .ts-bell.ring { animation:ts-ring .12s linear 6; }
   .ts-pad { position:absolute; left:-10%; right:-10%; bottom:-8px; height:14px; background:#e8173c; border:4px solid #111; border-radius:6px; }
-  .ts-puck { position:absolute; left:50%; width:calc(var(--tw) * .4); height:calc(var(--tw) * .22); margin-left:calc(var(--tw) * -.2); background:#444; border:4px solid #111;
+  /* The puck rides a rail up the left side of the post, so it never covers an answer (it used to slide up the middle and sat on the bottom one) */
+  .ts-rail { position:absolute; left:2%; width:6%; top:var(--bell); bottom:0; background:#bbb; border:3px solid #111; border-radius:4px; }
+  .ts-puck { position:absolute; left:-4%; width:18%; height:calc(var(--tw) * .16); background:#444; border:4px solid #111;
     border-radius:8px; z-index:3; }
   /* The macho monster: purple, a tank top, big arms, a giant mallet. Anchor: feet. --mz is its height */
   .ts-mon { position:absolute; left:0; top:0; width:calc(var(--mz) * .9); height:var(--mz); margin:calc(var(--mz) * -1) 0 0 calc(var(--mz) * -.45); z-index:5; pointer-events:none; }
   .ts-body { position:absolute; left:14%; right:14%; top:14%; bottom:0; background:#9c6bff; border:5px solid #111; border-radius:44% 44% 30% 30%; }
-  .ts-top { position:absolute; left:22%; right:22%; top:46%; bottom:6%; background:#fff; border:4px solid #111; border-radius:10px 10px 20px 20px; }
+  /* A red tank top with a white trim and a big yellow star (a plain white one read as an empty space) */
+  .ts-top { position:absolute; left:22%; right:22%; top:46%; bottom:6%; background:#e8173c; border:4px solid #111; border-radius:10px 10px 20px 20px;
+    box-shadow:inset 0 5px 0 #fff; display:flex; align-items:center; justify-content:center; }
+  .ts-top::after { content:"★"; color:#ffd400; font-size:calc(var(--mz) * .2); line-height:1; -webkit-text-stroke:2px #111; }
+  /* The fist that grips the mallet (drawn over the handle) */
+  .ts-fist { position:absolute; left:73%; top:45%; width:15%; aspect-ratio:1; background:#7d4fe0; border:4px solid #111; border-radius:45%; z-index:5;
+    background-image:repeating-linear-gradient(90deg, transparent 0 22%, rgba(0,0,0,.45) 22% 28%); }   /* darker, with knuckles, so it reads as a hand */
   .ts-arm { position:absolute; top:36%; width:30%; height:26%; background:#9c6bff; border:5px solid #111; border-radius:50%; z-index:1; }
   .ts-arm.l { left:-6%; } .ts-arm.r { right:-6%; }
   .ts-eye { position:absolute; top:22%; width:22%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:2; }
@@ -64,13 +72,13 @@
   .ts-brow { position:absolute; top:17%; width:22%; height:4%; background:#111; border-radius:9px; z-index:3; }
   .ts-brow.l { left:28%; transform:rotate(-10deg); } .ts-brow.r { right:28%; transform:rotate(10deg); }
   .ts-mouth { position:absolute; left:36%; right:36%; top:36%; height:8%; z-index:2; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; }
-  /* The mallet, in the monster's hands (its pivot, at the bottom: 64% across, 48% up). At rest it leans back over the
-     shoulder, charging raises it further back, and the slam swings it over onto the pad at the foot of the tower
+  /* The mallet, gripped in the right fist (its pivot, at the bottom: 80% across, 48% up). At rest it's held up proudly (not across the face), it tips back behind the head while charging, and
+     the slam swings it over onto the pad at the foot of the tower
      (the monster is placed so the mallet head lands there), so it never sits over the answers. */
-  .ts-mallet { position:absolute; left:58%; bottom:48%; width:13%; height:80%; z-index:4; transform-origin:50% 100%; transform:rotate(-30deg); transition:transform .2s; }
+  .ts-mallet { position:absolute; left:73.5%; bottom:48%; width:13%; height:80%; z-index:4; transform-origin:50% 100%; transform:rotate(-6deg); transition:transform .2s; }
   .ts-mallet::before { content:""; position:absolute; left:32%; right:32%; top:18%; bottom:0; background:#8b5a2b; border:3px solid #111; border-radius:3px; }
   .ts-mallet::after { content:""; position:absolute; left:-110%; right:-110%; top:0; height:22%; background:#e8173c; border:4px solid #111; border-radius:8px; }
-  .ts-mon.raise .ts-mallet { transform:rotate(-75deg); transition:transform .5s; }
+  .ts-mon.raise .ts-mallet { transform:rotate(-60deg); transition:transform .5s; }
   .ts-mon.slam .ts-mallet { transform:rotate(130deg); transition:transform .14s ease-in; }
   .ts-mon.flex { animation:ts-flex .3s ease-in-out infinite alternate; }
   .ts-mon.flex .ts-arm { transform:translateY(-40%) scale(1.25); }
@@ -107,7 +115,9 @@
       injectCss();
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const { tone, sweep, noise } = ctx.sfx;
-      const C = ctx.choiceRows(1, 3, { lowercase: true });
+      // Bands = power bands: 3 at normal speed, 4 from 1.75× (Practice MEDIUM), 5 from 2.5× (HARD).
+      const NZ = window.PowerBar.zoneCount(ctx.speed), BANDS = window.PowerBar.colors(NZ);
+      const C = ctx.choiceRows(1, NZ, { lowercase: true });
       const row = ctx.shuffle(C.rows[0].slice());
 
       const wrap = document.createElement("div");
@@ -131,7 +141,7 @@
       tower.className = "ts-tower";
       tower.innerHTML = '<div class="ts-bell"></div><div class="ts-post">' +
         row.map((o, i) => `<div class="ts-band" style="background:${BANDS[i]}"><div class="ts-sign"></div></div>`).join("") +
-        '</div><div class="ts-pad"></div><div class="ts-puck"></div>';
+        '</div><div class="ts-rail"></div><div class="ts-pad"></div><div class="ts-puck"></div>';
       fair.appendChild(tower);
       const bands = [...tower.querySelectorAll(".ts-band")].map((el, i) => ({ el, i, opt: row[i], sign: el.querySelector(".ts-sign") }));
       bands.forEach((b) => { b.sign.textContent = b.opt.text; });
@@ -139,7 +149,7 @@
       const mon = document.createElement("div");
       mon.className = "ts-mon";
       mon.innerHTML = '<div class="ts-body"></div><div class="ts-top"></div><div class="ts-arm l"></div><div class="ts-arm r"></div><div class="ts-brow l"></div><div class="ts-brow r"></div>' +
-        '<div class="ts-eye l"><i></i></div><div class="ts-eye r"><i></i></div><div class="ts-mouth"></div><div class="ts-mallet"></div>';
+        '<div class="ts-eye l"><i></i></div><div class="ts-eye r"><i></i></div><div class="ts-mouth"></div><div class="ts-mallet"></div><div class="ts-fist"></div>';
       fair.appendChild(mon);
 
       let W = 0, H = 0, tw = 90, th = 300, bellH = 40, tx = 0;
@@ -152,22 +162,24 @@
         tower.style.cssText = `left:${tx}px;top:${H * 0.86 - th}px;height:${th}px;--tw:${tw}px;--bell:${bellH}px;`;
         const mz = Math.max(100, Math.min(H * 0.42, 170));
         fair.style.setProperty("--mz", `${mz}px`);
-        // Its mallet pivots 0.13 mz right of its middle and the head lands 0.675 mz to the right at the slam,
+        // Its mallet pivots in its fist, 0.27 mz right of its middle, and the head lands 0.545 mz further at the slam,
         // so stand it there to bring the mallet down on the pad (the tower's middle).
-        mon.style.transform = `translate(${Math.max(mz * 0.5, tx - mz * 0.675)}px, ${H * 0.86 + 2}px)`;
+        mon.style.transform = `translate(${Math.max(mz * 0.5, tx - mz * 0.815)}px, ${H * 0.86 + 2}px)`;
         // Words are sized to the post (76% of the tower), so long sight words fit.
-        bands.forEach((b) => { b.sign.style.fontSize = b.opt.kind === "word" ? `${Math.min(tw * 0.3, (tw * 0.76 * 0.86) / (b.opt.text.length * 0.62))}px` : ""; });
+        // (and to the band height, which shrinks with 4 or 5 bands)
+        const bandH = (th - bellH) / NZ;
+        bands.forEach((b) => { b.sign.style.fontSize = `${b.opt.kind === "word" ? Math.min(tw * 0.3, bandH * 0.5, (tw * 0.76 * 0.86) / (b.opt.text.length * 0.62)) : Math.min(tw * 0.36, bandH * 0.56)}px`; });
         setPuck(0);
       }
-      // The puck's height: 0 = on the pad, 1 = up at the bell. Band i spans (i/3 .. (i+1)/3) of the post.
+      // The puck's height: 0 = on the pad, 1 = up at the bell. Band i spans (i/NZ .. (i+1)/NZ) of the post.
       function setPuck(f) {
-        const post = th - bellH, ph = tw * 0.22;
-        puck.style.top = `${(bellH + post * (1 - f) - ph - (f > 0 ? 0 : 4)).toFixed(1)}px`;
+        const post = th - bellH, ph = tw * 0.16;   // f = 0: at the foot of the rail; otherwise centred on that height
+        puck.style.top = `${(f > 0 ? bellH + post * (1 - f) - ph / 2 : th - ph - 2).toFixed(1)}px`;
       }
 
       let done = false;
       const bar = ctx.powerBar({
-        parent: fair, press: fair, icon: "🔨",
+        parent: fair, press: fair, icon: "💪", zones: NZ,
         onStart: () => mon.classList.add("raise"),
         onRelease: (zone) => smash(bands[zone]),
       });
@@ -181,7 +193,7 @@
         noise(0.12, "lowpass", 800, 100, 0.8); tone(90, 0.12, "square", 0.15); // WHAM on the pad
         const right = b.opt.right;
         ctx.freezeTimer(); // reported when the puck arrives, so the frame doesn't move on before it's seen
-        const goal = (b.i + 0.5) / 3, t0 = performance.now(), ms = reduceMotion ? 1 : 520;
+        const goal = (b.i + 0.5) / NZ, t0 = performance.now(), ms = reduceMotion ? 1 : 520;
         sweep(200, 200 + goal * 900, 0.5, "square", 0.06); // the puck whizzes up
         (function rise(now) {
           const k = Math.min(1, (now - t0) / ms), e = 1 - (1 - k) * (1 - k);

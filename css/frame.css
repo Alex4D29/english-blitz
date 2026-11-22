@@ -72,6 +72,7 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 .mode-btn .ico { font-size: 1.5em; -webkit-text-stroke: 0; }
 .mode-btn.fun { background: #ff2e88; }
 .mode-btn.challenge { background: #1e6bff; }
+.mode-btn.boss { background: linear-gradient(135deg, #ff7a00, #c4161c); }
 .mode-btn.practice, .mode-btn.tutorials { background: #1fd65f; min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
 .mode-btn.tutorials { background: #9c6bff; }
 .mode-btn:disabled { opacity: .5; }
@@ -375,3 +376,25 @@ body.demo #stage::before {
 .set-vol input { flex: 1; height: 36px; accent-color: #9c6bff; }
 .set-vol input:disabled { opacity: .4; }
 .set-note { margin: -4px 0 0; font-size: .95rem; font-weight: 700; line-height: 1.35; color: #444; }
+
+/* ---------- Practice difficulty (renderDiff in frame.js) ---------- */
+.diff { display: flex; gap: 10px; justify-content: center; width: min(100%, 440px); }
+.diff-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border: 5px solid var(--ink); border-radius: 18px;
+  box-shadow: 0 5px 0 var(--ink); background: #ddd; color: var(--ink); font: inherit; font-size: clamp(.9rem, 4.2vw, 1.1rem); cursor: pointer; touch-action: manipulation; }
+.diff-btn .ico { font-size: 1.8rem; line-height: 1; }
+.diff-btn[aria-pressed="true"] { background: #ffd400; transform: translateY(-2px); box-shadow: 0 7px 0 var(--ink); }
+.diff-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+
+/* ---------- Boss Battle (js/boss.js draws the boss, its seat in the corner and the cut-scenes; frame: renderHud) ---------- */
+.bs-hud { display: flex; align-items: center; gap: 6px; font-size: 1.2rem; white-space: nowrap; }
+.bs-hud .dot { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--ink); background: #eee; display: inline-block; }
+.bs-hud .dot.win { background: #4dd36b; } .bs-hud .dot.miss { background: #ff4d6d; }
+.bs-hud .seg { width: 18px; height: 14px; border: 3px solid var(--ink); border-radius: 4px; background: #e01b3c; display: inline-block; }
+.bs-hud .seg.gone { background: #ddd; }
+.bs-hud b { font-size: .9rem; }
+.res-bosses { font-size: 1.8rem; letter-spacing: 4px; }
+
+/* Title menu: a short description under each mode's name */
+.mode-txt { display: flex; flex-direction: column; gap: 4px; }
+.mode-desc { font-size: clamp(.9rem, 4vw, 1.15rem); line-height: 1.15; -webkit-text-stroke: 0; color: var(--paper); opacity: .95; white-space: normal;
+  text-shadow: 0 2px 0 rgba(0,0,0,.35); }

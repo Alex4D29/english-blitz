@@ -85,6 +85,12 @@
   .hs-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:9; pointer-events:none; font-size:1.8rem; color:#fff; -webkit-text-stroke:2px #111;
     paint-order:stroke fill; text-shadow:0 4px 0 #111; animation:hs-word .7s ease-out forwards; white-space:nowrap; }
   .hs-word.bad { color:#ff4d6d; }
+  /* The win: a giant trophy drops in from the top and lands with a bounce, in front of spinning golden rays */
+  .hs-win { position:absolute; left:50%; top:46%; width:var(--ty); height:var(--ty); transform:translate(-50%, -50%); z-index:7; pointer-events:none; }
+  .hs-rays { position:absolute; left:50%; top:50%; width:190%; height:190%; transform:translate(-50%, -50%); border-radius:50%; border:5px solid #111; opacity:0;
+    background:repeating-conic-gradient(#ffe066 0 12deg, #fff7c2 12deg 24deg); animation:hs-rays-in .3s .45s ease-out forwards, hs-rays-spin 6s linear infinite; }
+  .hs-trophy { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:var(--ty); line-height:1;
+    filter:drop-shadow(0 8px 0 rgba(0,0,0,.35)); animation:hs-drop 1.1s linear both; }
 
   @keyframes hs-swish { 40% { transform:scaleY(1.35) scaleX(.85); } }
   @keyframes hs-clang { 30% { transform:rotate(-4deg); } 60% { transform:rotate(3deg); } }
@@ -93,9 +99,14 @@
   @keyframes hs-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
   @keyframes hs-spin { to { transform:rotate(360deg); } }
   @keyframes hs-pop { from { transform:scale(.2); } }
+  @keyframes hs-drop {   /* falls (speeding up), squashes on landing, bounces back */
+    0% { transform:translateY(-160%) rotate(-12deg); animation-timing-function:cubic-bezier(.5,0,.8,.6); }
+    64% { transform:translateY(0) rotate(0) scale(1); } 74% { transform:translateY(4%) scale(1.25, .75); } 87% { transform:translateY(-6%) scale(.94, 1.08); } 100% { transform:none; } }
+  @keyframes hs-rays-in { to { opacity:.9; } }
+  @keyframes hs-rays-spin { to { transform:translate(-50%, -50%) rotate(360deg); } }
   @keyframes hs-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.6); } 30% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.15); }
     to { opacity:0; transform:translate(-50%, -110%) rotate(-8deg) scale(1); } }
-  @media (prefers-reduced-motion: reduce) { .hs-eye i, .hs-hoop.swish .hs-net, .hs-ball.yay .hs-bin, .hs-word { animation:none !important; } }`;
+  @media (prefers-reduced-motion: reduce) { .hs-eye i, .hs-hoop.swish .hs-net, .hs-ball.yay .hs-bin, .hs-word, .hs-trophy, .hs-rays { animation:none !important; } .hs-rays { opacity:.9; } }`;
 
   function injectCss() {
     if (document.getElementById("hs-css")) return;
@@ -288,7 +299,14 @@
         setBall(homeX, homeY);
         ball.classList.add("yay");
         [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, "triangle", 0.12, i * 0.08)); // ta-da
-        ctx.confetti(fx, W / 2, H * 0.4, { count: 90 });
+        // A giant trophy drops in and lands with a THUD, then the confetti bursts round it.
+        const tw = document.createElement("div");
+        tw.className = "hs-win";
+        tw.style.setProperty("--ty", `${Math.round(Math.min(W * 0.5, H * 0.5, 240))}px`);
+        tw.innerHTML = '<div class="hs-rays"></div><div class="hs-trophy">🏆</div>';
+        court.appendChild(tw);
+        sweep(1200, 300, 0.6, "sine", 0.06); // whistling down
+        ctx.later(() => { noise(0.25, "lowpass", 600, 80, 0.8); tone(90, 0.15, "square", 0.15); ctx.confetti(fx, W / 2, H * 0.4, { count: 110 }); }, reduceMotion ? 10 : 700);
         ctx.say(C.answer);
       }
 

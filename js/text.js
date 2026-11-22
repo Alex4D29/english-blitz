@@ -5,10 +5,17 @@ window.TEXT = {
   title: "ENGLISH\nBLITZ!",            // working title — rename freely
   fun: "FUN\nMODE",
   challenge: "CHALLENGE\nMODE",
-  practice: "PRACTICE",
+  boss: "BOSS\nBATTLE",
+  practice: "PICK A GAME",              // (Practice mode in the code)
+  // One line under each title-menu button
+  funDesc: "10 games, no pressure",
+  challengeDesc: "4 lives. It gets faster!",
+  bossDesc: "10 games, then beat a boss!",
+  practiceDesc: "Play one game you like",
+  tutorialsDesc: "Watch how each game works",
   tutorials: "TUTORIALS",
   pickTutorial: "Pick a game to watch!",
-  pickGame: "Pick a game!",
+  pickGame: "Tap a game to play it!",
   whatToPlay: "WHAT TO\nPLAY?",
   pickContent: "Pick one or more!",
   // Content picker: one toggle per list type, in this order.
@@ -32,6 +39,13 @@ window.TEXT = {
   helpLabel: "How to play",
   practiceScore: (won, played) => `✅ ${won} / ${played}`,
   practiceScoreLabel: (won, played) => `${won} cleared out of ${played}`,
+  // Practice difficulty (speeds from Challenge mode: it starts at 1× and tops out at 2.5×)
+  diffLabel: "How fast?",
+  diff: [
+    { icon: "🐢", name: "EASY", speed: 1 },
+    { icon: "🐇", name: "MEDIUM", speed: 1.75 },
+    { icon: "🚀", name: "HARD", speed: 2.5 },
+  ],
   settings: "SETTINGS",
   musicLabel: "Music",
   musicVolLabel: "Music volume",
@@ -64,7 +78,15 @@ window.TEXT = {
   challengeTitle: "WELL\nDONE!",
   newRecord: "NEW HIGH SCORE!",
   starsLabel: (n) => `${n} of 3 stars`,
-  stats: { cleared: "Cleared", accuracy: "Accuracy", speed: "Speed", best: "Best" },
+  stats: { cleared: "Cleared", accuracy: "Accuracy", speed: "Speed", best: "Best", levels: "Levels", showdown: "Showdown", bosses: "Bosses beaten" },
+  // Boss Battle (js/boss.js has the bosses' own lines)
+  bossWin: "BOSS\nBEATEN!",
+  bossLose: "THE BOSS\nWINS!",
+  bossResWin: (name) => `YOU BEAT\n${name}!`,
+  bossResLose: "SO\nCLOSE!",
+  bossWinsStamp: "BOSS\nWINS!",
+  bossShowdownLabel: (you, them) => `You ${you}, boss ${them}`,
+  bossBattleLabel: (hearts, hp) => `${hearts} hearts left, boss has ${hp} left`,
 
   spoken: {
     ready: "Let's go!",
@@ -74,5 +96,7 @@ window.TEXT = {
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
     done: "Well done!",
     record: "New high score!", // not "new record": TTS stresses "record" like the verb
+    bossWin: "You beat the boss! Amazing!",
+    bossLose: "So close! Try again!",
   },
 };

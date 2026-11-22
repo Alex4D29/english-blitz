@@ -36,12 +36,14 @@
   .mk-leaves { position:absolute; left:-10%; right:-10%; top:-30px; height:70px; border-radius:0 0 50% 50%; background:#2e8f38; border-bottom:5px solid #111; z-index:1; }
   .mk-top { position:absolute; left:8%; right:8%; height:14px; background:#7a4d29; border:4px solid #111; border-radius:99px; z-index:2; }
   .mk-banana { position:absolute; left:50%; font-size:var(--bn); line-height:1; transform:translate(-50%, -88%) rotate(-12deg); z-index:3;
-    filter:drop-shadow(0 6px 0 rgba(0,0,0,.3)); animation:mk-shine 1.2s ease-in-out infinite alternate; }
+    filter:drop-shadow(0 6px 0 rgba(0,0,0,.3)); animation:mk-shine 1.2s ease-in-out infinite alternate; will-change:transform; }
   .mk-banana.eat { animation:mk-eat .9s steps(3) forwards; }
   .mk-bush { position:absolute; left:50%; bottom:-30px; width:70%; height:90px; margin-left:-35%; background:#3f9d3c; border:5px solid #111; border-radius:50% 50% 0 0; z-index:1;
     box-shadow:inset 0 10px 0 #5cc055; }
   .mk-branch { position:absolute; left:4%; right:4%; height:10px; background:#8b5a2b; border:3px solid #111; border-radius:99px; z-index:2; }
   .mk-vine { position:absolute; left:0; top:0; width:0; z-index:3; }
+  /* Each vine swings as its own GPU layer (rotating signs with emoji would otherwise repaint every frame) */
+  .mk-vine > :first-child { transform-origin:0 0; will-change:transform; }
   .mk-rope { position:absolute; left:-4px; top:0; width:8px; background:repeating-linear-gradient(180deg, #3e9a3a 0 10px, #2b7a28 10px 14px); border:2px solid #111; border-radius:4px; }
   .mk-sign { position:absolute; left:0; transform:translate(-50%, 0); min-width:calc(var(--sz) * 1.1); height:calc(var(--sz) * .95); padding:0 6px; border:4px solid #111; border-radius:12px;
     background:#fff6d6; color:#111; font:inherit; font-size:calc(var(--sz) * .62); line-height:1; display:flex; align-items:center; justify-content:center; white-space:nowrap;
@@ -68,7 +70,9 @@
   .mk-stars { position:absolute; left:50%; top:0; transform:translateX(-50%); font-size:1.2rem; animation:mk-spin 1s linear infinite; white-space:nowrap; }
   .mk-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6; }
 
-  @keyframes mk-shine { from { filter:drop-shadow(0 6px 0 rgba(0,0,0,.3)) brightness(1); } to { filter:drop-shadow(0 6px 0 rgba(0,0,0,.3)) drop-shadow(0 0 12px #fff27a) brightness(1.1); } }
+  /* (the banana used to pulse a blurred glow with an animated filter: a full repaint every frame, which lagged on iPad at HARD
+     with phonics pictures; now it just bobs, which the GPU can do on its own) */
+  @keyframes mk-shine { from { transform:translate(-50%, -88%) rotate(-12deg) scale(1); } to { transform:translate(-50%, -88%) rotate(-8deg) scale(1.06); } }
   @keyframes mk-eat { 0% { clip-path:inset(0 0 0 0); } 100% { clip-path:inset(0 100% 0 0); } }
   @keyframes mk-live { from { transform:translate(-50%, 0) scale(1); } to { transform:translate(-50%, 0) scale(1.07); } }
   @keyframes mk-fall { to { transform:translateY(240px) rotate(40deg); opacity:0; } }
@@ -151,7 +155,7 @@
         sz = Math.max(42, Math.min(sz0, gap * 0.56));
         jungle.style.setProperty("--sz", `${sz}px`);
         jungle.style.setProperty("--mz", `${sz * 1.35}px`);
-        jungle.style.setProperty("--bn", `${Math.min(W * 0.55, topY * 1.9, 210)}px`); // comically BIG
+        jungle.style.setProperty("--bn", `${Math.min(W * 0.22, topY * 1.05, 96)}px`); // big, but not so big it crowds the jungle (the teacher found 55% of the width too much)
         topBar.style.top = `${topY}px`;
         banana.style.top = `${topY + 4}px`;
         branches.forEach((b, r) => {
@@ -178,7 +182,6 @@
           if (v.snapped) return;
           v.ang = Math.sin(now * swingRate + v.ph) * swingAmp;
           v.el.firstChild.style.transform = `rotate(${(-v.ang * 180) / Math.PI}deg)`;
-          v.el.firstChild.style.transformOrigin = "0 0";
         });
         if (jump) {
           const k = Math.min(1, (now - jump.t0) / jump.ms), to = jump.to();
@@ -199,6 +202,7 @@
       function grab(r, i) {
         if (done || ctx.ended || jump || r !== level + 1) return;
         const v = vines[r][i];
+        if (r === R - 1 || !v.item.right) ctx.freezeTimer(); // the result is decided: stop the clock now, not after the leap
         sweep(300, 800, 0.18, "square", 0.07); // whoop
         onVine = null;
         jump = { from: { ...pos }, to: () => handOf(v), t0: performance.now(), ms: 360, then: () => land(v) };

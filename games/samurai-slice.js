@@ -169,7 +169,8 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 7000,
     input: "slice",
-    tutorial: true, // has a ctx.tutorial script
+    tutorial: true,
+    bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
 
     start(ctx) {
       injectCss();
@@ -229,6 +230,7 @@
         foes = [target, ...ctx.pickOptions(target, n + 1).filter((o) => o !== target).slice(0, n - 1)].map((o) => ({ text: o.text, kind: "word", right: o === target, spoken: o.say || o.text }));
       }
       foes = ctx.shuffle(foes);
+      const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: the bandits are boss clones
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -285,8 +287,17 @@
         el.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); slice(foe, -0.7); }
         });
+        // Boss Battle: every bandit is a clone of the boss, holding its sign up (the halves of a cut one
+        // fall apart with the boss in them).
+        let boss = null;
+        if (bossId) {
+          el.querySelector(".ss-feyes").remove();
+          el.querySelector(".ss-ftear").remove();
+          boss = window.Boss.carrier(bossId, "1.3em");
+          el.querySelector(".ss-bod").prepend(boss);
+        }
         wrap.appendChild(el);
-        const foe = { ...f, el, txt, x: 0, y: 0, hw: 40, hh: 40, alive: true }; // hw/hh: half size in px
+        const foe = { ...f, el, txt, boss, x: 0, y: 0, hw: 40, hh: 40, alive: true }; // hw/hh: half size in px
         return foe;
       });
       wrap.append(fx, trailSvg);
@@ -450,6 +461,7 @@
         } else {
           clank();
           f.el.classList.add("sad");
+          if (f.boss) window.Boss.setMood(f.boss, "laugh"); // the wrong boss laughs at you
           ctx.later(() => { wrap.classList.remove("strike"); wrap.classList.add("oops"); sadSound(); }, 260);
           showAnswer();
           ctx.say(answer);

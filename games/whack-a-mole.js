@@ -97,6 +97,10 @@
     background:#9a6234; border:5px solid #111; border-radius:50% 50% 14% 14% / 36% 36% 10% 10%;
     box-shadow:inset calc(var(--mw) * -.08) 0 0 rgba(0,0,0,.18); }
   .wm-hole.up .wm-mole { transform:translate(-50%, 0); }
+  /* Boss Battle: no mole, the boss (behind the sign) pops up instead */
+  .wm-hole.bossy .wm-mole { background:none; border-color:transparent; box-shadow:none; }
+  .wm-hole.bossy .wm-face, .wm-hole.bossy .wm-paw { display:none; }
+  .wm-hole.bossy .bx-carrier { transform:translate(-50%, -2%); }
   .wm-hole.leaving .wm-mole { transition:transform .2s ease-in, scale .08s ease-out; }
   .wm-face { position:absolute; left:0; right:0; top:6%; height:38%; }
   .wm-eye { position:absolute; top:8%; width:21%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50%; }
@@ -185,9 +189,11 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 11000,
     input: "tap",
-    tutorial: true, // has a ctx.tutorial script
+    tutorial: true,
+    bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
 
     start(ctx) {
+      const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: the boss pops out of the holes
       injectCss();
       const isLetter = ctx.list.type === "letter";
       const isPhonics = ctx.list.type === "phonics";
@@ -285,7 +291,10 @@
           '<div class="wm-face"><div class="wm-eye l"></div><div class="wm-eye r"></div><div class="wm-nose"></div><div class="wm-mouth"></div></div>' +
           '<div class="wm-belly"><div class="wm-paw l"></div><div class="wm-paw r"></div><span class="wm-word"></span></div>' +
           "</div></div>";
-        const h = { el, word: el.querySelector(".wm-word"), item: null, state: "empty", token: 0 };
+        // Boss Battle: the mole is the boss, holding its sign (the mole's fur, face and paws are hidden).
+        let boss = null;
+        if (bossId) { el.classList.add("bossy"); boss = window.Boss.carrier(bossId, "calc(var(--mw) * 1.1)"); el.querySelector(".wm-mole").prepend(boss); }
+        const h = { el, boss, word: el.querySelector(".wm-word"), item: null, state: "empty", token: 0 };
         el.addEventListener("click", (e) => { if (e.detail === 0) whack(h, null); }); // keyboard / assistive
         field.appendChild(el);
         holes.push(h);
@@ -372,6 +381,7 @@
         h.word.textContent = item.text;
         h.el.setAttribute("aria-label", TEXT.holeLabel(spoken(item)));
         h.el.classList.remove("leaving", "bonk", "laugh");
+        if (h.boss) window.Boss.setMood(h.boss, null);
         h.el.classList.add("up");
         h.state = "up";
         const t = ++h.token;
@@ -436,6 +446,7 @@
           hits++;
           fill(good.pips[hits - 1], TEXT.goodMark);
           h.el.classList.add("bonk");
+          if (h.boss) window.Boss.setMood(h.boss, "hurt");
           bonkSound();
           pow(at);
           hide(h, 380);
@@ -451,6 +462,7 @@
           fill(bad.pips[strikes - 1], TEXT.badMark);
           bad.el.dataset.s = String(strikes);
           h.el.classList.add("laugh");
+          if (h.boss) window.Boss.setMood(h.boss, "laugh");
           redX(at);
           if (strikes >= STRIKES) {
             done = true;

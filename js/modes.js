@@ -28,6 +28,16 @@ window.MODES = {
     warmup: [{ games: 5, ms: 20000 }, { games: 5, ms: 15000 }],
     highScoreKey: "wwe.challenge.best",
   },
+  // 10 levels at 1× (like Fun), then a boss: a best-of-3 showdown and a 3-stage final battle.
+  // The boss part is run by the frame with js/boss.js (speeds, HP and hearts are set there).
+  boss: {
+    id: "boss",
+    totalGames: 10,
+    lives: 0,
+    speedUpEvery: 0,
+    speedStep: 0,
+    maxSpeed: 1,
+  },
   // One chosen game, over and over, at 1×, until the player leaves. No results screen.
   practice: {
     id: "practice",

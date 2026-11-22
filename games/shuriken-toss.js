@@ -147,6 +147,12 @@
   .st-fly.pic.wrong { -webkit-text-stroke:0; }
   .st-fly.wrong { background:#ff5a6e; color:#fff; -webkit-text-stroke:2px #111; paint-order:stroke fill; }
   .st-fly.glow { box-shadow:inset 0 0 0 5px var(--ring), 0 0 0 6px #ffd400, 0 0 26px 12px #ffd400; }
+  /* Boss Battle: the ball's face moves to ::before, so the boss (z -2) can sit behind it and above the ball's own box */
+  .st-fly.bossy { background:none; border-color:transparent; box-shadow:none; }
+  .st-fly.bossy::before { content:""; position:absolute; inset:-5px; z-index:-1; border-radius:inherit; background:#fff; border:5px solid #111; box-shadow:inset 0 0 0 5px var(--ring), 0 5px 0 rgba(0,0,0,.35); }
+  .st-fly.bossy .bx-carrier { z-index:-2; transform:translate(-50%, -62%); }
+  .st-fly.bossy.wrong::before { background:#ff5a6e; }
+  .st-fly.bossy.glow::before { box-shadow:inset 0 0 0 5px var(--ring), 0 0 0 6px #ffd400, 0 0 26px 12px #ffd400; }
 
   /* ---- shuriken and effects ---- */
   .st-star { position:absolute; left:0; top:0; width:calc(var(--d) * .55); height:calc(var(--d) * .55); pointer-events:none; z-index:3; }
@@ -197,9 +203,11 @@
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 13000, // needs 3 hits, and targets have to be fired first
     input: "tap",
-    tutorial: true, // has a ctx.tutorial script
+    tutorial: true,
+    bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
 
     start(ctx) {
+      const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: the balls are carried by boss clones
       injectCss();
       const isLetter = ctx.list.type === "letter";
       const isPhonics = ctx.list.type === "phonics";
@@ -335,9 +343,12 @@
         el.className = "st-fly" + (isPhonics ? " pic" : isLetter ? "" : " word");
         el.textContent = item.text;
         el.style.setProperty("--ring", ctx.pick(RINGS));
+        // Boss Battle: each ball is held up by a flying clone of the boss (the slice cuts both in half).
+        let boss = null;
+        if (bossId) { el.classList.add("bossy"); boss = window.Boss.carrier(bossId, "calc(var(--d) * 1.25)"); el.prepend(boss); }
         field.insertBefore(el, cannon); // starts behind the barrel
         const f = {
-          el, item, t0: performance.now(), dur: flightMs * (0.9 + Math.random() * 0.2),
+          el, item, boss, t0: performance.now(), dur: flightMs * (0.9 + Math.random() * 0.2),
           x0f: m.x / fw, y0f: m.y / fh,                 // start: the muzzle
           y1f: 0.15 + Math.random() * 0.45,             // where it leaves the right edge
           apexf: 0.1 + Math.random() * 0.25,            // how high the arc goes
@@ -459,6 +470,7 @@
           fill(bad.pips[strikes - 1], TEXT.badMark);
           bad.el.dataset.s = String(strikes);
           f.el.classList.add("wrong");
+          if (f.boss) window.Boss.setMood(f.boss, "laugh"); // the wrong boss laughs as it falls
           redX(f);
           bounceOff(s);
           drop(f);

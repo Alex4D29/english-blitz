@@ -59,7 +59,8 @@
     "stop-sneeze": "bouncy", "spot-imposter": "sneaky", "window-wiper": "chill", "sack-man": "spooky", "pachinko": "bouncy",
     "mouse-trap": "sneaky", "froggy-hop": "bouncy", "monkey-swing": "pirate", "snowman": "chill", "track-switch": "march",
     "bunny-burrow": "bouncy", "pizza-chef": "march", "treasure-dig": "pirate", "hoop-shot": "sporty", "penalty-kick": "sporty",
-    "monster-boxing": "sporty", "archery": "march", "monster-golf": "chill", "strength-test": "sporty", "maze-run": "sneaky",
+    "monster-boxing": "sporty", "archery": "march", "monster-golf": "chill", "strength-test": "sporty", "maze-run": "sneaky", "dance-off": "bouncy",
+    "boss-banana": "pirate", "boss-baby": "spooky", "boss-robot": "march",
   };
 
   // ---------- The menu theme (hand-written) ----------

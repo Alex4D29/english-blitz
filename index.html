@@ -14,10 +14,11 @@
 <section id="title" class="screen scroll">
   <h1 class="shout logo" data-text="title"></h1>
   <div class="menu">
-    <button class="mode-btn fun" id="funBtn" disabled><span class="ico" aria-hidden="true">🎈</span><span data-text="fun"></span></button>
-    <button class="mode-btn challenge" id="challengeBtn" disabled><span class="ico" aria-hidden="true">🔥</span><span data-text="challenge"></span></button>
-    <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span data-text="practice"></span></button>
-    <button class="mode-btn tutorials" id="tutorialsBtn" disabled><span class="ico" aria-hidden="true">👀</span><span data-text="tutorials"></span></button>
+    <button class="mode-btn fun" id="funBtn" disabled><span class="ico" aria-hidden="true">🎈</span><span class="mode-txt"><span data-text="fun"></span><span class="mode-desc" data-text="funDesc"></span></span></button>
+    <button class="mode-btn challenge" id="challengeBtn" disabled><span class="ico" aria-hidden="true">🔥</span><span class="mode-txt"><span data-text="challenge"></span><span class="mode-desc" data-text="challengeDesc"></span></span></button>
+    <button class="mode-btn boss" id="bossBtn" disabled><span class="ico" aria-hidden="true">👑</span><span class="mode-txt"><span data-text="boss"></span><span class="mode-desc" data-text="bossDesc"></span></span></button>
+    <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span class="mode-txt"><span data-text="practice"></span><span class="mode-desc" data-text="practiceDesc"></span></span></button>
+    <button class="mode-btn tutorials" id="tutorialsBtn" disabled><span class="ico" aria-hidden="true">👀</span><span class="mode-txt"><span data-text="tutorials"></span><span class="mode-desc" data-text="tutorialsDesc"></span></span></button>
     <button class="chunky" id="settingsBtn">⚙️ <span data-text="settings"></span></button>
   </div>
   <p id="loading" data-text="loading"></p>
@@ -54,6 +55,8 @@
       <ul id="howtoTips"></ul>
     </div>
   </div>
+  <!-- Practice difficulty: three speeds from Challenge mode (built by frame.js) -->
+  <div class="diff" id="diffRow" role="group"></div>
   <div class="buttons">
     <button class="chunky hot" id="howtoPlayBtn">▶️ <span data-text="play"></span></button>
     <button class="chunky" id="howtoWatchBtn" hidden>👀 <span data-text="watch"></span></button>
@@ -131,6 +134,7 @@
 <script src="js/power.js"></script>
 <script src="data/lists.js"></script>
 <script src="js/modes.js"></script>
+<script src="js/boss.js"></script>
 <script src="games/manifest.js"></script>
 <script src="js/frame.js"></script>
 </body>

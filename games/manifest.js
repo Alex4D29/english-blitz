@@ -28,6 +28,7 @@ window.GAME_FILES = [
   "track-switch",
   "bunny-burrow",
   "pizza-chef",
+  "dance-off",
   "treasure-dig",
   "hoop-shot",
   "penalty-kick",

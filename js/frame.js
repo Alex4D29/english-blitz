@@ -32,6 +32,8 @@
   const DEMO_POINTER = 4242;    // pointerId of the ghost finger's events
   const TUTORIAL_KEY = "wwe.tutorial";               // localStorage: the last 👀 Watch first? answer
   const LISTENING_KEY = "wwe.listening";             // localStorage: listening games on/off (Settings)
+  const PRACTICE_SPEED_KEY = "wwe.practice.speed";   // localStorage: the Practice difficulty
+  const BOSS_KEY = "wwe.boss.beaten";                // localStorage: the bosses beaten so far (Boss Battle)
   const CONTENT_TYPES = ["letter", "phonics", "cvc", "hfw"];   // content picker order
   const DEFAULT_TYPES = ["letter", "phonics"];
   const TYPES_KEY = "wwe.content.v2";                // localStorage: the last ticked types
@@ -63,15 +65,17 @@
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
     askWatch: $("#askWatch"), watchYes: $("#watchYes"), watchNo: $("#watchNo"),
     funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"),
+    bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
     pickerTitle: $("#pickerTitle"), pickerNote: $("#pickerNote"),
     tutorialsBtn: $("#tutorialsBtn"), howtoWatchBtn: $("#howtoWatchBtn"),
+    diffRow: $("#diffRow"),
     howtoIcon: $("#howtoIcon"), howtoName: $("#howtoName"), howtoSteps: $("#howtoSteps"),
     howtoTipsBox: $("#howtoTipsBox"), howtoTips: $("#howtoTips"),
     howtoPlayBtn: $("#howtoPlayBtn"), howtoBackBtn: $("#howtoBackBtn"),
-    status: $("#status"), roundPill: $("#roundPill"), bar: $("#bar"),
+    status: $("#status"), roundPill: $("#roundPill"), bar: $("#bar"), timer: $("#timer"),
     game: $("#game"), banner: $("#banner"), stamp: $("#stamp"),
     resTitle: $("#resTitle"), stars: $("#stars"), resStats: $("#resStats"), record: $("#record"),
     againBtn: $("#againBtn"), menuBtn: $("#menuBtn"),
@@ -87,6 +91,8 @@
     seen: new Set(),            // games whose tutorial this run has already shown
     forceDemo: null,            // a game id whose tutorial the next round must show (Tutorials menu)
     picker: "practice",         // what the game grid is for: "practice" or "tutorial"
+    practiceSpeed: Number(C.storage.get(PRACTICE_SPEED_KEY, 1)) || 1, // Practice difficulty (1, 1.75 or 2.5)
+    boss: null,                 // Boss Battle: { id, phase: levels | showdown | battle, you, them, stage, hp, hearts, last, done, scened }
     listening: C.storage.get(LISTENING_KEY, true) !== false, // listening games on (Settings)
     phase: "idle",              // idle | transition | playing | feedback | over | paused
     round: 0,
@@ -208,6 +214,8 @@
     return listsInPlay().filter((l) => types.includes(l.type));
   }
   const isPractice = () => !!state.mode && state.mode.id === "practice";
+  const isBoss = () => !!state.mode && state.mode.id === "boss" && !!state.boss;
+  const bossFight = () => isBoss() && state.boss.phase !== "levels"; // the showdown or the final battle
   // Listening games off (Settings): games whose target is only ever spoken are left out everywhere.
   const allowed = (g) => state.listening || !g.listening;
   // Pick the content type first, so each ticked type comes up about equally often,
@@ -218,6 +226,17 @@
     const gamesFor = (list) => C.MICROGAMES.filter((g) => usable(g) && (g.contentTypes || []).includes(list.type));
     const lists = listsInPlay().filter((l) => gamesFor(l).length);
     if (!lists.length) return null;
+    // Boss Battle: the showdown picks from the games the boss can race in, and each battle stage
+    // from its own short list (in order of preference), as long as the content in play suits it.
+    if (bossFight()) {
+      const b = state.boss, B = window.Boss.BOSSES[b.id];
+      const ids = b.phase === "showdown" ? C.shuffle(window.Boss.SHOWDOWN.filter((id) => id !== state.lastGame)) : B.stages[Math.min(2, b.stage)];
+      for (const id of ids) {
+        const g = C.MICROGAMES.find((x) => x.id === id);
+        const ls = g && usable(g) ? lists.filter((l) => (g.contentTypes || []).includes(l.type)) : [];
+        if (ls.length) { state.lastGame = g.id; return { game: g, list: C.pick(ls) }; }
+      }
+    }
     const list = C.pick(lists);
     const playable = gamesFor(list);
     const fresh = playable.filter((g) => g.id !== state.lastGame);
@@ -252,6 +271,8 @@
   }
   function speedFor(round) {
     const m = state.mode;
+    if (isPractice()) return state.practiceSpeed; // the difficulty chosen on the How to play card
+    if (bossFight()) return state.boss.phase === "showdown" ? window.Boss.SPEED.showdown : window.Boss.SPEED.stages[Math.min(2, state.boss.stage)];
     if (!m.speedUpEvery) return 1;
     const r = round - warmupRounds();
     if (r < 1) return 1;
@@ -343,6 +364,23 @@
       const played = state.results.length;
       els.status.textContent = T.practiceScore(won, played);
       els.status.setAttribute("aria-label", T.practiceScoreLabel(won, played));
+      // The difficulty shows where the round number usually is.
+      const lv = T.diff.find((d) => d.speed === state.practiceSpeed) || T.diff[0];
+      els.roundPill.hidden = false;
+      els.roundPill.textContent = `${lv.icon} ${lv.name}`;
+    } else if (bossFight()) {
+      // Showdown: your wins vs the boss's. Battle: your hearts and the boss's HP.
+      const b = state.boss, B = window.Boss.BOSSES[b.id];
+      const dots = (n, cls) => [0, 1].map((i) => `<span class="dot${i < n ? ` ${cls}` : ""}"></span>`).join("");
+      if (b.phase === "showdown") {
+        els.status.innerHTML = `<span class="bs-hud">😀 ${dots(b.you, "win")} <b>VS</b> ${dots(b.them, "miss")} ${B.icon}</span>`;
+        els.status.setAttribute("aria-label", T.bossShowdownLabel(b.you, b.them));
+      } else {
+        const hearts = [...Array(window.Boss.HEARTS)].map((_, i) => (i < b.hearts ? "❤️" : "🖤")).join("");
+        const hp = [...Array(window.Boss.HP)].map((_, i) => `<span class="seg${i < b.hp ? "" : " gone"}"></span>`).join("");
+        els.status.innerHTML = `<span class="bs-hud">${hearts} <b>VS</b> ${B.icon} ${hp}</span>`;
+        els.status.setAttribute("aria-label", T.bossBattleLabel(b.hearts, b.hp));
+      }
       els.roundPill.hidden = true;
     } else if (m.lives) {
       let html = "";
@@ -391,6 +429,7 @@
     els.game.innerHTML = "";
     els.game.classList.remove("locked");
     document.body.classList.remove("demo");
+    if (state.seat) { state.seat.remove(); state.seat = null; } // Boss Battle: the boss in the corner
   }
 
   function clearRound() {
@@ -404,14 +443,20 @@
 
   function isOver() {
     const m = state.mode;
+    if (isBoss()) return !!state.boss.done;
     return (m.lives && state.lives <= 0) || state.results.length >= m.totalGames;
   }
 
   function nextRound() {
     clearRound();
     if (state.screen !== "play") return;
-    if (isOver()) return finishRun();
     if (document.hidden) { state.phase = "paused"; return; }
+    if (isBoss() && !state.boss.scened && !isOver()) { // the boss's cut-scenes come before the next round
+      const scenes = bossScenes();
+      if (scenes.length) return playScenes(scenes);
+    }
+    if (isBoss()) state.boss.scened = false;
+    if (isOver()) return finishRun();
 
     const choice = chooseRound();
     if (!choice) {
@@ -421,7 +466,7 @@
     const { game, list } = choice;
     state.round++;
     const speed = speedFor(state.round);
-    const speedUp = speed > state.speed;
+    const speedUp = speed > state.speed && !bossFight(); // boss rounds have their own SHOWDOWN / STAGE banners
     state.speed = speed;
     state.phase = "transition";
     setTheme(state.theme + 1);
@@ -441,13 +486,18 @@
       // Between rounds the game's loop stops and a quick "get ready" jingle plays with the ROUND banner
       // (the next game's loop starts with the round, in startGame).
       if (window.Music) Music.play(null);
-      later(() => { shout(els.banner, T.round(state.round), "round"); if (window.Music) Music.jingle(state.round - 1); else C.sfx.whoosh(); }, t);
+      // Boss Battle: SHOWDOWN n / STAGE n instead of the round number.
+      const b = state.boss, BT = window.Boss && window.Boss.TEXT;
+      const label = !bossFight() ? T.round(state.round) : b.phase === "showdown" ? BT.showdown(b.you + b.them + 1) : BT.stage(b.stage + 1);
+      later(() => { shout(els.banner, label, "round"); if (window.Music) Music.jingle(state.round - 1); else C.sfx.whoosh(); }, t);
       t += ROUND_MS;
     }
+    // In the final battle a boss can have its own instruction (Baby Boss: FIND THE MILK!).
+    const bossIns = bossFight() && state.boss.phase === "battle" && window.Boss.BOSSES[state.boss.id].instruction;
     later(() => {
       // The game's picture above its title, so non-readers can tell which game is coming.
       els.banner.querySelector(".banner-icon").textContent = game.icon || "";
-      shout(els.banner, instructionFor(game, list), "instruction");
+      shout(els.banner, bossIns || instructionFor(game, list), "instruction");
       restartAnim(els.banner.querySelector(".banner-icon"));
       document.body.classList.add("flash");
       C.sfx.slam();
@@ -458,6 +508,51 @@
       els.banner.hidden = true;
       if (demo) runDemo(game, list); else startGame(game, list);
     }, t);
+  }
+
+  // ---------- Boss Battle cut-scenes (js/boss.js) ----------
+  // What to show before the next round, from what just happened (state.boss.last, set in report).
+  // Also moves the run on: levels → showdown → battle, and sets `done` when it's won or lost.
+  function bossScenes() {
+    const b = state.boss, B = window.Boss.BOSSES[b.id], Bs = window.Boss;
+    const env = { later, sfx: C.sfx, say: C.say, confetti: C.confetti };
+    const last = b.last;
+    b.last = null;
+    const out = [];
+    if (b.phase === "levels" && state.results.length >= b.levels) {
+      b.phase = "showdown";
+      out.push((r) => Bs.intro(r, B, env));
+    } else if (last && last.phase === "showdown") {
+      out.push((r) => Bs.score(r, B, b.you, b.them, last.won, env));
+      if (b.you >= 2) { b.phase = "battle"; out.push((r) => Bs.battleStart(r, B, env)); }
+      else if (b.them >= 2) { b.done = "lost"; out.push((r) => Bs.gloat(r, B, env)); }
+    } else if (last && last.phase === "battle") {
+      if (last.won && b.hp <= 0) { b.done = "won"; out.push((r) => Bs.defeat(r, B, env)); }
+      else if (last.won) out.push((r) => Bs.hit(r, B, b.hp, b.stage + 1, env));
+      else {
+        out.push((r) => Bs.miss(r, B, b.hp, b.hearts, env));
+        if (b.hearts <= 0) { b.done = "lost"; out.push((r) => Bs.gloat(r, B, env)); }
+      }
+    }
+    return out;
+  }
+  function playScenes(scenes) {
+    state.phase = "transition";
+    setBar(1);
+    renderHud();
+    if (window.Music) Music.play(`boss-${state.boss.id}`);
+    // One after another; then on to the round (or the end of the run).
+    const queue = scenes.slice();
+    function next() {
+      if (state.screen !== "play") return;
+      const s = queue.shift();
+      if (!s) { state.boss.scened = true; return nextRound(); }
+      els.game.innerHTML = "";
+      let ms = 1500;
+      try { ms = s(els.game); } catch (err) { console.error("boss scene:", err); }
+      later(next, ms);
+    }
+    next();
   }
 
   // ---------- Tutorial ----------
@@ -773,6 +868,7 @@
       speed,
       timeLimit,
       demo,         // true while the game plays itself in the tutorial
+      boss: bossFight() ? { id: state.boss.id, phase: state.boss.phase } : null, // Boss Battle (Dance Off shows the robot)
       // Show 👆 TAP! / DRAG! over the game for a moment (see showCoach). Drag games pass a target too.
       // Never during a demo: the ghost finger does the showing.
       hint: (from, to, opts) => { if (alive() && !state.reported && !demo) showCoach(game, from, to, opts, ctx.later); },
@@ -878,11 +974,20 @@
     }
     if (state.reported) return; // the game reported straight away
 
+    // Boss Battle: the boss sits in the corner of the game. In the showdown it plays too (its bar fills
+    // a third at a time; full = it got there first, the time limit). In a battle game that doesn't draw
+    // the boss itself (`bossArt`), it watches: Baby Boss wails until a 🍼 flies to it.
+    let seat = null;
+    if (bossFight() && (state.boss.phase === "showdown" || !(game.bossArt && window.Boss.fighting(ctx)))) {
+      seat = window.Boss.seat(els.game.parentElement, state.boss.id, state.boss.phase === "showdown", C.sfx);
+      state.seat = seat;
+    }
     let lastSec = Infinity;
     const tick = () => {
       if (!alive() || state.reported || state.current.frozenAt) return;
       const elapsed = performance.now() - state.current.t0;
       setBar(Math.min(1, 1 - elapsed / timeLimit));
+      if (seat) seat.progress(elapsed / timeLimit);
       const secs = Math.ceil((timeLimit - elapsed) / 1000);
       if (secs < lastSec && secs <= 2 && secs > 0) C.sfx.tick();
       lastSec = secs;
@@ -908,6 +1013,16 @@
     const timeMs = Math.max(0, Math.round(Math.min((state.current.frozenAt || performance.now()) - t0, timeLimit)));
     els.game.classList.add("locked");
     state.results.push({ gameId: game.id, won, timedOut, timeMs, timeLimit, speed: state.speed });
+    // Boss Battle: keep the showdown score / the battle's HP and hearts (the cut-scenes follow in nextRound).
+    const bossRound = bossFight();
+    if (bossRound) {
+      const b = state.boss;
+      b.last = { phase: b.phase, won };
+      if (b.phase === "showdown") { if (won) b.you++; else b.them++; }
+      else if (won) { b.hp--; b.stage++; }
+      else b.hearts--;
+      if (state.seat) { if (timedOut) state.seat.progress(1); state.seat.result(won); }
+    }
     if (timedOut) {
       setBar(0);
       if (onTimeout) guard(`${game.id} onTimeout`, onTimeout);
@@ -919,7 +1034,7 @@
     vibrate(won ? 30 : [60, 40, 60]);
     renderHud(loseLife);
 
-    later(() => shout(els.stamp, won ? T.correct : timedOut ? T.timeout : T.wrong, won ? "good" : "bad"), STAMP_DELAY_MS);
+    later(() => shout(els.stamp, won ? T.correct : timedOut ? (bossRound ? T.bossWinsStamp : T.timeout) : T.wrong, won ? "good" : "bad"), STAMP_DELAY_MS);
     later(() => whenQuiet(nextRound), FEEDBACK_MS);
   }
 
@@ -933,6 +1048,14 @@
 
   function finishRun() {
     state.phase = "over";
+    if (isBoss()) {
+      const won = state.boss.done === "won";
+      els.game.innerHTML = "";
+      shout(els.banner, won ? T.bossWin : T.bossLose, "end");
+      if (won) C.sfx.fanfare(); else C.sfx.buzz();
+      later(showResults, END_MS);
+      return;
+    }
     const dead = state.mode.lives > 0 && state.lives <= 0;
     shout(els.banner, dead ? T.gameOver : T.finish, "end");
     if (dead) C.sfx.buzz(); else C.sfx.fanfare();
@@ -968,6 +1091,20 @@
         statRow("✅", T.stats.cleared, `${cleared} / ${m.totalGames}`) +
         statRow("🎯", T.stats.accuracy, `${accuracy}%`);
       C.say(T.spoken.stars[stars]);
+    } else if (m.id === "boss") {
+      // Boss Battle: levels cleared, the showdown score, and the collection of bosses beaten so far.
+      const b = state.boss, B = window.Boss.BOSSES[b.id], won = b.done === "won";
+      const beaten = new Set(C.storage.get(BOSS_KEY, []) || []);
+      if (won) { beaten.add(b.id); C.storage.set(BOSS_KEY, [...beaten]); }
+      const levels = results.slice(0, b.levels).filter((r) => r.won).length;
+      els.resTitle.textContent = won ? T.bossResWin(B.name) : T.bossResLose;
+      const shelf = window.Boss.IDS.map((id) => (beaten.has(id) ? window.Boss.BOSSES[id].icon : "❔")).join("");
+      els.resStats.innerHTML =
+        statRow("✅", T.stats.levels, `${levels} / ${b.levels}`) +
+        (b.you + b.them ? statRow("⚔️", T.stats.showdown, `${b.you} – ${b.them}`) : "") +
+        statRow("👑", T.stats.bosses, `<span class="res-bosses">${shelf}</span>`);
+      if (won) later(C.sfx.fanfare, 400);
+      C.say(won ? T.spoken.bossWin : T.spoken.bossLose);
     } else {
       const score = window.SCORING.speedScore(results);
       const best = C.storage.get(m.highScoreKey, null);
@@ -1000,6 +1137,15 @@
     Object.assign(state, {
       mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(),
     });
+    // Boss Battle: a random boss waits at the end (?boss=banana|baby|robot picks one, for testing).
+    const q = new URLSearchParams(location.search), bossParam = q.get("boss");
+    state.boss = id !== "boss" ? null : {
+      id: window.Boss.IDS.includes(bossParam) ? bossParam : C.pick(window.Boss.IDS),
+      levels: Math.max(0, parseInt(new URLSearchParams(location.search).get("levels"), 10)) || window.Boss.LEVELS, // ?levels=1 for testing
+      phase: q.get("phase") === "battle" ? "battle" : "levels", // ?phase=battle&stage=2 starts in the final battle (testing)
+      you: 0, them: 0, stage: Math.min(2, Math.max(0, (parseInt(q.get("stage"), 10) || 1) - 1)), hp: 0,  hearts: window.Boss.HEARTS, last: null, done: null, scened: false,
+    };
+    if (state.boss) state.boss.hp = window.Boss.HP - state.boss.stage; // (a battle started at stage 2 has already lost one)
     showScreen("play");
     setBar(1);
     renderHud();
@@ -1151,9 +1297,31 @@
       els.howtoTips.appendChild(li);
     });
     els.howtoWatchBtn.hidden = !game.tutorial;
+    renderDiff();
     showScreen("howto");
   }
 
+
+  // ---------- Practice difficulty: three speeds from Challenge mode ----------
+  function renderDiff() {
+    els.diffRow.setAttribute("aria-label", T.diffLabel);
+    els.diffRow.innerHTML = "";
+    T.diff.forEach((d) => {
+      const b = document.createElement("button");
+      b.className = "diff-btn";
+      b.setAttribute("aria-pressed", String(d.speed === state.practiceSpeed));
+      b.innerHTML = `<span class="ico" aria-hidden="true">${d.icon}</span><span></span>`;
+      b.lastChild.textContent = d.name;
+      b.addEventListener("click", () => {
+        C.unlock();
+        state.practiceSpeed = d.speed;
+        C.storage.set(PRACTICE_SPEED_KEY, d.speed);
+        C.sfx.tone(440 + d.speed * 160, 0.08);
+        renderDiff();
+      });
+      els.diffRow.appendChild(b);
+    });
+  }
   function quitPlay() {
     if (isPractice()) showPractice(); else goTitle();
   }
@@ -1182,6 +1350,7 @@
   // Any tap unlocks (or resumes) audio: iOS needs a real tap, and can suspend audio in the background.
   document.addEventListener("pointerdown", () => C.unlock(), { capture: true });
   els.funBtn.addEventListener("click", () => chooseContent("fun"));
+  els.bossBtn.addEventListener("click", () => chooseContent("boss"));
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
   els.contentGoBtn.addEventListener("click", contentGo);
@@ -1248,7 +1417,7 @@
       els.loading.hidden = false;
       return;
     }
-    els.funBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = false;
+    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = false;
   }
   const files = window.GAME_FILES || [];
   let pending = files.length;

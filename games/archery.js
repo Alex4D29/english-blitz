@@ -29,7 +29,7 @@
     miss: "OOPS!",
   };
 
-  const RINGS = ["#2fd15b", "#ffd400", "#ff4d6d"]; // near, middle, far: the power bar's bands
+  // (the targets' ring colours are the power bar's bands: PowerBar.colors, near to far)
   const CSS = `
   .ar { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:8px; }
   .ar-top { flex:none; display:flex; align-items:center; gap:12px; }
@@ -108,7 +108,9 @@
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const { tone, sweep, noise } = ctx.sfx;
       const GOAL = 3, MISSES = 3;
-      const C = ctx.choiceRows(GOAL, 3, { lowercase: true });
+      // Targets = power bands: 3 at normal speed, 4 from 1.75× (Practice MEDIUM), 5 from 2.5× (HARD).
+      const NZ = window.PowerBar.zoneCount(ctx.speed), RINGS = window.PowerBar.colors(NZ);
+      const C = ctx.choiceRows(GOAL, NZ, { lowercase: true });
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -157,7 +159,9 @@
         field.style.setProperty("--az", `${az}px`);
         ax = 70 + az * 0.4; ay = H - 10;
         archer.style.transform = `translate(${ax}px, ${ay}px)`;
-        const spots = [{ fx: 0.5, fy: 0.95, k: 1 }, { fx: 0.7, fy: 0.78, k: 0.82 }, { fx: 0.89, fy: 0.62, k: 0.66 }];
+        // Near to far: further right, higher and smaller (spread wider and a little smaller with 4 or 5 targets).
+        const x0 = NZ > 3 ? 0.47 : 0.5, sMul = NZ === 3 ? 1 : NZ === 4 ? 0.9 : 0.8, rise = NZ > 3 ? 0.52 : 0.35;
+        const spots = targets.map((_, i) => { const k = i / (NZ - 1); return { fx: x0 + (0.91 - x0) * k, fy: 0.95 - rise * k, k: (1 - 0.34 * k) * sMul }; });
         targets.forEach((t, i) => {
           const s = Math.max(60, Math.min(W * 0.2, H * 0.36, 130)) * spots[i].k;
           t.s = s; t.x = W * spots[i].fx; t.y = H * spots[i].fy;
@@ -183,7 +187,7 @@
 
       // ---------- The power bar and the shot ----------
       const bar = ctx.powerBar({
-        parent: field, press: field, icon: "🏹",
+        parent: field, press: field, icon: "🏹", zones: NZ,
         onStart: () => { busy = true; },
         onRelease: (zone) => shoot(targets[zone]),
       });

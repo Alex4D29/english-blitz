@@ -28,7 +28,7 @@
     bonk: "BONK!",
   };
 
-  const FLAGS = ["#2fd15b", "#ffd400", "#ff4d6d"];
+  // (flag colours are the power bar's bands: PowerBar.colors, near to far)
   const CSS = `
   .mg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:8px; }
   .mg-card { flex:none; min-width:84px; height:72px; padding:0 18px; border-radius:18px; font:inherit; font-size:2.6rem; line-height:1; background:#fff; color:#111;
@@ -104,7 +104,9 @@
       injectCss();
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const { tone, sweep, noise } = ctx.sfx;
-      const C = ctx.choiceRows(1, 3, { lowercase: true });
+      // Holes = power bands: 3 at normal speed, 4 from 1.75× (Practice MEDIUM), 5 from 2.5× (HARD).
+      const NZ = window.PowerBar.zoneCount(ctx.speed), FLAGS = window.PowerBar.colors(NZ);
+      const C = ctx.choiceRows(1, NZ, { lowercase: true });
       const row = ctx.shuffle(C.rows[0].slice());
 
       const wrap = document.createElement("div");
@@ -148,7 +150,9 @@
         course.style.setProperty("--gz", `${gz}px`); course.style.setProperty("--bs", `${bs}px`);
         gx = 70 + gz * 0.45; gy = H - 12;
         golfer.style.transform = `translate(${gx}px, ${gy}px)`;
-        const spots = [{ fx: 0.45, fy: 0.94, k: 1 }, { fx: 0.68, fy: 0.78, k: 0.82 }, { fx: 0.88, fy: 0.64, k: 0.66 }];
+        // Near to far: further right, higher and smaller (spread wider and a little smaller with 4 or 5 holes).
+        const x0 = NZ > 3 ? 0.48 : 0.45, sMul = NZ === 3 ? 1 : NZ === 4 ? 0.9 : 0.8, rise = NZ > 3 ? 0.46 : 0.3;
+        const spots = holes.map((_, i) => { const k = i / (NZ - 1); return { fx: x0 + (0.91 - x0) * k, fy: 0.94 - rise * k, k: (1 - 0.34 * k) * sMul }; });
         holes.forEach((h, i) => {
           const s = Math.max(70, Math.min(W * 0.24, H * 0.36, 140)) * spots[i].k;
           h.s = s; h.x = W * spots[i].fx; h.y = H * spots[i].fy;
@@ -163,7 +167,7 @@
 
       let done = false;
       const bar = ctx.powerBar({
-        parent: course, press: course, icon: "⛳",
+        parent: course, press: course, icon: "⛳", zones: NZ,
         onStart: () => golfer.classList.add("wind"),
         onRelease: (zone) => swing(holes[zone]),
       });

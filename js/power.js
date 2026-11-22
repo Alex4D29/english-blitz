@@ -7,13 +7,23 @@
 // enough for 5-year-olds) while you charge. Two ways to play, both anywhere on the `press` element:
 //   hold:  press and hold to charge, let go to shoot (a press longer than HOLD_MS);
 //   tap:   tap once to start charging, tap again to shoot.
-// Releasing calls onRelease(zone, level): zone 0, 1 or 2 (the band the needle is in), level 0..1.
+// Releasing calls onRelease(zone, level): zone 0 .. zones-1 (the band the needle is in), level 0..1.
+// opts.zones: how many bands (3, 4 or 5: PowerBar.zoneCount(speed)); PowerBar.colors(n) gives their colours.
 //
 // PowerBar.create({ parent, press, raf, later, sfx, speed, onRelease, onStart }) → bar
 //   bar.el, bar.level, bar.charging, bar.locked, bar.reset() (ready for another shot), bar.lock()
 (function () {
   "use strict";
   const HOLD_MS = 260;            // a press longer than this is "hold" (let go to shoot); shorter is a tap
+  // Bands, weakest first. 3 at normal speed; the teacher wanted more at Practice MEDIUM (4, from 1.75×) and
+  // HARD (5, from 2.5×) to make the timing harder (zoneCount). Games colour their targets the same way.
+  const PALETTES = {
+    3: ["#2fd15b", "#ffd400", "#ff4d6d"],
+    4: ["#2fd15b", "#ffd400", "#ff8a1f", "#ff4d6d"],
+    5: ["#4d9dff", "#2fd15b", "#ffd400", "#ff8a1f", "#ff4d6d"],
+  };
+  const zoneCount = (speed) => ((speed || 1) >= 2.5 ? 5 : (speed || 1) >= 1.75 ? 4 : 3);
+  const colors = (n) => PALETTES[n] || PALETTES[3];
   const ZONES = [
     { color: "#2fd15b", name: "short" },
     { color: "#ffd400", name: "medium" },
@@ -48,7 +58,8 @@
     const el = document.createElement("div");
     el.className = "pwb";
     el.setAttribute("aria-hidden", "true");
-    el.innerHTML = '<div class="pwb-tube">' + ZONES.map((z) => `<div class="pwb-band" style="background:${z.color}"></div>`).join("") +
+    const N = o.zones || 3; // how many bands (zoneCount(speed) in the games)
+    el.innerHTML = '<div class="pwb-tube">' + colors(N).map((c) => `<div class="pwb-band" style="background:${c}"></div>`).join("") +
       '<div class="pwb-needle"></div></div><div class="pwb-btn">' + (o.icon || "💪") + "</div>";
     o.parent.appendChild(el);
     const bands = [...el.querySelectorAll(".pwb-band")], needle = el.querySelector(".pwb-needle");
@@ -57,7 +68,7 @@
     const bar = { el, level: 0, charging: false, locked: false, zone: 0 };
     let t0 = 0, downAt = 0, mode = null, lastBeep = 0;
 
-    const zoneOf = (lv) => Math.min(2, Math.floor(lv * 3));
+    const zoneOf = (lv) => Math.min(N - 1, Math.floor(lv * N));
     function show() {
       needle.style.bottom = `${(bar.level * 100).toFixed(1)}%`;
       bar.zone = zoneOf(bar.level);
@@ -103,10 +114,11 @@
 
     bar.reset = () => { bar.charging = false; bar.locked = false; bar.level = 0; mode = null; el.classList.remove("locked", "charging"); bands.forEach((b) => b.classList.remove("on")); show(); };
     bar.lock = () => { bar.charging = false; bar.locked = true; el.classList.add("locked"); };
-    bar.zoneCenter = (z) => (z + 0.5) / 3;
+    bar.zoneCenter = (z) => (z + 0.5) / N;
+    bar.zones = N;
     show();
     return bar;
   }
 
-  window.PowerBar = { create, ZONES };
+  window.PowerBar = { create, ZONES, zoneCount, colors };
 })();

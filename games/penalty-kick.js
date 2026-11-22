@@ -36,109 +36,109 @@
   };
 
   const CSS = `
-  .pk { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px; }
+  .pen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px; }
   /* The announcer: a green monster with a megaphone and a 🔊 bubble */
-  .pk-top { flex:none; display:flex; align-items:center; gap:10px; padding:0; border:0; background:none; font:inherit; cursor:pointer; touch-action:manipulation; }
-  .pk-ann { position:relative; width:64px; height:60px; }
-  .pk-abody { position:absolute; inset:8px 6px 0; background:#5fd932; border:4px solid #111; border-radius:50% 50% 40% 40%; }
-  .pk-aeye { position:absolute; top:6px; width:22px; height:22px; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
-  .pk-aeye.l { left:10px; } .pk-aeye.r { right:12px; width:18px; height:18px; top:9px; }
-  .pk-aeye i { position:absolute; left:6px; top:6px; width:9px; height:9px; background:#111; border-radius:50%; animation:pk-goggle 1.1s ease-in-out infinite; }
-  .pk-amouth { position:absolute; left:20px; right:20px; top:34px; height:14px; background:#6b1020; border:3px solid #111; border-radius:50%; z-index:1; animation:pk-talk .25s steps(2) infinite; }
-  .pk-mega { position:absolute; right:-14px; top:26px; font-size:26px; transform:rotate(-15deg); z-index:2; }
-  .pk-bubble { position:relative; height:56px; min-width:84px; padding:0 18px; background:#fff; border:5px solid #111; border-radius:28px; box-shadow:0 5px 0 #111;
+  .pen-top { flex:none; display:flex; align-items:center; gap:10px; padding:0; border:0; background:none; font:inherit; cursor:pointer; touch-action:manipulation; }
+  .pen-ann { position:relative; width:64px; height:60px; }
+  .pen-abody { position:absolute; inset:8px 6px 0; background:#5fd932; border:4px solid #111; border-radius:50% 50% 40% 40%; }
+  .pen-aeye { position:absolute; top:6px; width:22px; height:22px; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
+  .pen-aeye.l { left:10px; } .pen-aeye.r { right:12px; width:18px; height:18px; top:9px; }
+  .pen-aeye i { position:absolute; left:6px; top:6px; width:9px; height:9px; background:#111; border-radius:50%; animation:pen-goggle 1.1s ease-in-out infinite; }
+  .pen-amouth { position:absolute; left:20px; right:20px; top:34px; height:14px; background:#6b1020; border:3px solid #111; border-radius:50%; z-index:1; animation:pen-talk .25s steps(2) infinite; }
+  .pen-mega { position:absolute; right:-14px; top:26px; font-size:26px; transform:rotate(-15deg); z-index:2; }
+  .pen-bubble { position:relative; height:56px; min-width:84px; padding:0 18px; background:#fff; border:5px solid #111; border-radius:28px; box-shadow:0 5px 0 #111;
     display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
-  .pk-bubble::before { content:""; position:absolute; left:-14px; top:50%; margin-top:-8px; border:8px solid transparent; border-right:12px solid #111; }
+  .pen-bubble::before { content:""; position:absolute; left:-14px; top:50%; margin-top:-8px; border:8px solid transparent; border-right:12px solid #111; }
 
   /* The pitch: green stripes, the goal at the top, the penalty spot below */
-  .pk-pitch { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
+  .pen-pitch { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
     background:repeating-linear-gradient(180deg, #4cbf3a 0 34px, #43b032 34px 68px); touch-action:none; }
-  .pk-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:9; }
-  .pk-goal { position:absolute; border:9px solid #fff; border-bottom:0; border-radius:6px 6px 0 0; box-shadow:0 0 0 3px #111, inset 0 0 0 3px #111;
+  .pen-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:9; }
+  .pen-goal { position:absolute; border:9px solid #fff; border-bottom:0; border-radius:6px 6px 0 0; box-shadow:0 0 0 3px #111, inset 0 0 0 3px #111;
     background:rgba(255,255,255,.12); background-image:repeating-linear-gradient(45deg, transparent 0 12px, rgba(255,255,255,.55) 12px 14px),
     repeating-linear-gradient(-45deg, transparent 0 12px, rgba(255,255,255,.55) 12px 14px); }
-  .pk-goal.bulge { animation:pk-bulge .35s ease-out; }
-  .pk-line { position:absolute; left:0; right:0; height:4px; background:rgba(255,255,255,.8); }
-  .pk-spot { position:absolute; width:14px; height:8px; margin:-4px 0 0 -7px; background:#fff; border-radius:50%; }
-  .pk-corner { position:absolute; transform:translate(-50%, -50%); min-width:var(--cs); height:calc(var(--cs) * .82); padding:0 6px; background:#fff; color:#111;
+  .pen-goal.bulge { animation:pen-bulge .35s ease-out; }
+  .pen-line { position:absolute; left:0; right:0; height:4px; background:rgba(255,255,255,.8); }
+  .pen-spot { position:absolute; width:14px; height:8px; margin:-4px 0 0 -7px; background:#fff; border-radius:50%; }
+  .pen-corner { position:absolute; transform:translate(-50%, -50%); min-width:var(--cs); height:calc(var(--cs) * .82); padding:0 6px; background:#fff; color:#111;
     border:4px solid #111; border-radius:12px; box-shadow:0 4px 0 #111; font:inherit; font-size:calc(var(--cs) * .48); line-height:1; display:flex; align-items:center;
     justify-content:center; white-space:nowrap; cursor:pointer; touch-action:manipulation; z-index:3; }
-  .pk-corner.pic { font-size:calc(var(--cs) * .5); }
-  .pk-corner.right { background:#b8ffcf; box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; animation:pk-wiggle .4s ease-in-out 3; }
-  .pk-corner.dim { opacity:.45; }
-  .pk-corner.hit { transform:translate(-50%, -50%) scale(1.15); }
+  .pen-corner.pic { font-size:calc(var(--cs) * .5); }
+  .pen-corner.right { background:#b8ffcf; box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; animation:pen-wiggle .4s ease-in-out 3; }
+  .pen-corner.dim { opacity:.45; }
+  .pen-corner.hit { transform:translate(-50%, -50%) scale(1.15); }
 
   /* The goalkeeper: a purple monster with big white gloves. Anchor: feet centre. --kz is its height. */
-  .pk-keeper { position:absolute; left:0; top:0; width:calc(var(--kz) * .8); height:var(--kz); margin:calc(var(--kz) * -1) 0 0 calc(var(--kz) * -.4); z-index:4;
+  .pen-keeper { position:absolute; left:0; top:0; width:calc(var(--kz) * .8); height:var(--kz); margin:calc(var(--kz) * -1) 0 0 calc(var(--kz) * -.4); z-index:4;
     pointer-events:none; transform-origin:50% 80%; will-change:transform; }
-  .pk-kbody { position:absolute; left:14%; right:14%; top:16%; bottom:12%; background:#9c6bff; border:4px solid #111; border-radius:46% 46% 36% 36%;
+  .pen-kbody { position:absolute; left:14%; right:14%; top:16%; bottom:12%; background:#9c6bff; border:4px solid #111; border-radius:46% 46% 36% 36%;
     background-image:linear-gradient(180deg, transparent 58%, #ffd400 58% 70%, transparent 70%); }
-  .pk-keye { position:absolute; top:24%; width:24%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
-  .pk-keye.l { left:22%; } .pk-keye.r { right:22%; width:20%; top:27%; }
-  .pk-keye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:pk-goggle 1s ease-in-out infinite; }
-  .pk-kmouth { position:absolute; left:30%; right:30%; top:46%; height:12%; z-index:1; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; overflow:hidden; }
-  .pk-kmouth::after { content:""; position:absolute; left:24%; right:24%; bottom:-30%; height:70%; background:#ff6f91; border-radius:50%; }
-  .pk-glove { position:absolute; top:18%; width:30%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50% 50% 40% 40%; z-index:3; transition:left .12s, right .12s, top .12s; }
+  .pen-keye { position:absolute; top:24%; width:24%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
+  .pen-keye.l { left:22%; } .pen-keye.r { right:22%; width:20%; top:27%; }
+  .pen-keye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:pen-goggle 1s ease-in-out infinite; }
+  .pen-kmouth { position:absolute; left:30%; right:30%; top:46%; height:12%; z-index:1; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; overflow:hidden; }
+  .pen-kmouth::after { content:""; position:absolute; left:24%; right:24%; bottom:-30%; height:70%; background:#ff6f91; border-radius:50%; }
+  .pen-glove { position:absolute; top:18%; width:30%; aspect-ratio:1; background:#fff; border:4px solid #111; border-radius:50% 50% 40% 40%; z-index:3; transition:left .12s, right .12s, top .12s; }
   /* A save: the ball sits in the keeper's hands (drawn inside the keeper, under its gloves), and the gloves close round it */
-  .pk-kball { position:absolute; left:50%; top:2%; display:none; transform:translateX(-50%); font-size:calc(var(--kz) * .42); line-height:1; z-index:2; }
-  .pk-keeper.holding .pk-kball { display:block; }
-  .pk-keeper.holding .pk-glove.l { left:6%; top:6%; } .pk-keeper.holding .pk-glove.r { right:6%; top:6%; }
-  .pk-keeper.holding.gloat .pk-kball { top:-34%; }   /* held up over its head */
-  .pk-keeper.holding.gloat .pk-glove.l { left:4%; top:-26%; } .pk-keeper.holding.gloat .pk-glove.r { right:4%; top:-26%; }
-  .pk-impact { position:absolute; width:calc(var(--kz) * 1.1); height:calc(var(--kz) * 1.1); transform:translate(-50%, -50%) scale(.3); z-index:8; pointer-events:none;
+  .pen-kball { position:absolute; left:50%; top:2%; display:none; transform:translateX(-50%); font-size:calc(var(--kz) * .42); line-height:1; z-index:2; }
+  .pen-keeper.holding .pen-kball { display:block; }
+  .pen-keeper.holding .pen-glove.l { left:6%; top:6%; } .pen-keeper.holding .pen-glove.r { right:6%; top:6%; }
+  .pen-keeper.holding.gloat .pen-kball { top:-34%; }   /* held up over its head */
+  .pen-keeper.holding.gloat .pen-glove.l { left:4%; top:-26%; } .pen-keeper.holding.gloat .pen-glove.r { right:4%; top:-26%; }
+  .pen-impact { position:absolute; width:calc(var(--kz) * 1.1); height:calc(var(--kz) * 1.1); transform:translate(-50%, -50%) scale(.3); z-index:8; pointer-events:none;
     background:#fff; border:4px solid #111; clip-path:polygon(50% 0, 60% 32%, 92% 18%, 70% 46%, 100% 56%, 68% 64%, 82% 96%, 54% 74%, 40% 100%, 36% 70%, 6% 86%, 26% 56%, 0 38%, 32% 34%, 18% 6%, 44% 26%);
-    animation:pk-impact .45s ease-out forwards; }
-  .pk-glove.l { left:-12%; transform:rotate(-20deg); } .pk-glove.r { right:-12%; transform:rotate(20deg); }
-  .pk-kleg { position:absolute; bottom:0; width:18%; height:16%; background:#111; border-radius:6px; }
-  .pk-kleg.l { left:26%; } .pk-kleg.r { right:26%; }
-  .pk-keeper.gloat .pk-kmouth { height:20%; top:44%; }
-  .pk-keeper.gloat .pk-kmouth::after { height:110%; bottom:-60%; }   /* tongue out */
-  .pk-keeper.gloat { animation:pk-dance .3s ease-in-out infinite alternate; }
-  .pk-keeper.flop .pk-keye i { animation:pk-dizzy .45s linear infinite; }
-  .pk-keeper.flop .pk-kmouth { left:40%; right:40%; height:10%; top:50%; border-radius:50%; }
+    animation:pen-impact .45s ease-out forwards; }
+  .pen-glove.l { left:-12%; transform:rotate(-20deg); } .pen-glove.r { right:-12%; transform:rotate(20deg); }
+  .pen-kleg { position:absolute; bottom:0; width:18%; height:16%; background:#111; border-radius:6px; }
+  .pen-kleg.l { left:26%; } .pen-kleg.r { right:26%; }
+  .pen-keeper.gloat .pen-kmouth { height:20%; top:44%; }
+  .pen-keeper.gloat .pen-kmouth::after { height:110%; bottom:-60%; }   /* tongue out */
+  .pen-keeper.gloat { animation:pen-dance .3s ease-in-out infinite alternate; }
+  .pen-keeper.flop .pen-keye i { animation:pen-dizzy .45s linear infinite; }
+  .pen-keeper.flop .pen-kmouth { left:40%; right:40%; height:10%; top:50%; border-radius:50%; }
 
   /* Your player: an orange monster beside the ball. Anchor: feet centre. --pz is its height. */
-  .pk-player { position:absolute; left:0; top:0; width:calc(var(--pz) * .8); height:var(--pz); margin:calc(var(--pz) * -1) 0 0 calc(var(--pz) * -.4); z-index:5; pointer-events:none; }
-  .pk-pbody { position:absolute; left:10%; right:10%; top:6%; bottom:16%; background:#ff8a1f; border:4px solid #111; border-radius:48% 48% 40% 40%;
+  .pen-player { position:absolute; left:0; top:0; width:calc(var(--pz) * .8); height:var(--pz); margin:calc(var(--pz) * -1) 0 0 calc(var(--pz) * -.4); z-index:5; pointer-events:none; }
+  .pen-pbody { position:absolute; left:10%; right:10%; top:6%; bottom:16%; background:#ff8a1f; border:4px solid #111; border-radius:48% 48% 40% 40%;
     background-image:linear-gradient(180deg, transparent 62%, #1e6bff 62%); }
-  .pk-peye { position:absolute; top:16%; width:30%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
-  .pk-peye.l { left:14%; } .pk-peye.r { right:14%; width:25%; top:19%; }
-  .pk-peye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:pk-goggle 1.2s ease-in-out infinite; }
-  .pk-pmouth { position:absolute; left:28%; right:28%; top:46%; height:14%; z-index:1; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; }
-  .pk-pleg { position:absolute; bottom:0; width:20%; height:22%; background:#ff8a1f; border:4px solid #111; border-radius:6px 6px 10px 10px; transform-origin:50% 0; }
-  .pk-pleg.l { left:22%; } .pk-pleg.r { right:22%; }
-  .pk-player.kick .pk-pleg.r { animation:pk-kick .25s ease-out; }
-  .pk-player.yay { animation:pk-jump .4s cubic-bezier(.2,1.6,.4,1) 3; }
-  .pk-player.yay .pk-pmouth { height:22%; }
-  .pk-player.cry .pk-pmouth { border-radius:999px 999px 4px 4px; height:10%; top:50%; }
-  .pk-player.cry .pk-peye i { top:52%; }
-  .pk-tear { position:absolute; font-size:calc(var(--pz) * .2); z-index:6; pointer-events:none; animation:pk-tear .7s ease-in forwards; }
+  .pen-peye { position:absolute; top:16%; width:30%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:1; }
+  .pen-peye.l { left:14%; } .pen-peye.r { right:14%; width:25%; top:19%; }
+  .pen-peye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:pen-goggle 1.2s ease-in-out infinite; }
+  .pen-pmouth { position:absolute; left:28%; right:28%; top:46%; height:14%; z-index:1; background:#6b1020; border:3px solid #111; border-radius:4px 4px 999px 999px; }
+  .pen-pleg { position:absolute; bottom:0; width:20%; height:22%; background:#ff8a1f; border:4px solid #111; border-radius:6px 6px 10px 10px; transform-origin:50% 0; }
+  .pen-pleg.l { left:22%; } .pen-pleg.r { right:22%; }
+  .pen-player.kick .pen-pleg.r { animation:pen-kick .25s ease-out; }
+  .pen-player.yay { animation:pen-jump .4s cubic-bezier(.2,1.6,.4,1) 3; }
+  .pen-player.yay .pen-pmouth { height:22%; }
+  .pen-player.cry .pen-pmouth { border-radius:999px 999px 4px 4px; height:10%; top:50%; }
+  .pen-player.cry .pen-peye i { top:52%; }
+  .pen-tear { position:absolute; font-size:calc(var(--pz) * .2); z-index:6; pointer-events:none; animation:pen-tear .7s ease-in forwards; }
 
-  .pk-ball { position:absolute; left:0; top:0; font-size:var(--bz); line-height:1; z-index:6; pointer-events:none; will-change:transform; }
-  .pk-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:10; pointer-events:none; font-size:2.6rem; color:#ffd400; -webkit-text-stroke:3px #111;
-    paint-order:stroke fill; text-shadow:0 5px 0 #111; white-space:nowrap; animation:pk-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
-  .pk-word.bad { color:#ff4d6d; font-size:2rem; }
-  .pk-word.saved { color:#ff4d6d; font-size:3.2rem; z-index:11; }   /* big and right over the goal, so a save is unmistakable */
+  .pen-ball { position:absolute; left:0; top:0; font-size:var(--bz); line-height:1; z-index:6; pointer-events:none; will-change:transform; }
+  .pen-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:10; pointer-events:none; font-size:2.6rem; color:#ffd400; -webkit-text-stroke:3px #111;
+    paint-order:stroke fill; text-shadow:0 5px 0 #111; white-space:nowrap; animation:pen-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
+  .pen-word.bad { color:#ff4d6d; font-size:2rem; }
+  .pen-word.saved { color:#ff4d6d; font-size:3.2rem; z-index:11; }   /* big and right over the goal, so a save is unmistakable */
 
-  @keyframes pk-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
-  @keyframes pk-talk { 50% { transform:scaleY(.4); } }
-  @keyframes pk-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
-  @keyframes pk-bulge { 40% { transform:scale(1.04, 1.06); } }
-  @keyframes pk-wiggle { 25% { rotate:-6deg; } 75% { rotate:6deg; } }
-  @keyframes pk-kick { 50% { transform:rotate(-70deg); } }
-  @keyframes pk-jump { 50% { translate:0 -30%; } }
-  @keyframes pk-dance { from { rotate:-10deg; } to { rotate:10deg; } }
-  @keyframes pk-tear { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(40px); } }
-  @keyframes pk-pop { from { transform:translate(-50%, -50%) rotate(-8deg) scale(.2); } }
-  @keyframes pk-impact { 50% { transform:translate(-50%, -50%) scale(1.1); opacity:1; } to { transform:translate(-50%, -50%) scale(1.3); opacity:0; } }
+  @keyframes pen-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
+  @keyframes pen-talk { 50% { transform:scaleY(.4); } }
+  @keyframes pen-dizzy { from { transform:rotate(0) translate(30%); } to { transform:rotate(360deg) translate(30%); } }
+  @keyframes pen-bulge { 40% { transform:scale(1.04, 1.06); } }
+  @keyframes pen-wiggle { 25% { rotate:-6deg; } 75% { rotate:6deg; } }
+  @keyframes pen-kick { 50% { transform:rotate(-70deg); } }
+  @keyframes pen-jump { 50% { translate:0 -30%; } }
+  @keyframes pen-dance { from { rotate:-10deg; } to { rotate:10deg; } }
+  @keyframes pen-tear { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(40px); } }
+  @keyframes pen-pop { from { transform:translate(-50%, -50%) rotate(-8deg) scale(.2); } }
+  @keyframes pen-impact { 50% { transform:translate(-50%, -50%) scale(1.1); opacity:1; } to { transform:translate(-50%, -50%) scale(1.3); opacity:0; } }
   @media (prefers-reduced-motion: reduce) {
-    .pk-aeye i, .pk-keye i, .pk-peye i, .pk-amouth, .pk-goal.bulge, .pk-corner.right, .pk-keeper.gloat, .pk-player.yay, .pk-word { animation:none !important; }
+    .pen-aeye i, .pen-keye i, .pen-peye i, .pen-amouth, .pen-goal.bulge, .pen-corner.right, .pen-keeper.gloat, .pen-player.yay, .pen-word { animation:none !important; }
   }`;
 
   function injectCss() {
-    if (document.getElementById("pk-css")) return;
+    if (document.getElementById("pen-css")) return;
     const style = document.createElement("style");
-    style.id = "pk-css";
+    style.id = "pen-css";
     style.textContent = CSS;
     document.head.appendChild(style);
   }
@@ -191,26 +191,26 @@
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
-      wrap.className = "pk";
+      wrap.className = "pen";
       const top = document.createElement("button");
-      top.className = "pk-top";
+      top.className = "pen-top";
       top.setAttribute("aria-label", TEXT.hearLabel);
-      top.innerHTML = '<div class="pk-ann"><div class="pk-abody"></div><div class="pk-aeye l"><i></i></div><div class="pk-aeye r"><i></i></div>' +
-        '<div class="pk-amouth"></div><div class="pk-mega">📣</div></div><div class="pk-bubble">🔊</div>';
+      top.innerHTML = '<div class="pen-ann"><div class="pen-abody"></div><div class="pen-aeye l"><i></i></div><div class="pen-aeye r"><i></i></div>' +
+        '<div class="pen-amouth"></div><div class="pen-mega">📣</div></div><div class="pen-bubble">🔊</div>';
       top.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       const pitch = document.createElement("div");
-      pitch.className = "pk-pitch";
-      pitch.innerHTML = '<div class="pk-line"></div><div class="pk-goal"></div><div class="pk-spot"></div><div class="pk-fx"></div>';
-      const goalEl = pitch.querySelector(".pk-goal"), line = pitch.querySelector(".pk-line"), spot = pitch.querySelector(".pk-spot"), fx = pitch.querySelector(".pk-fx");
+      pitch.className = "pen-pitch";
+      pitch.innerHTML = '<div class="pen-line"></div><div class="pen-goal"></div><div class="pen-spot"></div><div class="pen-fx"></div>';
+      const goalEl = pitch.querySelector(".pen-goal"), line = pitch.querySelector(".pen-line"), spot = pitch.querySelector(".pen-spot"), fx = pitch.querySelector(".pen-fx");
       const keeper = document.createElement("div");
-      keeper.className = "pk-keeper";
-      keeper.innerHTML = '<div class="pk-kleg l"></div><div class="pk-kleg r"></div><div class="pk-kbody"></div><div class="pk-keye l"><i></i></div><div class="pk-keye r"><i></i></div>' +
-        '<div class="pk-kmouth"></div><div class="pk-kball">⚽</div><div class="pk-glove l"></div><div class="pk-glove r"></div>';
+      keeper.className = "pen-keeper";
+      keeper.innerHTML = '<div class="pen-kleg l"></div><div class="pen-kleg r"></div><div class="pen-kbody"></div><div class="pen-keye l"><i></i></div><div class="pen-keye r"><i></i></div>' +
+        '<div class="pen-kmouth"></div><div class="pen-kball">⚽</div><div class="pen-glove l"></div><div class="pen-glove r"></div>';
       const player = document.createElement("div");
-      player.className = "pk-player";
-      player.innerHTML = '<div class="pk-pleg l"></div><div class="pk-pleg r"></div><div class="pk-pbody"></div><div class="pk-peye l"><i></i></div><div class="pk-peye r"><i></i></div><div class="pk-pmouth"></div>';
+      player.className = "pen-player";
+      player.innerHTML = '<div class="pen-pleg l"></div><div class="pen-pleg r"></div><div class="pen-pbody"></div><div class="pen-peye l"><i></i></div><div class="pen-peye r"><i></i></div><div class="pen-pmouth"></div>';
       const ball = document.createElement("div");
-      ball.className = "pk-ball";
+      ball.className = "pen-ball";
       ball.textContent = "⚽";
       pitch.append(keeper, player, ball);
       wrap.append(top, pitch);
@@ -218,7 +218,7 @@
 
       const corners = opts.map((o, i) => {
         const b = document.createElement("button");
-        b.className = "pk-corner" + (o.kind === "pic" ? " pic" : "");
+        b.className = "pen-corner" + (o.kind === "pic" ? " pic" : "");
         b.textContent = o.text;
         b.setAttribute("aria-label", TEXT.cornerLabel(o.spoken));
         b.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); kick(c); });
@@ -324,7 +324,7 @@
         ball.style.visibility = "hidden";
         keeper.classList.add("holding");
         const burst = document.createElement("div");
-        burst.className = "pk-impact";
+        burst.className = "pen-impact";
         burst.style.left = `${at.x}px`; burst.style.top = `${at.y}px`;
         fx.appendChild(burst);
         ctx.later(() => burst.remove(), 500);
@@ -349,7 +349,7 @@
         const r = player.getBoundingClientRect(), p = pitch.getBoundingClientRect();
         [0.28, 0.66].forEach((fxp, k) => [0, 1, 2].forEach((n) => ctx.later(() => {
           const t = document.createElement("div");
-          t.className = "pk-tear";
+          t.className = "pen-tear";
           t.textContent = "💧";
           t.style.left = `${r.left - p.left + r.width * fxp}px`;
           t.style.top = `${r.top - p.top + r.height * 0.32}px`;
@@ -359,7 +359,7 @@
       }
       function say(text, x, y, bad, extra) {
         const w = document.createElement("div");
-        w.className = "pk-word" + (bad ? " bad" : "") + (extra ? ` ${extra}` : "");
+        w.className = "pen-word" + (bad ? " bad" : "") + (extra ? ` ${extra}` : "");
         w.textContent = text;
         w.style.left = `${Math.max(70, Math.min(W - 70, x))}px`; w.style.top = `${y}px`;
         fx.appendChild(w);
