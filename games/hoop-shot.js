@@ -85,6 +85,13 @@
   .hs-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:9; pointer-events:none; font-size:1.8rem; color:#fff; -webkit-text-stroke:2px #111;
     paint-order:stroke fill; text-shadow:0 4px 0 #111; animation:hs-word .7s ease-out forwards; white-space:nowrap; }
   .hs-word.bad { color:#ff4d6d; }
+  /* Boss Battle showdown: the boss shoots at its own little hoop on the wall (no sign), bottom right */
+  .hs-boss { position:absolute; left:0; top:0; z-index:5; pointer-events:none; }
+  .hs-boss .bx-boss { margin:calc(var(--bbs) * -1) 0 0 calc(var(--bbs) * -.5); }
+  .hs-bhoop { pointer-events:none; cursor:default; z-index:1; }
+  .hs-bhoop .hs-board { background:#fff; }
+  .hs-bhoop .hs-board::after { content:""; width:40%; height:40%; margin-top:10%; border:4px solid #ff4d6d; }
+  .hs-bball { position:absolute; left:0; top:0; font-size:var(--bb); line-height:1; margin:calc(var(--bb) * -.5) 0 0 calc(var(--bb) * -.5); z-index:6; pointer-events:none; }
   /* The win: a giant trophy drops in from the top and lands with a bounce, in front of spinning golden rays */
   .hs-win { position:absolute; left:50%; top:46%; width:var(--ty); height:var(--ty); transform:translate(-50%, -50%); z-index:7; pointer-events:none; }
   .hs-rays { position:absolute; left:50%; top:50%; width:190%; height:190%; transform:translate(-50%, -50%); border-radius:50%; border:5px solid #111; opacity:0;
@@ -126,6 +133,7 @@
     duration: 12000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss shoots at its own hoop
 
     start(ctx) {
       injectCss();
@@ -179,6 +187,20 @@
       ball.innerHTML = '<div class="hs-bin"><div class="hs-eye l"><i></i></div><div class="hs-eye r"><i></i></div><div class="hs-mouth"></div></div>';
       court.appendChild(ball);
 
+      // Boss Battle showdown: the boss stands bottom right shooting at its own little hoop on the wall; it
+      // misses (off the rim, way short) until time runs out, and then it swishes one.
+      const rv = window.Boss && Boss.rival(ctx);
+      let boss = null, bhoop = null, bs = 80;
+      if (rv) {
+        boss = document.createElement("div");
+        boss.className = "hs-boss";
+        boss.appendChild(rv.el("var(--bbs)"));
+        bhoop = document.createElement("div");
+        bhoop.className = "hs-hoop hs-bhoop";
+        bhoop.innerHTML = '<div class="hs-board"></div><div class="hs-rim"></div><div class="hs-net"></div>';
+        court.append(bhoop, boss);
+      }
+
       // ---------- Layout ----------
       let W = 0, H = 0, hw = 100, bz = 70, hoopY = 10, homeX = 0, homeY = 0;
       function layout() {
@@ -190,6 +212,15 @@
         hoopY = Math.max(8, H * 0.04);
         homeX = W / 2; homeY = H - bz * 0.65;
         if (!flying) setBall(homeX, homeY);
+        if (rv) {
+          bs = Math.max(56, Math.min(H * 0.26, W * 0.22, 100));
+          const bhw = Math.max(54, Math.min(W * 0.2, 84));
+          court.style.setProperty("--bbs", `${bs}px`);
+          court.style.setProperty("--bb", `${bs * 0.36}px`);
+          bhoop.style.setProperty("--hw", `${bhw}px`);
+          bhoop.style.transform = `translate(${W * 0.16 - bhw / 2}px, ${H * 0.44}px)`;
+          boss.style.transform = `translate(${W - bs * 0.5 - 6}px, ${H - 4}px)`;
+        }
       }
       const laneX = (i) => (W / N) * (i + 0.5);
       function placeHoops(now) {
@@ -342,6 +373,41 @@
       };
       court.addEventListener("pointerup", endFlick);
       court.addEventListener("pointercancel", () => { flick = null; });
+
+      // The boss's shots: off the rim, short… and at time up, a swish.
+      function bossShot(kind) {
+        const b = document.createElement("div");
+        b.className = "hs-bball";
+        b.textContent = "🏀";
+        fx.appendChild(b);
+        const r = bhoop.querySelector(".hs-rim").getBoundingClientRect(), c = court.getBoundingClientRect();
+        const rim = { x: r.left + r.width / 2 - c.left, y: r.top + r.height / 2 - c.top };
+        const from = { x: W - bs * 0.75, y: H - bs * 0.8 };
+        const to = kind === "short" ? { x: rim.x + W * 0.25, y: H * 0.7 } : { x: rim.x + (kind === "rim" ? r.width * 0.45 : 0), y: rim.y - 8 };
+        const t0 = performance.now(), ms = reduceMotion ? 1 : 650;
+        sweep(300, 520, 0.12, "sine", 0.06);
+        (function fly(now) {
+          const k = Math.min(1, (now - t0) / ms);
+          const x = from.x + (to.x - from.x) * k, y = from.y + (to.y - from.y) * k - Math.sin(k * Math.PI) * H * 0.3;
+          b.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${k * 400}deg) scale(${1 - 0.3 * k})`;
+          if (k < 1) { ctx.raf(fly); return; }
+          if (kind === "swish") {
+            bhoop.classList.remove("swish"); void bhoop.offsetWidth; bhoop.classList.add("swish");
+            noise(0.25, "highpass", 2500, 5000, 0.2);
+            b.animate([{ transform: b.style.transform, opacity: 1 }, { transform: `translate(${x}px, ${y + H * 0.25}px) scale(.7)`, opacity: 0 }], { duration: 400, fill: "forwards" });
+            rv.bubble(window.Boss.TEXT.done, 1500);
+            return;
+          }
+          if (kind === "rim") tone(1300, 0.06, "square", 0.05); // clank
+          rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+          b.animate([{ transform: b.style.transform, opacity: 1 }, { transform: `translate(${x + W * 0.12}px, ${H - bs * 0.2}px) rotate(700deg)`, opacity: 0 }], { duration: 650, easing: "ease-in", fill: "forwards" });
+          ctx.later(() => b.remove(), 700);
+        })(t0);
+      }
+      if (rv) {
+        rv.tries(4, (i) => { if (!done) bossShot(i % 2 ? "short" : "rim"); });
+        rv.onTimeUp(() => bossShot("swish"));
+      }
 
       ctx.onTimeout(() => { done = true; showRight(); ctx.say(C.answer); });
       function onKey(e) {

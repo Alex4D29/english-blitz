@@ -92,6 +92,9 @@
     background:radial-gradient(circle at 34% 30%, #fff 0 18%, #e6e9ee 26%, #9aa3ad 70%, #6d7680 100%); border:3px solid #111; z-index:4;
     display:flex; align-items:center; justify-content:center; font-size:calc(var(--bs) * .5); line-height:1; color:#111; will-change:transform; }
   .pk-ball.content { background:radial-gradient(circle at 34% 30%, #fff 0 60%, #e8ecf2 100%); }
+  /* Boss Battle showdown: the boss stands up top too, with its own ball */
+  .pk-rival { position:absolute; left:2px; bottom:0; z-index:3; pointer-events:none; }
+  .pk-ball.bossball { background:radial-gradient(circle at 34% 30%, #fff 0 18%, var(--bc) 60%); z-index:4; }
   .pk-shot { position:absolute; width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; border:2px solid #111; z-index:6;
     background:radial-gradient(circle at 34% 30%, #fff 0 18%, #d8dde3 30%, #8a939d 100%); }
   .pk-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:5; }
@@ -124,6 +127,7 @@
     duration: 8000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss drops a ball too
 
     start(ctx) {
       injectCss();
@@ -233,6 +237,60 @@
       if (/^[a-z]{3,}$/i.test(ball)) ballEl.style.fontSize = `calc(var(--bs) * ${(1.3 / ball.length).toFixed(2)})`; // a word on the ball
       wrap.appendChild(ballEl);
 
+      // Boss Battle showdown: the boss stands up top too, holding its own ball. When you drop yours it drops
+      // its own: into a wrong funnel if yours is right, into the right one if yours is wrong; and if time runs
+      // out, into the right one.
+      const rv = window.Boss && Boss.rival(ctx);
+      let rival = null, bossBall = null;
+      if (rv) {
+        rival = document.createElement("div");
+        rival.className = "pk-rival";
+        rival.appendChild(rv.el("clamp(60px, 17vw, 84px)"));
+        top.appendChild(rival);
+        bossBall = document.createElement("div");
+        bossBall.className = "pk-ball bossball";
+        bossBall.style.setProperty("--bc", rv.info.color);
+        wrap.appendChild(bossBall);
+      }
+      const bossHand = () => {
+        const w = wrap.getBoundingClientRect(), m = rival.getBoundingClientRect();
+        return { x: m.right - w.left + 4, y: m.top - w.top + m.height * 0.5 };
+      };
+      function placeBossBall(x, y) { bossBall.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`; }
+      // The boss tosses its ball into funnel i; it rides that tube down (fallMs) and lands.
+      function bossDrop(i, fallMs) {
+        const w = wrap.getBoundingClientRect(), mr = machine.getBoundingClientRect();
+        const ox = mr.left - w.left + 6, oy = mr.top - w.top + 6;
+        const from = bossHand(), to = { x: ox + laneX(i), y: oy + yTop - 30 };
+        const path = pathEls[i], len = path.getTotalLength(), tossMs = reduceMotion ? 1 : 380, t0 = performance.now();
+        pathEls[i].classList.add("pk-tube-pick");
+        (function anim(now) {
+          const t = now - t0;
+          if (t < tossMs) {
+            const k = t / tossMs;
+            placeBossBall(from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k - Math.sin(k * Math.PI) * 50);
+          } else {
+            const k = Math.min(1, (t - tossMs) / (reduceMotion ? 1 : fallMs));
+            const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+            const p = path.getPointAtLength(len * e);
+            placeBossBall(ox + p.x, oy + p.y);
+            if (k >= 1) {
+              const s = slotOfFunnel[i];
+              if (slots[s].right) {
+                rv.bubble(window.Boss.TEXT.done, 1500);
+                [784, 1047, 1319].forEach((f, n) => tone(f, 0.08, "square", 0.06, n * 0.06));
+              } else {
+                rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+                sweep(400, 250, 0.3, "sawtooth", 0.06);
+              }
+              return;
+            }
+          }
+          ctx.raf(anim);
+        })(t0);
+      }
+      const rightFunnel = () => slotOfFunnel.indexOf(slots.findIndex((s) => s.right));
+
       const funnels = [...Array(n)].map((_, i) => {
         const b = document.createElement("button");
         b.className = "pk-funnel";
@@ -324,7 +382,9 @@
           b.style.setProperty("--d", `${(-(i % 6) * 0.06).toFixed(2)}s`);
         });
         if (!dropped) placeBallInHands();
+        if (rv && !bossDropped) { const p = bossHand(); placeBossBall(p.x, p.y); }
       }
+      let bossDropped = false;
       // The monster holds the ball out at its side (so it doesn't hide its face).
       const handPos = () => {
         const w = wrap.getBoundingClientRect(), m = mon.getBoundingClientRect();
@@ -345,6 +405,12 @@
         ctx.freezeTimer();
         funnels.forEach((f) => { f.disabled = true; });
         funnels[i].classList.add("pick");
+        if (rv && !bossDropped) { // the boss drops too: the opposite of you
+          bossDropped = true;
+          const r = rightFunnel(), mine = slots[slotOfFunnel[i]].right;
+          const j = mine ? ctx.pick(funnels.map((_, k) => k).filter((k) => k !== r && k !== i)) : r;
+          ctx.later(() => bossDrop(j, 2300), 120);
+        }
         machine.classList.add("dropped");
         pathEls[i].classList.add("pk-tube-pick");
         const w = wrap.getBoundingClientRect(), mr = machine.getBoundingClientRect(), m = mon.getBoundingClientRect();
@@ -444,6 +510,7 @@
       ctx.onTimeout(() => {
         done = true;
         funnels.forEach((f) => { f.disabled = true; });
+        if (rv && !bossDropped) { bossDropped = true; bossDrop(rightFunnel(), 900); } // too slow: the boss gets it
         mon.classList.add("sad");
         tears();
         slots.forEach((s, k) => { if (s.right) slotEls[k].classList.add("right"); });

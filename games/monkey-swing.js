@@ -69,6 +69,12 @@
   .mk-monkey.happy .mk-mouth { height:12%; background:#c0392b; border:3px solid #111; }
   .mk-stars { position:absolute; left:50%; top:0; transform:translateX(-50%); font-size:1.2rem; animation:mk-spin 1s linear infinite; white-space:nowrap; }
   .mk-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6; }
+  /* Boss Battle showdown: the boss climbs its own lane of plain vines on the right */
+  .mk-lane { position:absolute; top:0; bottom:0; right:0; width:var(--lane); background:rgba(0,0,0,.14); border-left:4px dashed rgba(255,255,255,.5); z-index:1; pointer-events:none; }
+  .mk-bvine { position:absolute; left:0; top:0; width:0; z-index:3; pointer-events:none; }
+  .mk-bvine > .mk-rope { transform-origin:4px 0; will-change:transform; }
+  .mk-boss { position:absolute; left:0; top:0; z-index:5; pointer-events:none; will-change:transform; }
+  .mk-boss .bx-boss { margin:calc(var(--bbs) * -.1) 0 0 calc(var(--bbs) * -.5); }
 
   /* (the banana used to pulse a blurred glow with an animated filter: a full repaint every frame, which lagged on iPad at HARD
      with phonics pictures; now it just bobs, which the GPU can do on its own) */
@@ -97,6 +103,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss climbs its own lane of vines
 
     start(ctx) {
       injectCss();
@@ -142,10 +149,30 @@
         '<div class="mk-face"></div><div class="mk-eye l"></div><div class="mk-eye r"></div><div class="mk-mouth"></div></div>';
       jungle.appendChild(monkey);
 
+      // Boss Battle showdown: the boss climbs too, up its own lane of plain vines on the right, a level at a
+      // time, and at time up it leaps to the top and grabs the banana.
+      const rv = window.Boss && Boss.rival(ctx);
+      let boss = null, bossLevel = -1, bossJump = null, bossPos = { x: 0, y: 0 }, bvines = [];
+      if (rv) {
+        jungle.insertAdjacentHTML("beforeend", '<div class="mk-lane"></div>');
+        bvines = [...Array(R)].map(() => {
+          const el = document.createElement("div");
+          el.className = "mk-bvine";
+          el.innerHTML = '<div class="mk-rope"></div>';
+          jungle.appendChild(el);
+          return { el, rope: el.firstChild, ph: Math.random() * 6.28, ax: 0, ay: 0, L: 0, ang: 0 };
+        });
+        boss = document.createElement("div");
+        boss.className = "mk-boss";
+        boss.appendChild(rv.el("var(--bbs)"));
+        jungle.appendChild(boss);
+      }
+
       // ---------- Layout ----------
       let W = 0, H = 0, sz = 56, topY = 0, groundY = 0;
       function layout() {
-        W = jungle.clientWidth; H = jungle.clientHeight;
+        const lane = rv ? Math.max(52, Math.min(90, jungle.clientWidth * 0.18)) : 0; // the boss's lane
+        W = jungle.clientWidth - lane; H = jungle.clientHeight;
         topY = Math.max(96, H * 0.22);
         // The monkey starts in its own space at the bottom, below the lowest vines, so it never
         // covers an option.
@@ -157,10 +184,21 @@
         jungle.style.setProperty("--mz", `${sz * 1.35}px`);
         jungle.style.setProperty("--bn", `${Math.min(W * 0.22, topY * 1.05, 96)}px`); // big, but not so big it crowds the jungle (the teacher found 55% of the width too much)
         topBar.style.top = `${topY}px`;
+        if (rv) {
+          jungle.style.setProperty("--lane", `${lane}px`);
+          jungle.style.setProperty("--bbs", `${Math.min(lane * 0.95, sz * 1.3)}px`);
+          banana.style.left = `${W / 2}px`;
+        }
         banana.style.top = `${topY + 4}px`;
         branches.forEach((b, r) => {
           const ay = groundY - gap * (r + 1) - sz * 0.2;
           b.style.top = `${ay - 6}px`;
+          if (bvines[r]) {
+            const b = bvines[r];
+            b.ax = W + (jungle.clientWidth - W) / 2; b.ay = ay; b.L = gap * 0.5;
+            b.el.style.left = `${b.ax}px`; b.el.style.top = `${b.ay}px`;
+            b.rope.style.height = `${b.L}px`;
+          }
           vines[r].forEach((v) => {
             v.ax = (W / N) * (v.i + 0.5); v.ay = ay; v.L = gap * 0.5;
             v.el.style.left = `${v.ax}px`; v.el.style.top = `${v.ay}px`;
@@ -189,7 +227,42 @@
           if (k >= 1) { const then = jump.then; jump = null; then(); }
         } else if (onVine) pos = handOf(onVine);
         monkey.style.transform = `translate(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px) rotate(${onVine && !jump ? (-onVine.ang * 180) / Math.PI : 0}deg)`;
+        if (boss) placeBoss(now);
         ctx.raf(frame);
+      }
+      // The boss: its vines swing like yours; it hangs from the one it's on, or leaps (bossJump).
+      const laneX = () => W + (jungle.clientWidth - W) / 2;
+      const bossSpot = (l) => {
+        if (l < 0) return { x: laneX(), y: groundY - sz * 0.1 };
+        if (l >= R) return { x: laneX(), y: topY - sz * 1.2 };
+        const b = bvines[l];
+        return { x: b.ax + Math.sin(b.ang) * b.L, y: b.ay + Math.cos(b.ang) * b.L };
+      };
+      function placeBoss(now) {
+        bvines.forEach((b) => { b.ang = Math.sin(now * swingRate + b.ph) * swingAmp; b.rope.style.transform = `rotate(${(-b.ang * 180) / Math.PI}deg)`; });
+        let p = bossSpot(bossLevel);
+        if (bossJump) {
+          const k = Math.min(1, (now - bossJump.t0) / bossJump.ms), a = bossSpot(bossJump.from);
+          p = { x: a.x + (p.x - a.x) * k, y: a.y + (p.y - a.y) * k - Math.sin(k * Math.PI) * sz * 0.9 };
+          if (k >= 1) bossJump = null;
+        }
+        boss.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+      }
+      function bossLeap() {
+        bossJump = { from: bossLevel, t0: performance.now(), ms: 380 };
+        bossLevel++;
+        sweep(200, 500, 0.18, "square", 0.05);
+      }
+      if (rv) {
+        rv.tries(R, bossLeap);               // a level each R+1-th of the time…
+        rv.onTimeUp(() => {                  // …and the top at time up: it grabs the banana
+          bossLeap();
+          ctx.later(() => {
+            const bx = laneX() - W / 2;
+            banana.animate([{ translate: "0 0" }, { translate: `${bx}px ${-sz * 0.2}px` }], { duration: 300, fill: "forwards", easing: "ease-in" });
+            ctx.later(() => { banana.classList.add("eat"); [0, 0.3, 0.6].forEach((d) => noise(0.08, "bandpass", 900, 1400, 0.3, d)); rv.bubble(window.Boss.TEXT.done, 1500); }, 320);
+          }, 400);
+        });
       }
       layout();
       const startPos = () => ({ x: W / 2, y: groundY + 4 + sz * 0.2 }); // sitting in the bush, below every sign

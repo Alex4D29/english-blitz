@@ -154,6 +154,14 @@
     animation:fi-ripple .6s ease-out forwards; pointer-events:none; }
   .fi-heart { position:absolute; font-size:30px; line-height:1; }
 
+  /* ---- Boss Battle showdown: the boss fishes from its own boat (top right of the pond) ---- */
+  .fi-boat { position:absolute; z-index:6; pointer-events:none; left:var(--btx); top:var(--bty); width:var(--btw); height:calc(var(--btw) * .36); }
+  .fi-hull { position:absolute; inset:0; z-index:2; border:5px solid #111; border-radius:6px 6px 50% 50% / 6px 6px 100% 100%;
+    background:linear-gradient(#ff5a4e 0 34%, #fff 34% 46%, #d63a2f 46%); box-shadow:0 5px 0 rgba(0,0,0,.3); }
+  .fi-boat .bx-boss { position:absolute; left:50%; bottom:30%; margin-left:calc(var(--bbs) / -2); z-index:1; }
+  .fi-bob.boss { z-index:5; }
+  .fi-fish.bossfish { z-index:8; }
+
   @keyframes fi-bob    { to { transform:translateY(-6%); } }
   @keyframes fi-jump   { 50% { transform:translateY(-22%) scale(1.08); } }
   @keyframes fi-no     { 25% { transform:rotate(-10deg); } 75% { transform:rotate(10deg); } }
@@ -196,6 +204,7 @@
     duration: 12000, // cast, wait for a bite, maybe a wrong fish and a second cast
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss fishes from its own boat
 
     start(ctx) {
       injectCss();
@@ -295,6 +304,26 @@
       wrap.append(mon, svg, bob, fx);
       ctx.root.appendChild(wrap);
 
+      // Boss Battle showdown: the boss fishes too, from its own boat at the top right, with its own line
+      // and float. Fish never go to it: it gets a few nibbles that come to nothing, and when time runs
+      // out it yanks up the fish you wanted.
+      const rv = window.Boss && Boss.rival(ctx);
+      let rb = null;
+      if (rv) {
+        const boat = document.createElement("div");
+        boat.className = "fi-boat";
+        boat.appendChild(rv.el("var(--bbs)"));
+        boat.insertAdjacentHTML("beforeend", '<div class="fi-hull"></div>');
+        const bbob = document.createElement("div");
+        bbob.className = "fi-bob boss";
+        const rodO = svgEl("path", { fill: "none", stroke: "#111", "stroke-width": 9, "stroke-linecap": "round" });
+        const rodI = svgEl("path", { fill: "none", stroke: "#8a5a2b", "stroke-width": 4, "stroke-linecap": "round" });
+        const line = svgEl("path", { fill: "none", stroke: "#111", "stroke-width": 2.5 });
+        svg.append(line, rodO, rodI);
+        wrap.append(boat, bbob);
+        rb = { boat, bbob, rodO, rodI, line, hand: { x: 0, y: 0 }, tip: { x: 0, y: 0 }, float: { x: 0, y: 0 }, jerk: 0, pull: null };
+      }
+
       // Fish start in evenly spaced lanes, scattered across.
       const lanes = ctx.shuffle(fish.map((_, i) => i));
       fish.forEach((f, i) => {
@@ -310,13 +339,12 @@
         wrap.style.setProperty("--shore", `${clamp(wr.height * 0.27, 120, 200)}px`);
         const pr = pond.getBoundingClientRect();
         P = { l: pr.left - wr.left + 5, t: pr.top - wr.top + 5, w: pr.width - 10, h: pr.height - 10 };
-        S = mon.getBoundingClientRect().width || 100;
+        S = mon.offsetWidth || 100; // offset*, not getBoundingClientRect: the reveal zooms the monster (a transform) while this runs
         const monLeft = clamp(W * 0.1, 12, 60);
         mon.style.setProperty("--ml", `${monLeft}px`);
         wrap.style.setProperty("--dl", `${monLeft - 16}px`);
         wrap.style.setProperty("--dw", `${S + 32}px`);
-        const mr = mon.getBoundingClientRect();
-        base = { x: mr.left - wr.left + S * 0.86, y: mr.top - wr.top + S * 0.66 };
+        base = { x: mon.offsetLeft + S * 0.86, y: mon.offsetTop + S * 0.66 };
         FW = clamp(P.w * 0.33, 100, 170);
         FH = FW * 0.58;
         wrap.style.setProperty("--fw", `${FW}px`);
@@ -330,6 +358,17 @@
             f.tag.style.fontSize = `${tagH * 0.9}px`;
           }
         });
+        if (rb) { // the boss's boat, rod and float
+          const btw = clamp(W * 0.36, 110, 170), bbs = btw * 0.72;
+          const bx = P.l + P.w - btw - 4, by = P.t - btw * 0.2;
+          wrap.style.setProperty("--btw", `${btw}px`);
+          wrap.style.setProperty("--bbs", `${bbs}px`);
+          wrap.style.setProperty("--btx", `${bx}px`);
+          wrap.style.setProperty("--bty", `${by}px`);
+          rb.hand = { x: bx + btw * 0.32, y: by - bbs * 0.2 };
+          rb.tip = { x: bx - btw * 0.12, y: by - bbs * 0.8 };
+          rb.float = { x: bx - btw * 0.22, y: P.t + P.h * 0.24 };
+        }
       }
       measure();
       const ro = new ResizeObserver(measure);
@@ -507,7 +546,61 @@
           aimRing.setAttribute("opacity", 0);
         }
 
+        if (rb) drawBoss(now, dt);
         ctx.raf(frame);
+      }
+
+      // The boss's rod (bending when it gets a nibble or pulls) and its line to the float, or to the fish it caught.
+      function drawBoss(now, dt) {
+        rb.jerk = Math.max(0, rb.jerk - dt * 2.5);
+        const pulling = rb.pull && now - rb.pull.t0 < rb.pull.dur;
+        const bend = pulling ? 1 : rb.jerk;
+        const h = rb.hand, t = { x: rb.tip.x + bend * 18, y: rb.tip.y - bend * 14 };
+        const d = `M${h.x},${h.y} Q${(h.x + t.x) / 2 + bend * 10},${(h.y + t.y) / 2 + 6 + bend * 16} ${t.x},${t.y}`;
+        rb.rodO.setAttribute("d", d);
+        rb.rodI.setAttribute("d", d);
+        if (rb.pull) {
+          const p = rb.pull, u = Math.min(1, (now - p.t0) / p.dur), e = 1 - (1 - u) * (1 - u);
+          const x = lerp(p.from.x, t.x, e), y = lerp(p.from.y, t.y + FH * 0.75, e) - Math.sin(u * Math.PI) * 60;
+          p.f.el.style.transform = `translate(${x}px,${y}px)`;
+          drawLineTo(t, { x, y: y - FH * 0.4 }, 0);
+          if (u >= 1 && !p.landed) { p.landed = true; rv.bubble(window.Boss.TEXT.done, 1500); }
+        } else {
+          rb.bbob.style.transform = `translate(${rb.float.x}px,${rb.float.y}px)`;
+          drawLineTo(t, rb.float, 22);
+        }
+      }
+      function drawLineTo(tip, end, sag) {
+        rb.line.setAttribute("d", `M${tip.x},${tip.y} Q${(tip.x + end.x) / 2},${(tip.y + end.y) / 2 + sag} ${end.x},${end.y}`);
+      }
+      if (rv) {
+        // A few nibbles that come to nothing: the float dips, the boss yanks… and misses.
+        rv.tries(3, () => {
+          rb.bbob.classList.add("dip");
+          later(() => {
+            rb.bbob.classList.remove("dip");
+            if (done) return;
+            rb.jerk = 1;
+            rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+            ripple(rb.float, true);
+            plopSound();
+          }, 650);
+        });
+        // Time's up: it yanks up the fish you wanted.
+        rv.onTimeUp(() => {
+          const f = fish.find((x) => x.item === target);
+          if (!f) return;
+          if (hooked && hooked.f === f) hooked = null;
+          f.state = "held";
+          f.el.classList.remove("bite");
+          f.el.classList.add("hooked", "bossfish");
+          f.dir = -1;
+          f.el.classList.add("left");
+          rb.bbob.classList.add("hide");
+          rb.pull = { f, from: fishPx(f), t0: performance.now(), dur: 650 };
+          ripple(fishPx(f));
+          reelSound();
+        });
       }
 
       // ---------- Input ----------

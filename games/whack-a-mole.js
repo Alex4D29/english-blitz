@@ -1,3 +1,4 @@
+          const h = holes.find((x) => x.el.classList.contains("up")) || bossHole; // (it swings from where it stands, so the mole stays in sight)
 // WHACK-A-MOLE — the target letter (or word) sits in a card at the top, and the
 // voice says it. Moles pop out of their holes for a couple of seconds, each
 // holding a sign on its belly. Whack 3 moles with the target to win.
@@ -140,6 +141,9 @@
   .wm-hole.soot .wm-eye { animation:wm-blink 1.2s steps(1) infinite; }
 
   /* ---- effects ---- */
+  /* Boss Battle showdown: the boss stands on a hole of its own, whacking it (and missing) */
+  .wm-rival { position:absolute; left:0; top:0; z-index:2; pointer-events:none; transition:transform .3s cubic-bezier(.3,.7,.4,1); }
+  .wm-rival .bx-boss { margin:calc(var(--bbs) * -1) 0 0 calc(var(--bbs) * -.5); }
   .wm-mallet { position:absolute; font-size:var(--mallet); line-height:1; transform-origin:82% 82%;
     animation:wm-swing .26s cubic-bezier(.5,0,.8,.4) forwards; }
   .wm-pow { position:absolute; width:var(--s); height:var(--s); margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
@@ -191,6 +195,7 @@
     input: "tap",
     tutorial: true,
     bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss whacks along, on a hole of its own
 
     start(ctx) {
       const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: the boss pops out of the holes
@@ -566,6 +571,55 @@
           if (isUp(h)) { h.el.classList.add("laugh"); hide(h, 700); }
         });
       });
+
+      // Boss Battle showdown: the boss stands on a hole of its own (no mole comes up there while it does),
+      // hopping to another empty hole now and then and whacking it: nothing there, a miss every time.
+      // At time up it bonks a mole.
+      const rv = window.Boss && Boss.rival(ctx);
+      let rival = null, bossHole = null;
+      function bossTo(h) {
+        if (bossHole && bossHole.state === "boss") bossHole.state = "empty";
+        bossHole = h;
+        if (h.state === "empty") h.state = "boss";
+        const f = fx.getBoundingClientRect(), r = h.el.getBoundingClientRect();
+        rival.style.transform = `translate(${r.left + r.width / 2 - f.left}px, ${r.bottom - f.top - 4}px)`;
+      }
+      if (rv) {
+        rival = document.createElement("div");
+        rival.className = "wm-rival";
+        rival.appendChild(rv.el("var(--bbs)"));
+        fx.style.setProperty("--bbs", `${Math.max(44, Math.min(mw * 0.95, 110))}px`);
+        fx.appendChild(rival);
+        rival.style.transition = "none";
+        bossTo(ctx.pick(holes));
+        void rival.offsetWidth;
+        rival.style.transition = "";
+        rv.tries(5, () => {
+          if (done) return;
+          const empties = holes.filter((h) => h.state === "empty" && h !== bossHole);
+          if (!empties.length) return;
+          bossTo(ctx.pick(empties));
+          ctx.later(() => {
+            if (done) return;
+            mallet(pointIn(fx, null, bossHole.el));
+            whiffSound();
+            rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+          }, 350);
+        });
+        rv.onTimeUp(() => {
+          const h = holes.find((x) => x.el.classList.contains("up")) || bossHole;
+          bossTo(h);
+          ctx.later(() => {
+            const at = pointIn(fx, null, h.el);
+            mallet(at);
+            bonkSound();
+            pow(at);
+            h.el.classList.remove("laugh");
+            h.el.classList.add("bonk");
+            rv.bubble(window.Boss.TEXT.done, 1400);
+          }, 330);
+        });
+      }
 
       // ---------- Sound effects ----------
       const whiffSound = () => noise(0.08, "highpass", 900, 2600, 0.25);

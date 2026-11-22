@@ -71,6 +71,11 @@
   .mg-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:9; pointer-events:none; font-size:2.2rem; color:#ffd400; -webkit-text-stroke:2px #111;
     paint-order:stroke fill; text-shadow:0 4px 0 #111; white-space:nowrap; animation:mg-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
   .mg-word.bad { color:#ff4d6d; }
+  /* Boss Battle showdown: the boss stands bottom right, putting at its own hole (a plain flag) */
+  .mg-boss { position:absolute; left:0; top:0; z-index:5; pointer-events:none; }
+  .mg-boss .bx-boss { margin:calc(var(--bbs) * -1) 0 0 calc(var(--bbs) * -.5); }
+  .mg-boss.swing .bx-boss { animation:mg-squash .3s ease-out; }
+  .mg-bhole .mg-flag { min-width:0; width:56%; height:calc(var(--fs) * .4); padding:0; }
   .mg-clap { position:absolute; font-size:1.8rem; pointer-events:none; z-index:8; }
   .mg-star { position:absolute; font-size:1.3rem; pointer-events:none; z-index:8; }
   @keyframes mg-wave { 50% { transform:skewY(-6deg) scaleX(.94); } }
@@ -99,6 +104,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss putts at its own hole
 
     start(ctx) {
       injectCss();
@@ -143,6 +149,21 @@
       ball.className = "mg-ball";
       course.appendChild(ball);
 
+      // Boss Battle showdown: the boss stands at the bottom right, swinging at its own hole (a plain flag in
+      // its colour, on the hill). Short, long, short… and at time up, in it goes.
+      const rv = window.Boss && Boss.rival(ctx);
+      let boss = null, bhole = null, bp = { x: 0, y: 0 }, bh = { x: 0, y: 0, s: 50 };
+      if (rv) {
+        boss = document.createElement("div");
+        boss.className = "mg-boss";
+        boss.appendChild(rv.el("var(--bbs)"));
+        bhole = document.createElement("div");
+        bhole.className = "mg-hole mg-bhole";
+        bhole.style.setProperty("--fc", rv.info.color);
+        bhole.innerHTML = '<div class="mg-cup"></div><div class="mg-pole"></div><div class="mg-flag"></div>';
+        course.append(bhole, boss);
+      }
+
       let W = 0, H = 0, gz = 100, gx = 0, gy = 0, bs = 18, kicked = false;
       function layout() {
         W = course.clientWidth; H = course.clientHeight;
@@ -161,6 +182,15 @@
           h.flag.style.fontSize = h.opt.kind === "word" ? `${Math.min(s * 0.28, (s * 0.9) / (h.opt.text.length * 0.6))}px` : "";
         });
         if (!kicked) setBall(gx + gz * 0.42, gy - bs * 0.5, 1);
+        if (rv) {
+          const bz = Math.max(56, Math.min(H * 0.24, W * 0.2, 96));
+          course.style.setProperty("--bbs", `${bz}px`);
+          bp = { x: W - bz * 0.5 - 6, y: H - 6 };
+          boss.style.transform = `translate(${bp.x}px, ${bp.y}px)`;
+          bh = { x: W * 0.3, y: H * 0.5, s: Math.max(40, Math.min(W * 0.14, 70)) };
+          bhole.style.setProperty("--fs", `${bh.s}px`);
+          bhole.style.left = `${bh.x}px`; bhole.style.top = `${bh.y}px`;
+        }
       }
       function setBall(x, y, s) { ball.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${s.toFixed(3)})`; }
       const cupOf = (h) => ({ x: h.x, y: h.y - h.s * 1.6 * 0.08 });
@@ -250,6 +280,32 @@
         fx.appendChild(w);
       }
       function replay() { if (!done) ctx.say(C.prompt); }
+
+      // The boss's shots.
+      function bossShot(kind) {
+        const b = document.createElement("div");
+        b.className = "mg-ball";
+        fx.appendChild(b);
+        boss.classList.remove("swing"); void boss.offsetWidth; boss.classList.add("swing");
+        noise(0.04, "highpass", 2000, 4000, 0.2);
+        const cup = { x: bh.x, y: bh.y - bh.s * 1.6 * 0.08 };
+        const from = { x: bp.x - 20, y: bp.y - 8 };
+        const to = kind === "in" ? cup : kind === "short" ? { x: cup.x + W * 0.2, y: cup.y + H * 0.14 } : { x: cup.x - W * 0.16, y: cup.y - H * 0.04 };
+        const t0 = performance.now(), ms = reduceMotion ? 1 : 700;
+        (function fly(now) {
+          const k = Math.min(1, (now - t0) / ms);
+          const x = from.x + (to.x - from.x) * k, y = from.y + (to.y - from.y) * k - Math.sin(k * Math.PI) * H * 0.25;
+          b.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${(1 - 0.3 * k).toFixed(3)})`;
+          if (k < 1) { ctx.raf(fly); return; }
+          if (kind === "in") { b.style.opacity = "0"; tone(400, 0.05, "sine", 0.08); rv.bubble(window.Boss.TEXT.done, 1500); return; }
+          rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+          b.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, delay: 500, fill: "forwards" });
+        })(t0);
+      }
+      if (rv) {
+        rv.tries(3, (i) => { if (!done) bossShot(i % 2 ? "long" : "short"); });
+        rv.onTimeUp(() => bossShot("in"));
+      }
 
       ctx.onTimeout(() => { done = true; bar.lock(); golfer.classList.remove("wind"); holes.forEach((x) => x.el.classList.add(x.opt.right ? "right" : "dim")); ctx.say(C.answer); });
       function onKey(e) { if (e.key === " ") { e.preventDefault(); replay(); } }

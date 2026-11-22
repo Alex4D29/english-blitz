@@ -80,6 +80,16 @@
   .td-beach::before { content:""; position:absolute; left:-5%; right:-5%; top:-30px; height:62px; background:#3fb6e8; border-bottom:5px solid #fff;
     border-radius:0 0 50% 50% / 0 0 40% 40%; }   /* a strip of sea at the top */
   .td-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:8; }
+  /* Boss Battle showdown: the boss digs its own hole, up the beach behind the X marks */
+  .td-rival { position:absolute; left:0; top:0; z-index:2; pointer-events:none; }
+  .td-rival .bx-boss { margin:calc(var(--bbs) * -1) 0 0 calc(var(--bbs) * -.75); }
+  .td-bhole { position:absolute; left:calc(var(--bbs) * .1); top:calc(var(--bbs) * -.16); width:calc(var(--bbs) * .8); height:calc(var(--bbs) * .3); border-radius:50%;
+    background:radial-gradient(ellipse at 50% 60%, #3a2410 0 35%, #6b4520 60%, #a87a3c 100%); border:3px solid #111; transform:scale(var(--d, .15)); transition:transform .1s; }
+  .td-bspade { position:absolute; left:calc(var(--bbs) * .25); top:calc(var(--bbs) * -.75); font-size:calc(var(--bbs) * .42); line-height:1; transform-origin:30% 90%; }
+  .td-bspade.dig { animation:td-bdig .25s ease-in-out 2; }
+  .td-bloot { position:absolute; left:calc(var(--bbs) * .2); top:calc(var(--bbs) * -.6); font-size:calc(var(--bbs) * .5); line-height:1; animation:td-bloot .5s cubic-bezier(.2,1.8,.4,1) both; }
+  @keyframes td-bdig { 50% { transform:rotate(40deg) translateY(10%); } }
+  @keyframes td-bloot { from { transform:translateY(60%) scale(.3); } }
 
   /* An X spot: its sign on a stake, the painted X, the hole, a pile of sand */
   .td-spot { position:absolute; width:var(--sp); height:calc(var(--sp) * 1.5); transform:translate(-50%, -100%); padding:0; border:0; background:none; font:inherit;
@@ -175,6 +185,7 @@
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
     listening: true, // the target is only ever spoken: left out when listening games are off (Settings)
+    bossRival: true, // Boss Battle showdown: the boss digs its own hole
 
     start(ctx) {
       injectCss();
@@ -283,6 +294,43 @@
       layout();
       const ro = new ResizeObserver(layout);
       ro.observe(beach);
+
+      // Boss Battle showdown: the boss digs its own hole up the beach, behind the X marks. Dig, dig… nothing
+      // (a few times); and at time up, it digs up a treasure of its own.
+      const rv = window.Boss && Boss.rival(ctx);
+      let rival = null, bdepth = 0.15;
+      if (rv) {
+        rival = document.createElement("div");
+        rival.className = "td-rival";
+        rival.innerHTML = '<div class="td-bhole"></div>';
+        rival.appendChild(rv.el("var(--bbs)"));
+        rival.insertAdjacentHTML("beforeend", '<div class="td-bspade">🪏</div>');
+        beach.appendChild(rival);
+        const placeRival = () => {
+          const bs = Math.max(50, Math.min(H * 0.24, 90));
+          beach.style.setProperty("--bbs", `${bs}px`);
+          const top = Math.min(...holes.map((h) => Math.min(H - 6, h.y) - sp * 1.5)); // the top of the highest sign
+          rival.style.transform = `translate(${W * 0.5}px, ${Math.max(bs + 34, Math.min(top - 6, H * 0.5))}px)`;
+        };
+        placeRival();
+        new ResizeObserver(placeRival).observe(beach);
+        const spade = rival.querySelector(".td-bspade"), bhole = rival.querySelector(".td-bhole");
+        const bossDig = () => {
+          spade.classList.remove("dig"); void spade.offsetWidth; spade.classList.add("dig");
+          [0, 0.25].forEach((d) => noise(0.06, "bandpass", 1400, 900, 0.18, d));
+          bdepth = Math.min(1, bdepth + 0.22);
+          bhole.style.setProperty("--d", bdepth.toFixed(2));
+        };
+        rv.tries(3, () => { if (done) return; bossDig(); ctx.later(() => { if (!done) rv.bubble(ctx.pick(window.Boss.TEXT.miss)); }, 450); });
+        rv.onTimeUp(() => {
+          bossDig();
+          ctx.later(() => {
+            rival.insertAdjacentHTML("beforeend", '<div class="td-bloot">💰</div>');
+            [784, 988, 1175].forEach((f, n) => tone(f, 0.1, "triangle", 0.08, n * 0.07));
+            rv.bubble(window.Boss.TEXT.done, 1500);
+          }, 450);
+        });
+      }
 
       // ---------- Digging ----------
       let done = false;

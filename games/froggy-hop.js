@@ -95,6 +95,12 @@
     animation:fh-ring .7s ease-out forwards; pointer-events:none; }
   .fh-drop { position:absolute; width:12px; height:12px; margin:-6px 0 0 -6px; background:#bfe6ff; border:3px solid #111; border-radius:50%; z-index:6; pointer-events:none; }
   .fh-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:7; }
+  /* Boss Battle showdown: the boss hops its own lane of plain pads on the right */
+  .fh-bpad { position:absolute; left:0; top:0; width:var(--bps); height:calc(var(--bps) * .8); margin:calc(var(--bps) * -.4) 0 0 calc(var(--bps) * -.5);
+    background:#3fb54a; border:4px solid #111; border-radius:50%; box-shadow:inset -4px -4px 0 rgba(0,0,0,.18); z-index:2; pointer-events:none; }
+  .fh-lane { position:absolute; top:var(--bank); bottom:var(--bank); right:0; width:var(--lane); background:rgba(0,0,0,.12); border-left:4px dashed rgba(255,255,255,.55); z-index:1; pointer-events:none; }
+  .fh-boss { position:absolute; left:0; top:0; z-index:6; pointer-events:none; will-change:transform; }
+  .fh-boss .bx-boss { margin:calc(var(--bbs) * -.85) 0 0 calc(var(--bbs) * -.5); }
 
   @keyframes fh-in { from { transform:scale(.5); opacity:0; } }
   @keyframes fh-flow { from { background-position:0 0; } to { background-position:0 60px; } }
@@ -124,6 +130,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss hops its own lane
 
     start(ctx) {
       injectCss();
@@ -183,11 +190,25 @@
       frog.innerHTML = '<div class="fh-tongue"></div><div class="fh-fbody"><div class="fh-belly"></div></div><div class="fh-feye l"></div><div class="fh-feye r"></div><div class="fh-fmouth"></div>';
       river.appendChild(frog);
 
+      // Boss Battle showdown: the boss crosses too, hopping up its own lane of plain pads on the right, a row
+      // at a time, so it reaches the far bank (and grabs the fly) just as time runs out.
+      const rv = window.Boss && Boss.rival(ctx);
+      let boss = null, bossRow = -1, bossJump = null, bossPads = [];
+      if (rv) {
+        river.insertAdjacentHTML("beforeend", '<div class="fh-lane"></div>');
+        bossPads = [...Array(R)].map(() => { const d = document.createElement("div"); d.className = "fh-bpad"; river.appendChild(d); return d; });
+        boss = document.createElement("div");
+        boss.className = "fh-boss";
+        boss.appendChild(rv.el("var(--bbs)"));
+        river.appendChild(boss);
+      }
+
       // ---------- Layout ----------
-      let W = 0, H = 0, bank = 40, ps = 70, rowY = [], startY = 0, endY = 0;
+      let W = 0, H = 0, bank = 40, ps = 70, rowY = [], startY = 0, endY = 0, lane = 0;
       const phase = [...Array(R)].map(() => Math.random() * 6.28);
       function layout() {
-        W = river.clientWidth; H = river.clientHeight;
+        lane = rv ? Math.max(56, Math.min(100, river.clientWidth * 0.2)) : 0; // the boss's lane
+        W = river.clientWidth - lane; H = river.clientHeight; // (pads, the frog and the fly stay left of it)
         bank = Math.max(40, Math.min(64, H * 0.11));
         const span = H - bank * 2;
         rowY = [...Array(R)].map((_, r) => H - bank - span * ((r + 0.5) / R)); // row 0 nearest the frog
@@ -195,6 +216,12 @@
         river.style.setProperty("--bank", `${bank}px`);
         river.style.setProperty("--ps", `${ps}px`);
         river.style.setProperty("--fs", `${ps * 0.62}px`);
+        if (rv) {
+          river.style.setProperty("--lane", `${lane}px`);
+          river.style.setProperty("--bps", `${lane * 0.78}px`);
+          river.style.setProperty("--bbs", `${Math.min(lane * 0.9, ps * 0.8)}px`);
+          fly.style.left = `${W / 2}px`;
+        }
         startY = H - bank * 0.55; endY = bank * 0.62;
         pads.flat().forEach((p) => {
           if (p.item.kind === "word") p.tag.style.fontSize = `${Math.min(ps * 0.36, (ps * 0.84) / (p.item.text.length * 0.6))}px`;
@@ -234,8 +261,39 @@
           if (onPad && !onPad.sunk) frogPos = { x: onPad.x, y: onPad.y };
           frog.style.transform = `translate(${frogPos.x.toFixed(1)}px, ${frogPos.y.toFixed(1)}px)`;
         }
+        if (boss) placeBoss(now);
         ctx.raf(frame);
       }
+      // The boss: its pads, and where it is (hopping from row to row on bossJump).
+      const bossY = (r) => (r < 0 ? startY : r >= R ? endY + ps * 0.28 : rowY[r]);
+      function placeBoss(now) {
+        const x = W + lane / 2;
+        bossPads.forEach((d, r) => { d.style.transform = `translate(${x}px, ${rowY[r]}px)`; });
+        let y = bossY(bossRow), lift = 0;
+        if (bossJump) {
+          const k = Math.min(1, (now - bossJump.t0) / bossJump.ms);
+          y = bossY(bossJump.from) + (bossY(bossRow) - bossY(bossJump.from)) * k;
+          lift = Math.sin(k * Math.PI) * ps * 0.5;
+          if (k >= 1) bossJump = null;
+        }
+        boss.style.transform = `translate(${x}px, ${(y - lift).toFixed(1)}px)`;
+      }
+      function bossHop() {
+        bossJump = { from: bossRow, t0: performance.now(), ms: 380 };
+        bossRow++;
+        sweep(200, 420, 0.15, "square", 0.05); // a lower boing than the frog's
+      }
+      if (rv) {
+        rv.tries(R, bossHop);           // one row each R+1-th of the time…
+        rv.onTimeUp(() => {             // …and the far bank at time up: it gets the fly
+          bossHop();
+          ctx.later(() => {
+            fly.animate([{ left: `${W / 2}px` }, { left: `${W + lane / 2}px` }], { duration: 300, fill: "forwards", easing: "ease-in" });
+            ctx.later(() => { fly.classList.add("gone"); sweep(1800, 300, 0.12, "sine", 0.1); rv.bubble(window.Boss.TEXT.done, 1500); }, 300);
+          }, 400);
+        });
+      }
+
       layout();
       frogPos = { x: W / 2, y: startY };
       setLive();

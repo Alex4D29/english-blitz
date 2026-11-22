@@ -75,6 +75,12 @@
   .ar-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:9; pointer-events:none; font-size:1.8rem; color:#ffd400; -webkit-text-stroke:2px #111;
     paint-order:stroke fill; text-shadow:0 4px 0 #111; white-space:nowrap; animation:ar-word .8s ease-out forwards; }
   .ar-word.bad { color:#fff; }
+  /* Boss Battle showdown: the boss stands bottom right and shoots at its own target (no sign) on the hill */
+  .ar-boss { position:absolute; left:0; top:0; z-index:5; pointer-events:none; }
+  .ar-boss .bx-boss { margin:calc(var(--bbs) * -1) 0 0 calc(var(--bbs) * -.5); }
+  .ar-btgt { position:absolute; width:var(--bts); height:calc(var(--bts) * 1.45); transform:translate(-50%, -100%); z-index:2; pointer-events:none; --ring:#9a4dff; --ts:var(--bts); }
+  .ar-btgt .ar-legs { border-width:0 4px; }
+  .ar-btgt.thunk .ar-face { animation:ar-thunk .3s ease-out; }
 
   @keyframes ar-flip { from { transform:translate(-50%, -50%) rotateX(90deg); } }
   @keyframes ar-thunk { 30% { transform:translateX(4px) rotate(3deg); } 60% { transform:translateX(-3px); } }
@@ -102,6 +108,7 @@
     duration: 16000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss shoots at its own target
 
     start(ctx) {
       injectCss();
@@ -151,6 +158,20 @@
       field.appendChild(archer);
       const string = archer.querySelector(".ar-string");
 
+      // Boss Battle showdown: the boss stands at the bottom right and shoots at its own plain target on the
+      // hill. Its arrows fall short or fly over until time runs out, and then it hits the bullseye.
+      const rv = window.Boss && Boss.rival(ctx);
+      let boss = null, btgt = null, bpos = { x: 0, y: 0 }, bt = { x: 0, y: 0, s: 40 };
+      if (rv) {
+        boss = document.createElement("div");
+        boss.className = "ar-boss";
+        boss.appendChild(rv.el("var(--bbs)"));
+        btgt = document.createElement("div");
+        btgt.className = "ar-btgt";
+        btgt.innerHTML = '<div class="ar-legs"></div><div class="ar-face"></div>';
+        field.append(btgt, boss);
+      }
+
       // ---------- Layout: the archer bottom-left, targets further away = higher and smaller ----------
       let W = 0, H = 0, az = 100, ax = 0, ay = 0;
       function layout() {
@@ -169,6 +190,15 @@
           t.el.style.left = `${t.x}px`; t.el.style.top = `${t.y}px`;
           if (t.opt) fit(t);
         });
+        if (rv) {
+          const bs = Math.max(56, Math.min(H * 0.24, W * 0.2, 96));
+          field.style.setProperty("--bbs", `${bs}px`);
+          bpos = { x: W - bs * 0.5 - 6, y: H - 6 };
+          boss.style.transform = `translate(${bpos.x}px, ${bpos.y}px)`;
+          bt = { x: W * 0.3, y: H * 0.52, s: Math.max(34, Math.min(W * 0.12, 60)) };
+          field.style.setProperty("--bts", `${bt.s}px`);
+          btgt.style.left = `${bt.x}px`; btgt.style.top = `${bt.y}px`;
+        }
       }
       const bullseye = (t) => ({ x: t.x, y: t.y - t.s * 1.45 + t.s * 0.5 });
       function fit(t) { t.sign.style.fontSize = t.opt.kind === "word" ? `${Math.min(t.s * 0.28, (t.s * 0.8) / (t.opt.text.length * 0.6))}px` : ""; }
@@ -261,6 +291,40 @@
       }
       function showRight() { targets.forEach((t) => t.el.classList.add(t.opt.right ? "right" : "dim")); }
       function replay() { if (!done) ctx.say(C.prompt); }
+
+      // The boss's shots: short, over, short… and at time up, the bullseye.
+      function bossShot(kind) {
+        const arrow = document.createElement("div");
+        arrow.className = "ar-arrow";
+        fx.appendChild(arrow);
+        const bs = parseFloat(field.style.getPropertyValue("--bbs")) || 70;
+        const eye = { x: bt.x, y: bt.y - bt.s * 0.95 };
+        const from = { x: bpos.x - bs * 0.3, y: bpos.y - bs * 0.55 };
+        const to = kind === "hit" ? eye : kind === "short" ? { x: eye.x + bt.s * 1.4, y: bt.y + H * 0.12 } : { x: eye.x - bt.s * 2.2, y: -40 };
+        const t0 = performance.now(), ms = reduceMotion ? 1 : 560, lift = H * 0.18;
+        let prev = from;
+        sweep(800, 260, 0.15, "sine", 0.07);
+        (function fly(now) {
+          const k = Math.min(1, (now - t0) / ms);
+          const x = from.x + (to.x - from.x) * k, y = from.y + (to.y - from.y) * k - Math.sin(k * Math.PI) * lift;
+          arrow.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${(Math.atan2(y - prev.y, x - prev.x) * 57.3).toFixed(1)}deg) scale(.8)`;
+          prev = { x, y };
+          if (k < 1) { ctx.raf(fly); return; }
+          if (kind === "hit") {
+            btgt.classList.remove("thunk"); void btgt.offsetWidth; btgt.classList.add("thunk");
+            noise(0.06, "lowpass", 900, 300, 0.5); tone(220, 0.06, "square", 0.08);
+            rv.bubble(window.Boss.TEXT.done, 1500);
+            return;
+          }
+          if (kind === "short") noise(0.05, "lowpass", 600, 200, 0.3); // thud in the grass
+          rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+          ctx.later(() => arrow.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: "forwards" }), 600);
+        })(t0);
+      }
+      if (rv) {
+        rv.tries(3, (i) => { if (!done) bossShot(i % 2 ? "over" : "short"); });
+        rv.onTimeUp(() => bossShot("hit"));
+      }
 
       ctx.onTimeout(() => { done = true; bar.lock(); archer.classList.add("sad"); showRight(); ctx.say(C.answer); });
       function onKey(e) {

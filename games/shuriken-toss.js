@@ -155,6 +155,9 @@
   .st-fly.bossy.glow::before { box-shadow:inset 0 0 0 5px var(--ring), 0 0 0 6px #ffd400, 0 0 26px 12px #ffd400; }
 
   /* ---- shuriken and effects ---- */
+  /* Boss Battle showdown: the boss stands on the left too, throwing shurikens (and missing) */
+  .st-rival { position:absolute; left:calc(2% + var(--d) * 1.75); bottom:7%; z-index:2; pointer-events:none; }
+  .st-rival.throw .bx-boss { animation:st-throw .2s ease-out; }
   .st-star { position:absolute; left:0; top:0; width:calc(var(--d) * .55); height:calc(var(--d) * .55); pointer-events:none; z-index:3; }
   .st-star svg { width:100%; height:100%; display:block; animation:st-spin .22s linear infinite; }
   .st-slash { position:absolute; left:0; top:0; height:9px; background:#fff; border:3px solid #111; border-radius:9px;
@@ -205,6 +208,7 @@
     input: "tap",
     tutorial: true,
     bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss throws shurikens too, from the left
 
     start(ctx) {
       const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: the balls are carried by boss clones
@@ -568,6 +572,50 @@
         done = true;
         flyers.forEach((f) => { if (!f.gone && isTarget(f.item)) f.el.classList.add("glow"); });
       });
+
+      // Boss Battle showdown: the boss stands on the left by the cannon, throwing shurikens at the balls too.
+      // They whizz just behind every ball (a miss); at time up it slices one of yours.
+      const rv = window.Boss && Boss.rival(ctx);
+      let rival = null;
+      if (rv) {
+        rival = document.createElement("div");
+        rival.className = "st-rival";
+        rival.appendChild(rv.el("calc(var(--d) * 1.15)"));
+        field.insertBefore(rival, cannon);
+      }
+      function bossThrow(f, hit) {
+        const o = centre(rival);
+        restart(rival, "throw");
+        throwSound();
+        const el = document.createElement("div");
+        el.className = "st-star";
+        el.innerHTML = STAR_SVG;
+        field.appendChild(el);
+        const aim = f ? { x: f.x - d * 1.2, y: f.y - d * 0.7 } : { x: fw * 0.6, y: fh * 0.2 }; // just behind it
+        const t0 = performance.now(), ms = STAR_MS * 1.4;
+        (function fly(now) {
+          const t = Math.min(1, (now - t0) / ms), e = 1 - (1 - t) * (1 - t);
+          const to = hit && f && !f.gone ? { x: f.x, y: f.y } : aim;
+          const x = o.x + (to.x - o.x) * e * (hit ? 1 : 1.6), y = o.y + (to.y - o.y) * e * (hit ? 1 : 1.6); // a miss carries on past
+          el.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%)`;
+          if (t < 1) { ctx.raf(fly); return; }
+          if (hit && f && !f.gone) { el.remove(); slice(f); sliceSound(); rv.bubble(window.Boss.TEXT.done, 1500); return; }
+          el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" });
+          ctx.later(() => el.remove(), 260);
+          if (!hit) rv.bubble(ctx.pick(window.Boss.TEXT.miss));
+        })(t0);
+      }
+      if (rv) {
+        rv.tries(4, () => {
+          if (done) return;
+          const live = flyers.filter((f) => !f.gone && !f.claimed && f.x > fw * 0.25);
+          bossThrow(live.length ? ctx.pick(live) : null, false);
+        });
+        rv.onTimeUp(() => {
+          const live = flyers.filter((f) => !f.gone);
+          bossThrow(live.find((f) => isTarget(f.item)) || live[0] || null, true);
+        });
+      }
 
       // ---------- Input ----------
       field.addEventListener("pointerdown", (e) => {

@@ -857,7 +857,7 @@
     state.phase = demo ? "demo" : "playing";
     if (window.Music) Music.play(game.id); // its own chiptune loop (js/music.js)
     // The clock starts after the start lock, so the lock doesn't eat into the time limit.
-    state.current = { game, timeLimit, t0: performance.now() + START_LOCK_MS, onTimeout: null, demo };
+    state.current = { game, timeLimit, t0: performance.now() + START_LOCK_MS, onTimeout: [], onEnd: [], demo };
 
     // Items with several pictures (`pics`) get one picked at random for this round,
     // so "A" can be apple, ant or arrow. pickOptions uses these same objects.
@@ -899,7 +899,15 @@
       sfx: C.sfx,
       win: () => report(token, true),
       lose: () => report(token, false),
-      onTimeout: (fn) => { if (alive() && state.current) state.current.onTimeout = fn; },
+      onTimeout: (fn) => { if (alive() && state.current) state.current.onTimeout.push(fn); },
+      // Called once with (won, timedOut) when the result is in (Boss.rival uses it for the boss's reaction).
+      onEnd: (fn) => { if (alive() && state.current) state.current.onEnd.push(fn); },
+      // How far through the time limit we are, 0..1 (0 during the start lock and the reveal; stops at a freeze).
+      timeFrac: () => {
+        const c = state.current;
+        if (!alive() || !c || demo) return 0;
+        return Math.max(0, Math.min(1, ((c.frozenAt || performance.now()) - c.t0) / c.timeLimit));
+      },
       // Stop the clock: the player's choice is made and the game is only animating the outcome
       // (Pachinko's falling ball). The game must still call win() or lose() itself.
       freezeTimer: () => {
@@ -978,11 +986,13 @@
     }
     if (state.reported) return; // the game reported straight away
 
-    // Boss Battle: the boss sits in the corner of the game. In the showdown it plays too (its bar fills
-    // a third at a time; full = it got there first, the time limit). In a battle game that doesn't draw
-    // the boss itself (`bossArt`), it watches: Baby Boss wails until a 🍼 flies to it.
+    // Boss Battle: in the showdown the game puts the boss into its own scene (`bossRival`: Boss.rival);
+    // a game without that gets the boss in the corner with a race bar (a third of the time at a time;
+    // full = it got there first). In a battle game that doesn't draw the boss itself (`bossArt`), it
+    // watches from the corner: Baby Boss wails until a 🍼 flies to it.
     let seat = null;
-    if (bossFight() && (state.boss.phase === "showdown" || !(game.bossArt && window.Boss.fighting(ctx)))) {
+    const showdown = bossFight() && state.boss.phase === "showdown";
+    if (bossFight() && (showdown ? !game.bossRival : !(game.bossArt && window.Boss.fighting(ctx)))) {
       seat = window.Boss.seat(els.game.parentElement, state.boss.id, state.boss.phase === "showdown", C.sfx);
       state.seat = seat;
     }
@@ -1013,7 +1023,7 @@
       later(() => whenQuiet(finish), won ? DEMO_AFTER_MS : 300);
       return;
     }
-    const { game, timeLimit, t0, onTimeout } = state.current;
+    const { game, timeLimit, t0, onTimeout, onEnd } = state.current;
     const timeMs = Math.max(0, Math.round(Math.min((state.current.frozenAt || performance.now()) - t0, timeLimit)));
     els.game.classList.add("locked");
     state.results.push({ gameId: game.id, won, timedOut, timeMs, timeLimit, speed: state.speed });
@@ -1029,8 +1039,9 @@
     }
     if (timedOut) {
       setBar(0);
-      if (onTimeout) guard(`${game.id} onTimeout`, onTimeout);
+      onTimeout.forEach((fn) => guard(`${game.id} onTimeout`, fn));
     }
+    onEnd.forEach((fn) => guard(`${game.id} onEnd`, () => fn(won, timedOut)));
 
     const loseLife = !won && state.mode.lives > 0;
     if (loseLife) state.lives--;
@@ -1150,6 +1161,7 @@
       you: 0, them: 0, stage: Math.min(2, Math.max(0, (parseInt(q.get("stage"), 10) || 1) - 1)), hp: 0,  hearts: window.Boss.HEARTS, last: null, done: null, scened: false,
     };
     if (state.boss) state.boss.hp = window.Boss.HP - state.boss.stage; // (a battle started at stage 2 has already lost one)
+    if (state.boss && q.get("phase") === "showdown") state.boss.levels = 0; // ?phase=showdown (testing; add &game=fishing for one game)
     // PICK A GAME → BOSS BATTLE: that boss, straight into its final battle (no levels, no showdown).
     if (state.boss && state.bossPick) Object.assign(state.boss, { id: state.bossPick, phase: "battle", stage: 0, hp: window.Boss.HP, picked: true });
     showScreen("play");

@@ -3,7 +3,7 @@
 // hit or laughing, the final defeat or gloat). The round loop itself lives in js/frame.js.
 //
 // A run: 10 normal levels → 💥 a random boss appears → SHOWDOWN: best of 3 rounds of a game the boss
-// plays too (its face races along the timer bar: beat the game before it gets there) → win 2 and it's
+// plays too, inside the game (its own boat, pads, hoop…: beat the game before time runs out and it gets there) → win 2 and it's
 // the FINAL BATTLE: the boss has 3 HP and you have 3 hearts; each stage is a different battle game
 // (faster each time), a stage won knocks off an HP, a stage lost costs a heart and is replayed.
 (function () {
@@ -17,6 +17,9 @@
     haha: "HA HA HA!",
     ouch: ["OUCH!", "OOF!", "ARGH!"],
     bossWins: "BOSS WINS!",
+    grr: "GRRR!",
+    miss: ["OOPS!", "NOO!", "MISSED!", "ARGH!"],   // the boss's tries in a showdown game
+    done: "I WIN!",                                // …and when it gets there first
   };
 
   // Battle stages: each a list of games to choose from (the first one that can use the content in play).
@@ -60,9 +63,10 @@
     },
   };
   const IDS = Object.keys(BOSSES);
-  // Games the boss can play alongside you (races to the finish) in the showdown.
+  // Games the boss plays alongside you in the showdown, drawn into the game itself (each has `bossRival`:
+  // see rival() below). It never really scores: it only gets there first if you run out of time.
   const SHOWDOWN = ["fishing", "froggy-hop", "monkey-swing", "archery", "hoop-shot", "track-switch", "bunny-burrow",
-    "snowman", "pizza-chef", "whack-a-mole", "balloon-pop", "monster-golf", "shuriken-toss", "pachinko"];
+    "snowman", "pizza-chef", "whack-a-mole", "monster-golf", "shuriken-toss", "pachinko", "dance-off", "treasure-dig"];
   const SPEED = { showdown: 1.25, stages: [1.5, 1.75, 2] };
   const HP = 3, HEARTS = 3, LEVELS = 10;
 
@@ -83,6 +87,11 @@
   .bx-want { font-size:15px; line-height:1; }
   .bx-carrier { position:absolute; left:50%; top:0; transform:translate(-50%, -58%); z-index:-1; pointer-events:none; }
   .bx-boss.dead .bx-in { animation:none; }
+  .bx-rival { pointer-events:none; }
+  .bx-bub { position:absolute; left:50%; bottom:96%; transform:translateX(-50%); z-index:40; white-space:nowrap; pointer-events:none;
+    font-size:max(12px, calc(var(--bs) * .2)); line-height:1; padding:.25em .45em; color:#111; background:#fff; border:3px solid #111;
+    border-radius:.6em; box-shadow:0 3px 0 #111; animation:bx-bub .25s cubic-bezier(.2,1.8,.4,1) both; }
+  @keyframes bx-bub { from { transform:translateX(-50%) scale(0); } to { transform:translateX(-50%) scale(1); } }
   .bx-eye { position:absolute; width:22%; height:22%; border-radius:50%; background:#fff; border:var(--bw) solid #111; overflow:hidden; z-index:3; }
   .bx-eye i { position:absolute; left:30%; top:30%; width:46%; height:46%; border-radius:50%; background:#111; animation:bx-roll 1.6s ease-in-out infinite alternate; }
   .bx-eye.big { width:27%; height:27%; }
@@ -303,6 +312,58 @@
     };
   }
 
+  // ---------- The boss as a rival inside a showdown game ----------
+  // Showdown games (`bossRival: true`) draw the boss into their own scene, playing the same game beside
+  // you: fishing from its own boat, hopping its own pads, shooting and missing. It never really scores
+  // and never gets in your way; its tries all miss until time runs out, and then it gets there first
+  // (each game's onTimeUp: the boss pulls up a fish, finishes its snowman…). Returns null outside the
+  // showdown (and in tutorials).
+  //   const rv = Boss.rival(ctx);
+  //   rv.el(size)            the boss character (Boss.el), size a px number or CSS length
+  //   rv.frac()              how far through the time limit, 0..1 (pace the boss on this)
+  //   rv.loop(fn)            fn(frac) every frame until the round ends
+  //   rv.tries(n, fn)        fn(i) n times, evenly spread through the time limit (its misses)
+  //   rv.onTimeUp(fn)        time ran out: the boss's winning move
+  //   rv.mood(m), rv.bubble(text, ms)   a mood on every boss drawn; a speech bubble over the first
+  // Its reaction to the result is automatic: angry if you win, laughing if you don't.
+  function rival(ctx) {
+    if (!ctx || !ctx.boss || ctx.boss.phase !== "showdown" || ctx.demo) return null;
+    injectCss();
+    const id = ctx.boss.id, bosses = [], timeUp = [];
+    const r = {
+      id, info: BOSSES[id], bosses,
+      el(size) { const b = el(id, size); b.classList.add("bx-rival"); bosses.push(b); return b; },
+      frac: () => (ctx.timeFrac ? ctx.timeFrac() : 0),
+      loop(fn) {
+        const step = () => { if (ctx.ended) return; fn(r.frac()); ctx.raf(step); };
+        ctx.raf(step);
+      },
+      tries(n, fn) {
+        let i = 0;
+        r.loop((f) => { while (i < n && f >= (i + 1) / (n + 1)) fn(i++); });
+      },
+      onTimeUp(fn) { timeUp.push(fn); },
+      mood(m) { bosses.forEach((b) => setMood(b, m)); },
+      bubble(text, ms = 900) {
+        const b = bosses[0];
+        if (!b) return;
+        const old = b.querySelector(".bx-bub");
+        if (old) old.remove();
+        const s = document.createElement("div");
+        s.className = "bx-bub";
+        s.textContent = text;
+        b.appendChild(s);
+        ctx.later(() => s.remove(), ms);
+      },
+    };
+    ctx.onEnd((won, timedOut) => {
+      if (timedOut) timeUp.forEach((fn) => { try { fn(); } catch (err) { console.error("boss rival:", err); } });
+      r.mood(won ? "angry" : "laugh");
+      if (!timedOut) r.bubble(won ? TEXT.grr : TEXT.haha, 1400);
+    });
+    return r;
+  }
+
   // ---------- Cut-scenes ----------
   // Each builds a scene inside `root` (#game, which the frame empties between rounds) and returns how
   // long it lasts in ms. `env`: { later, sfx, say, confetti }.
@@ -518,5 +579,5 @@
     return 2800;
   }
 
-  window.Boss = { TEXT, BOSSES, IDS, SHOWDOWN, SPEED, HP, HEARTS, LEVELS, el, carrier, fighting, seat, setMood, injectCss, intro, score, battleStart, hit, miss, defeat, gloat };
+  window.Boss = { TEXT, BOSSES, IDS, SHOWDOWN, SPEED, HP, HEARTS, LEVELS, el, carrier, fighting, seat, rival, setMood, injectCss, intro, score, battleStart, hit, miss, defeat, gloat };
 })();

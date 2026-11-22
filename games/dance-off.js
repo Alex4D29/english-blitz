@@ -96,6 +96,13 @@
   .do-me.sad .do-mouth { border-radius:50% 50% 10% 10% / 86% 86% 14% 14%; height:14%; top:64%; }
   .do-me.sad .do-mouth::after { display:none; }
   .do-robot { position:absolute; right:2%; top:2%; z-index:3; pointer-events:none; }
+  /* Boss Battle showdown: the boss dances too, up in the corner: a move now and then, a big finish at time up */
+  .do-rival { position:absolute; right:2%; top:calc(var(--rbs) * .4); z-index:3; pointer-events:none; }   /* (room above for its speech bubble) */
+  .do-rival.m0 .bx-boss { animation:do-bm0 .5s ease-in-out; } .do-rival.m1 .bx-boss { animation:do-bm1 .5s ease-in-out; } .do-rival.m2 .bx-boss { animation:do-bm2 .5s ease-in-out; }
+  .do-rival.fin .bx-boss { animation:do-bm0 .4s ease-in-out 3; }
+  @keyframes do-bm0 { 50% { transform:translateY(-22%) rotate(-10deg); } }
+  @keyframes do-bm1 { 50% { transform:translateX(-14%) rotate(-18deg) scaleY(.9); } }
+  @keyframes do-bm2 { to { transform:rotate(360deg); } }
   .do-fx { position:absolute; inset:0; pointer-events:none; z-index:8; }
   .do-word { position:absolute; left:50%; top:30%; transform:translate(-50%, -50%); font-size:2.2rem; color:#ffd400; -webkit-text-stroke:2px #111; text-shadow:0 4px 0 #111;
     white-space:nowrap; animation:do-word .8s ease-out forwards; }
@@ -134,13 +141,14 @@
     input: "tap",
     tutorial: true,
     bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting)
+    bossRival: true, // Boss Battle showdown: the boss dances too, in the corner
     start(ctx) {
       injectCss();
       const speed = ctx.speed || 1;
       const { tone, sweep, noise } = ctx.sfx;
       const R = speed >= 1.5 ? 4 : 3;
       const C = ctx.choiceRows(R, 4, { lowercase: true });
-      const robotBattle = ctx.boss && ctx.boss.id === "robot" && window.Boss;
+      const robotBattle = ctx.boss && ctx.boss.phase === "battle" && ctx.boss.id === "robot" && window.Boss;
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -189,6 +197,27 @@
       });
       let robot = null;
       if (robotBattle) { robot = window.Boss.el("robot", 80); robot.classList.add("do-robot"); stage.appendChild(robot); }
+      // Boss Battle showdown: whichever boss it is dances too, up in the corner (a move every so often), and
+      // finishes its dance with a big pose just as time runs out.
+      const rv = window.Boss && Boss.rival(ctx);
+      let rival = null;
+      if (rv) {
+        rival = document.createElement("div");
+        rival.className = "do-rival";
+        rival.appendChild(rv.el("var(--rbs)"));
+        stage.appendChild(rival);
+        rv.tries(R, (i) => {
+          if (done) return;
+          rival.classList.remove("m0", "m1", "m2"); void rival.offsetWidth; rival.classList.add(`m${i % 3}`);
+          tone(523 + (i % 3) * 131, 0.08, "square", 0.05); tone(784 + (i % 3) * 131, 0.08, "square", 0.04, 0.1);
+          rv.bubble("🎵", 600);
+        });
+        rv.onTimeUp(() => {
+          rival.classList.remove("m0", "m1", "m2"); void rival.offsetWidth; rival.classList.add("fin");
+          [523, 659, 784, 1047].forEach((f, n) => tone(f, 0.1, "square", 0.05, n * 0.07));
+          rv.bubble(window.Boss.TEXT.done, 1500);
+        });
+      }
 
       // ---------- Layout ----------
       let gs = 300;
@@ -196,6 +225,7 @@
         gs = Math.max(200, Math.min(stage.clientWidth - 16, stage.clientHeight - 16, 520));
         stage.style.setProperty("--gs", `${gs}px`);
         if (robot) robot.style.setProperty("--bs", `${Math.round(gs * 0.28)}px`);
+        if (rival) stage.style.setProperty("--rbs", `${Math.round(gs * 0.28)}px`);
         pads.forEach(fitSign);
       }
       function fitSign(p) {

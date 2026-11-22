@@ -102,6 +102,10 @@
   .bn-carrot { position:absolute; left:50%; top:30%; font-size:var(--cz); line-height:1; transform:translate(-50%, -50%) rotate(30deg); }
   .bn-carrot.eat { animation:bn-eat .9s steps(3) forwards; }
   .bn-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6; }
+  /* Boss Battle showdown: the boss is down here too, pacing about and choosing doors */
+  .bn-boss { position:absolute; left:0; top:0; z-index:4; pointer-events:none; will-change:transform; }
+  .bn-boss .bx-boss { margin:calc(var(--bbs) * -1) 0 0 calc(var(--bbs) * -.5); transition:opacity .2s, transform .25s; }
+  .bn-boss.in .bx-boss { opacity:0; transform:scale(.4) translateY(-30%); }
 
   @keyframes bn-whoosh { 50% { filter:brightness(0); transform:scale(1.08); } }
   @keyframes bn-wiggle { 25% { rotate:-6deg; } 75% { rotate:6deg; } }
@@ -129,6 +133,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss paces about choosing doors
 
     start(ctx) {
       injectCss();
@@ -163,6 +168,22 @@
         '<div class="bn-beye l"><i></i></div><div class="bn-beye r"><i></i></div><div class="bn-cheek l"></div><div class="bn-cheek r"></div>' +
         '<div class="bn-bnose"></div><div class="bn-bmouth"></div><div class="bn-paw l"></div><div class="bn-paw r"></div></div>';
       dirt.appendChild(bunny);
+
+      // Boss Battle showdown: the boss is down here too, pacing about between the doors and scratching its
+      // head (it never stops under a door, so it never gives one away); at time up it runs through the right one.
+      const rv = window.Boss && Boss.rival(ctx);
+      let boss = null, bossX = 0;
+      if (rv) {
+        boss = document.createElement("div");
+        boss.className = "bn-boss";
+        boss.appendChild(rv.el("var(--bbs)"));
+        dirt.appendChild(boss);
+      }
+      function setBoss(x, y, ms) {
+        bossX = x;
+        boss.style.transition = ms ? `transform ${ms}ms cubic-bezier(.3,.7,.4,1)` : "";
+        boss.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      }
       wrap.append(top, dirt);
       ctx.root.appendChild(wrap);
 
@@ -174,6 +195,7 @@
         dirt.style.setProperty("--bz", `${Math.max(60, Math.min(dz * 0.95, H * 0.3, 118))}px`); // big, like the train
         dirt.style.setProperty("--cz", `${Math.min(W * 0.4, H * 0.4, 170)}px`);
         doorY = H * 0.58; homeY = H - 12;
+        if (rv) dirt.style.setProperty("--bbs", `${Math.max(56, Math.min(dz * 0.9, H * 0.28, 110))}px`);
       }
       measure();
       let pos = { x: 0, y: 0 };
@@ -279,6 +301,30 @@
 
       buildDoors(0);
       setBunny(W / 2, homeY, 0);
+      if (rv) {
+        const bz = Math.max(56, Math.min(dz * 0.9, H * 0.28, 110));
+        setBoss(Math.min(W - bz * 0.55, W / 2 + bz * 1.1), homeY, 0);
+        // Pacing: from gap to gap between the doors (or the sides), never under one.
+        rv.tries(4, () => {
+          if (done) return;
+          const spots = [...Array(N + 1)].map((_, k) => Math.max(bz * 0.55, Math.min(W - bz * 0.55, (W / N) * k))).filter((x) => Math.abs(x - bossX) > 10 && Math.abs(x - pos.x) > bz * 0.6);
+          setBoss(ctx.pick(spots.length ? spots : [bossX]), homeY, 450);
+          ctx.later(() => { if (!done) rv.bubble(ctx.pick(["🤔", "HMM…", "❓"])); }, 450);
+          tone(300, 0.05, "square", 0.04);
+        });
+        // Time's up: it runs through the right door.
+        rv.onTimeUp(() => {
+          const d = doors.find((o) => o.item.right);
+          if (!d) return;
+          setBoss(d.x, doorY + dz * 0.15, 300);
+          ctx.later(() => {
+            d.el.classList.add("open");
+            noise(0.15, "bandpass", 500, 900, 0.3);
+            rv.bubble(window.Boss.TEXT.done, 900);
+            ctx.later(() => { boss.classList.add("in"); sweep(900, 200, 0.35, "sine", 0.08); }, 650); // …and in it goes
+          }, 320);
+        });
+      }
       ctx.say(C.prompt);
       // Show the target big in the middle for a moment before play starts (ctx.reveal).
       ctx.reveal(card);

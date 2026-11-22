@@ -85,6 +85,11 @@
   .sw-opt.dim { opacity:.4; }
   .sw-fly { position:absolute; z-index:5; pointer-events:none; }
   .sw-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6; }
+  /* Boss Battle showdown: your snowman on the left, the boss builds its own on the right */
+  .sw-scene.vs .sw-stack { left:26%; }
+  .sw-scene.vs .sw-stack.sw-bstack { left:62%; }
+  .sw-boss { position:absolute; right:4px; bottom:30px; z-index:4; pointer-events:none; }
+  .sw-boss.throw .bx-boss { animation:sw-hop .3s ease-out; }
 
   @keyframes sw-snow { from { transform:translateY(0); } to { transform:translateY(110vh); } }
   @keyframes sw-wave { from { transform:rotate(-20deg); } to { transform:rotate(-50deg); } }
@@ -111,6 +116,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss builds its own snowman
 
     start(ctx) {
       injectCss();
@@ -141,6 +147,23 @@
       }
       const stack = scene.querySelector(".sw-stack"), fx = scene.querySelector(".sw-fx");
       const arms = [...scene.querySelectorAll(".sw-arm")];
+
+      // Boss Battle showdown: your snowman moves to the left and the boss builds its own on the right, a
+      // ball at a time (plain ones), and finishes it (face, arms, a hop) just as time runs out.
+      const rv = window.Boss && Boss.rival(ctx);
+      let bstack = null, bossBox = null;
+      const bplaced = [];
+      if (rv) {
+        scene.classList.add("vs");
+        bstack = document.createElement("div");
+        bstack.className = "sw-stack sw-bstack";
+        bstack.innerHTML = '<div class="sw-arm l"></div><div class="sw-arm r"></div>';
+        bossBox = document.createElement("div");
+        bossBox.className = "sw-boss";
+        bossBox.appendChild(rv.el("var(--bbs)"));
+        scene.insertBefore(bstack, fx);
+        scene.insertBefore(bossBox, fx);
+      }
       const tray = document.createElement("div");
       tray.className = "sw-tray";
       wrap.append(card, scene, tray);
@@ -152,11 +175,14 @@
       function layout() {
         const H = scene.clientHeight, W = scene.clientWidth;
         const total = R >= 4 ? 1 + 0.78 + 0.6 + 0.62 : 1 + 0.78 + 0.6;
-        bs = Math.max(56, Math.min((H - 70) / (total * 0.9), W * 0.42, 150));
+        bs = Math.max(rv ? 44 : 56, Math.min((H - 70) / (total * 0.9), W * (rv ? 0.3 : 0.42), 150)); // (two snowmen in the showdown)
+        if (rv) scene.style.setProperty("--bbs", `${Math.max(50, Math.min(bs * 0.75, 90))}px`);
         scene.style.setProperty("--bs", `${bs}px`);
         scene.style.setProperty("--hs", `${bs * 0.6}px`);
         tray.style.setProperty("--os", `${Math.min(84, (tray.clientWidth - 12 * N - 20) / N)}px`);
         placed.forEach(placePiece);
+        bplaced.forEach((p) => { const sz = pieceSize(p.step); p.el.style.width = p.el.style.height = `${sz}px`; p.el.style.bottom = `${baseOf(p.step)}px`; });
+        if (bstack) bstack.querySelectorAll(".sw-arm").forEach((a) => { a.style.top = `${-(baseOf(1) + pieceSize(1) * 0.5)}px`; });
       }
       // Where piece s sits: each ball overlaps the one below by 10%.
       const baseOf = (s) => { let y = 0; for (let k = 0; k < s; k++) y += pieceSize(k) * 0.9; return y; };
@@ -263,6 +289,29 @@
       }
       function showRight() { opts.forEach((o) => { o.el.classList.remove("gone"); o.el.classList.add(o.item.right ? "right" : "dim"); o.el.disabled = true; }); }
       function replay() { if (!done) ctx.say(C.prompt); }
+
+      // The boss's snowman: plain balls dropping on one at a time (3 of them, like yours at this speed).
+      const BN = Math.min(R, 3);
+      function bossBall() {
+        const s = bplaced.length;
+        if (s >= BN) return;
+        const el = document.createElement("div");
+        el.className = "sw-ball";
+        if (s === BN - 1) el.innerHTML = '<div class="sw-face"><div class="sw-eye l"></div><div class="sw-eye r"></div><div class="sw-nose"></div><div class="sw-smile"></div></div>';
+        bstack.appendChild(el);
+        bplaced.push({ el, step: s });
+        layout();
+        el.animate([{ transform: "translate(-50%, -160px) scale(.6)" }, { transform: "translate(-50%, 0) scale(1)" }], { duration: reduceMotion ? 1 : 380, easing: "cubic-bezier(.3,.7,.4,1)" });
+        bossBox.classList.remove("throw"); void bossBox.offsetWidth; bossBox.classList.add("throw");
+        ctx.later(() => noise(0.1, "lowpass", 800, 300, 0.25), 380); // flump
+      }
+      if (rv) {
+        rv.tries(BN - 1, bossBall);
+        rv.onTimeUp(() => {
+          while (bplaced.length < BN) bossBall();
+          ctx.later(() => { bstack.classList.add("alive"); rv.bubble(window.Boss.TEXT.done, 1500); }, 420);
+        });
+      }
 
       ctx.onTimeout(() => { done = true; showRight(); ctx.say(C.answer); });
       function onKey(e) {

@@ -86,6 +86,18 @@
   .tk-train.yay .tk-eng { animation:tk-hop .45s ease-out 2; }
   .tk-puff { position:absolute; font-size:1.4rem; transform:translate(-50%, -50%); animation:tk-puff .9s ease-out forwards; z-index:5; pointer-events:none; }
   .tk-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6; }
+  /* Boss Battle showdown: the boss rides its own straight line up the right side to its own 🏁 */
+  .tk-lane { position:absolute; top:0; right:0; bottom:0; width:var(--lane); z-index:5; pointer-events:none; background:rgba(0,0,0,.14); border-left:4px dashed rgba(255,255,255,.55); }
+  .tk-ltrack { position:absolute; left:50%; top:calc(var(--lane) * .45); bottom:0; width:30px; margin-left:-15px;
+    background:linear-gradient(90deg, transparent 0 4px, #5d6670 4px 9px, transparent 9px 21px, #5d6670 21px 26px, transparent 26px), repeating-linear-gradient(180deg, #6b4a2b 0 6px, transparent 6px 15px); }
+  .tk-lflag { position:absolute; left:50%; top:4px; transform:translateX(-50%); font-size:calc(var(--lane) * .38); line-height:1; }
+  .tk-bcart { position:absolute; left:50%; top:0; width:calc(var(--lane) * .84); margin-left:calc(var(--lane) * -.42); will-change:transform; display:flex; flex-direction:column; align-items:center; }
+  .tk-bcart .bx-boss { z-index:1; }
+  .tk-bcar { position:relative; z-index:2; width:100%; margin-top:calc(var(--bbs) * -.42); height:calc(var(--lane) * .34); background:#e8173c; border:4px solid #111; border-radius:6px; }
+  .tk-bcar::before, .tk-bcar::after { content:""; position:absolute; bottom:-30%; width:30%; aspect-ratio:1; background:#333; border:3px solid #111; border-radius:50%; }
+  .tk-bcar::before { left:6%; } .tk-bcar::after { right:6%; }
+  .tk-bcart.go .tk-bcar { animation:tk-chug2 .22s ease-in-out infinite; }
+  @keyframes tk-chug2 { 50% { transform:translateY(-2px); } }
 
   @keyframes tk-wiggle { 25% { transform:translate(-50%, -100%) rotate(-7deg); } 75% { transform:translate(-50%, -100%) rotate(7deg); } }
   @keyframes tk-in { from { transform:translate(-50%, -50%) scale(.2); } }
@@ -120,6 +132,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss rides its own line up the side
 
     start(ctx) {
       injectCss();
@@ -154,6 +167,22 @@
         '<div class="tk-bump"></div><div class="tk-wheel l"></div><div class="tk-wheel r"></div></div>';
       world.appendChild(train);
       scene.appendChild(world);
+
+      // Boss Battle showdown: the boss rides its own straight line up the right side of the view, steadily,
+      // and reaches its 🏁 just as time runs out.
+      const rv = window.Boss && Boss.rival(ctx);
+      let bcart = null;
+      if (rv) {
+        const lane = document.createElement("div");
+        lane.className = "tk-lane";
+        lane.innerHTML = '<div class="tk-ltrack"></div><div class="tk-lflag">🏁</div>';
+        bcart = document.createElement("div");
+        bcart.className = "tk-bcart go";
+        bcart.appendChild(rv.el("var(--bbs)"));
+        bcart.insertAdjacentHTML("beforeend", '<div class="tk-bcar"></div>');
+        lane.appendChild(bcart);
+        scene.appendChild(lane);
+      }
       wrap.append(card, scene);
       ctx.root.appendChild(wrap);
 
@@ -163,7 +192,9 @@
       // the engine at the bottom (JY) while it drives, so the world scrolls down under it.
       let W = 0, H = 0, sz = 56, tz = 64, JY = 0, A = 0;
       function measure() {
-        W = scene.clientWidth; H = scene.clientHeight;
+        const lane = rv ? Math.max(54, Math.min(84, scene.clientWidth * 0.17)) : 0; // the boss's line
+        W = scene.clientWidth - lane; H = scene.clientHeight;
+        if (rv) { scene.style.setProperty("--lane", `${lane}px`); scene.style.setProperty("--bbs", `${lane * 0.8}px`); }
         sz = Math.max(40, Math.min(W / (N + 1), 70));
         tz = Math.max(60, Math.min(sz * 1.6, H * 0.32, 112));
         scene.style.setProperty("--sz", `${sz}px`);
@@ -337,6 +368,23 @@
 
       setCam(0);
       setTrain(W / 2, JY);
+      if (rv) {
+        // The boss's cart climbs its line with the clock: the bottom of the view at the start, its 🏁 at time up.
+        const placeCart = (f) => {
+          const lane = scene.clientWidth - W, ch = bcart.offsetHeight;
+          const y0 = H - ch - 4, y1 = lane * 0.5; // (stops just under its 🏁)
+          bcart.style.transform = `translateY(${(y0 + (y1 - y0) * f).toFixed(1)}px)`;
+        };
+        placeCart(0);
+        let lastChuff = 0;
+        rv.loop((f) => { placeCart(f); const now = performance.now(); if (f > 0 && now - lastChuff > 420) { lastChuff = now; noise(0.04, "bandpass", 500, 300, 0.08); } });
+        rv.onTimeUp(() => {
+          placeCart(1);
+          bcart.classList.remove("go");
+          [0, 0.3].forEach((d) => tone(440, 0.22, "square", 0.06, d)); // its own toot toot
+          rv.bubble(window.Boss.TEXT.done, 1500);
+        });
+      }
       ctx.say(C.prompt);
       // Show the target big in the middle for a moment before play starts (ctx.reveal).
       ctx.reveal(card);

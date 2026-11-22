@@ -75,6 +75,10 @@
   .pz-box.dim { opacity:.45; }
   .pz-fly { position:fixed; z-index:50; font-size:2rem; line-height:1; pointer-events:none; transform:translate(-50%, -50%); }
   .pz-fx { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6; }
+  /* Boss Battle showdown: your pizza on the left, the boss makes its own on the right */
+  .pz-counter.vs { gap:4%; }
+  .pz-boss { position:absolute; right:4px; top:4px; z-index:4; pointer-events:none; }
+  .pz-boss.toss .bx-boss { animation:pz-hop .3s ease-out; }
 
   @keyframes pz-hop { 50% { transform:translateY(-14%); } }
   @keyframes pz-pop { from { transform:scale(.3); } }
@@ -100,6 +104,7 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossRival: true, // Boss Battle showdown: the boss makes its own pizza
 
     start(ctx) {
       injectCss();
@@ -128,6 +133,21 @@
       counter.className = "pz-counter";
       counter.innerHTML = '<div class="pz-pizza"></div><div class="pz-fx"></div>';
       const pizza = counter.querySelector(".pz-pizza"), fx = counter.querySelector(".pz-fx");
+
+      // Boss Battle showdown: the boss makes its own pizza beside yours (mushrooms, peppers, olives… a
+      // handful at a time) and gobbles it up just as time runs out.
+      const rv = window.Boss && Boss.rival(ctx);
+      let bpizza = null, bossBox = null;
+      if (rv) {
+        counter.classList.add("vs");
+        bpizza = document.createElement("div");
+        bpizza.className = "pz-pizza";
+        bossBox = document.createElement("div");
+        bossBox.className = "pz-boss";
+        bossBox.appendChild(rv.el("var(--bbs)"));
+        counter.insertBefore(bpizza, fx);
+        counter.appendChild(bossBox);
+      }
       const tray = document.createElement("div");
       tray.className = "pz-tray";
       wrap.append(top, counter, tray);
@@ -135,7 +155,9 @@
 
       function measure() {
         const r = counter.getBoundingClientRect();
-        counter.style.setProperty("--pz", `${Math.max(120, Math.min(r.width * 0.78, r.height * 0.84))}px`);
+        const pz = rv ? Math.max(90, Math.min(r.width * 0.44, r.height * 0.7)) : Math.max(120, Math.min(r.width * 0.78, r.height * 0.84)); // (two pizzas in the showdown)
+        counter.style.setProperty("--pz", `${pz}px`);
+        if (rv) counter.style.setProperty("--bbs", `${Math.max(48, Math.min(pz * 0.55, r.height * 0.4, 86))}px`);
         tray.style.setProperty("--bx", `${Math.min(96, (tray.clientWidth - 20 - 10 * (N - 1)) / N)}px`);
       }
       measure();
@@ -254,6 +276,31 @@
       }
       function showRight() { boxes.forEach((b) => { b.el.disabled = true; b.el.classList.add(b.item.right ? "right" : "dim"); }); }
       function replay() { if (!done) ctx.say(C.prompt); }
+
+      // The boss's pizza: a handful of toppings at a time, then it gobbles it up at time up.
+      const BTOP = ["🍄", "🫑", "🫒", "🧀", "🍅"];
+      function bossTopping(k) {
+        const e = BTOP[k % BTOP.length];
+        for (let n = 0; n < 3; n++) {
+          const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * 0.3;
+          const p = document.createElement("div");
+          p.className = "pz-top-piece";
+          p.textContent = e;
+          p.style.left = `${(0.5 + Math.cos(a) * d) * 100}%`; p.style.top = `${(0.5 + Math.sin(a) * d) * 100}%`;
+          bpizza.appendChild(p);
+          p.animate([{ transform: "translate(-50%, -260%) scale(1.4)", opacity: 0 }, { transform: "translate(-50%, -50%)", opacity: 1 }], { duration: reduceMotion ? 1 : 300, delay: n * 70, fill: "backwards", easing: "ease-in" });
+        }
+        bossBox.classList.remove("toss"); void bossBox.offsetWidth; bossBox.classList.add("toss");
+        ctx.later(() => noise(0.04, "bandpass", 1200, 800, 0.12), 320);
+      }
+      if (rv) {
+        rv.tries(R - 1, bossTopping);
+        rv.onTimeUp(() => {
+          bossTopping(R - 1);
+          ctx.later(() => { bpizza.classList.add("gone"); noise(0.2, "lowpass", 600, 200, 0.5); }, 450); // GULP
+          ctx.later(() => rv.bubble(TEXT.burp, 1300), 850);
+        });
+      }
 
       ctx.onTimeout(() => { done = true; showRight(); ctx.say(C.answer); });
       function onKey(e) {
