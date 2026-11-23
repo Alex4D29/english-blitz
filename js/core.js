@@ -177,9 +177,9 @@
     const used = new Set(), steps = [];
     for (let s = 0; s < R; s++) {
       const fresh = pool.filter((it) => !used.has(it.text)), old = pool.filter((it) => used.has(it.text));
-      const c = choiceRows(fresh.length ? [...fresh, ...old] : pool, type, 1, N, o); // the target comes from the front
+      const c = choiceRows(fresh.length ? [...fresh, ...old] : pool, type, opts.rowsPer || 1, N, o); // the target comes from the front
       used.add(c.target.text);
-      steps.push({ ...c, row: c.rows[0] });
+      steps.push({ ...c, row: c.rows[0] }); // (opts.rowsPer: several rows for that target, in `rows`: Monkey Swing's race sections)
     }
     return steps;
   }

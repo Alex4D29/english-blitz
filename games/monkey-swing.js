@@ -38,6 +38,10 @@
   .mk-banana { position:absolute; left:50%; font-size:var(--bn); line-height:1; transform:translate(-50%, -88%) rotate(-12deg); z-index:3;
     filter:drop-shadow(0 6px 0 rgba(0,0,0,.3)); animation:mk-shine 1.2s ease-in-out infinite alternate; will-change:transform; }
   .mk-banana.eat { animation:mk-eat .9s steps(3) forwards; }
+  /* Gorilla Boss's race: the GOLD BANANA, and the card popping to each section's new target */
+  .mk-banana.gold { filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 12px #ffd400) drop-shadow(0 6px 0 rgba(0,0,0,.3)); }
+  .mk-card.next { animation:mk-next .45s cubic-bezier(.2,1.8,.4,1); }
+  @keyframes mk-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
   .mk-bush { position:absolute; left:50%; bottom:-30px; width:70%; height:90px; margin-left:-35%; background:#3f9d3c; border:5px solid #111; border-radius:50% 50% 0 0; z-index:1;
     box-shadow:inset 0 10px 0 #5cc055; }
   .mk-branch { position:absolute; left:4%; right:4%; height:10px; background:#8b5a2b; border:3px solid #111; border-radius:99px; z-index:2; }
@@ -104,14 +108,22 @@
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
     bossRival: true, // Boss Battle showdown: the boss climbs its own lane of vines
+    bossArt: true,   // Boss Battle: Gorilla Boss's race to the GOLD BANANA (3 sections, he climbs his own lane)
+    bossDuration: 26000,
 
     start(ctx) {
       injectCss();
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const R = speed >= 1.5 ? 4 : 3, N = speed >= 2 ? 4 : 3;
+      // Gorilla Boss's race (the teacher's design): 3 sections of 3 levels, each with its own target. Where you'd
+      // normally win, the jungle scrolls down to the next section; at the top of the third, the GOLD BANANA.
+      // Gorilla Boss climbs his own lane the whole way, getting there just as time runs out.
+      const gorillaMode = !!(window.Boss && window.Boss.fighting(ctx) === "gorilla");
+      const SECT = gorillaMode ? 3 : 1;
+      const R = gorillaMode ? 3 : speed >= 1.5 ? 4 : 3, N = speed >= 2 ? 4 : 3;
       const { tone, sweep, noise } = ctx.sfx;
-      const C = ctx.choiceRows(R, N, { lowercase: true });
+      const SECTIONS = gorillaMode ? ctx.choiceSteps(SECT, N, { lowercase: true, rowsPer: R }) : [ctx.choiceRows(R, N, { lowercase: true })];
+      let sec = 0, C = SECTIONS[0];
 
       const wrap = document.createElement("div");
       wrap.className = "mk";
@@ -130,7 +142,8 @@
       ctx.root.appendChild(wrap);
 
       const branches = [...Array(R)].map(() => { const b = document.createElement("div"); b.className = "mk-branch"; jungle.appendChild(b); return b; });
-      const vines = C.rows.map((row, r) => row.map((item, i) => {
+      if (gorillaMode) { banana.classList.add("gold"); banana.style.visibility = "hidden"; } // (the GOLD BANANA waits at the top of the last section)
+      const makeVines = (rows) => rows.map((row, r) => row.map((item, i) => {
         const v = document.createElement("div");
         v.className = "mk-vine";
         v.innerHTML = '<div class="mk-low"><div class="mk-rope"></div><button class="mk-sign"></button></div>';
@@ -140,9 +153,10 @@
         sign.setAttribute("aria-label", TEXT.vineLabel(item.spoken));
         sign.addEventListener("pointerdown", (e) => { e.preventDefault(); grab(r, i); });
         sign.addEventListener("click", (e) => { if (e.detail === 0) grab(r, i); });
-        jungle.appendChild(v);
+        jungle.insertBefore(v, fx);
         return { el: v, rope: v.querySelector(".mk-rope"), sign, item, r, i, ph: Math.random() * 6.28, ax: 0, ay: 0, L: 0, ang: 0 };
       }));
+      let vines = makeVines(C.rows);
       const monkey = document.createElement("div");
       monkey.className = "mk-monkey";
       monkey.innerHTML = '<div class="mk-arm l"></div><div class="mk-arm r"></div><div class="mk-body"></div><div class="mk-head"><div class="mk-ear l"></div><div class="mk-ear r"></div>' +
@@ -151,7 +165,7 @@
 
       // Boss Battle showdown: the boss climbs too, up its own lane of plain vines on the right, a level at a
       // time, and at time up it leaps to the top and grabs the banana.
-      const rv = window.Boss && Boss.rival(ctx);
+      const rv = window.Boss && (Boss.rival(ctx) || (gorillaMode ? Boss.rival(ctx, { battle: true }) : null));
       let boss = null, bossLevel = -1, bossJump = null, bossPos = { x: 0, y: 0 }, bvines = [];
       if (rv) {
         jungle.insertAdjacentHTML("beforeend", '<div class="mk-lane"></div>');
@@ -253,10 +267,23 @@
         bossLevel++;
         sweep(200, 500, 0.18, "square", 0.05);
       }
+      // Gorilla Boss's race: his hops through all 3 sections are spread over the time limit (gTotal: hops so far,
+      // -1 = not started). He's drawn in YOUR section: below it, he waits at the bottom; ahead, at the top.
+      const TOT = SECT * (R + 1);
+      let gTotal = -1;
+      const gorillaLocal = () => Math.max(-1, Math.min(R, gTotal - sec * (R + 1)));
+      function showGorilla(anim) {
+        const l = gorillaLocal();
+        if (l === bossLevel) return;
+        if (anim) { bossJump = { from: bossLevel, t0: performance.now(), ms: 380 }; sweep(160, 380, 0.18, "square", 0.05); }
+        bossLevel = l;
+      }
       if (rv) {
-        rv.tries(R, bossLeap);               // a level each R+1-th of the time…
+        if (gorillaMode) rv.loop((f) => { const g = Math.min(TOT - 1, Math.floor(f * TOT) - 1); while (gTotal < g) { gTotal++; showGorilla(true); } });
+        else rv.tries(R, bossLeap);          // a level each R+1-th of the time…
         rv.onTimeUp(() => {                  // …and the top at time up: it grabs the banana
-          bossLeap();
+          if (gorillaMode) { gTotal = sec * (R + 1) + R; showGorilla(true); banana.style.visibility = "visible"; }
+          else bossLeap();
           ctx.later(() => {
             const bx = laneX() - W / 2;
             banana.animate([{ translate: "0 0" }, { translate: `${bx}px ${-sz * 0.2}px` }], { duration: 300, fill: "forwards", easing: "ease-in" });
@@ -275,7 +302,7 @@
       function grab(r, i) {
         if (done || ctx.ended || jump || r !== level + 1) return;
         const v = vines[r][i];
-        if (r === R - 1 || !v.item.right) ctx.freezeTimer(); // the result is decided: stop the clock now, not after the leap
+        if ((r === R - 1 && sec === SECT - 1) || !v.item.right) ctx.freezeTimer(); // the result is decided: stop the clock now, not after the leap
         sweep(300, 800, 0.18, "square", 0.07); // whoop
         onVine = null;
         jump = { from: { ...pos }, to: () => handOf(v), t0: performance.now(), ms: 360, then: () => land(v) };
@@ -290,11 +317,45 @@
           ctx.later(() => {
             onVine = null;
             sweep(300, 900, 0.2, "square", 0.07);
-            jump = { from: { ...pos }, to: () => ({ x: W / 2 - sz * 0.9, y: topY - sz * 0.6 }), t0: performance.now(), ms: 380, then: win };
+            jump = { from: { ...pos }, to: () => ({ x: W / 2 - sz * 0.9, y: topY - sz * 0.6 }), t0: performance.now(), ms: 380, then: sec < SECT - 1 ? nextSection : win };
           }, 180);
         }
         setLive();
       }
+      // Gorilla Boss's race: the top of a section isn't the end. The jungle scrolls down (the top branch you're on
+      // becomes the ground), the next section's vines come in from above, and the card pops to a new target.
+      function nextSection() {
+        if (done) return;
+        ctx.pauseTimer(1100);
+        const D = (groundY + 4 + sz * 0.2) - (topY - sz * 0.6); // how far the world moves
+        const old = [...vines.flat().map((v) => v.el), ...branches, topBar];
+        const ms = reduceMotion ? 1 : 750;
+        old.forEach((el) => el.animate([{ translate: "0 0" }, { translate: `0 ${D}px` }], { duration: ms, easing: "ease-in-out", fill: "forwards" }));
+        jungle.querySelector(".mk-leaves").animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `0 ${D}px` }], { duration: ms, easing: "ease-in-out" });
+        const from = { ...pos };
+        jump = { from, to: () => startPos(), t0: performance.now(), ms, then: () => {} }; // you ride the branch down
+        sec++;
+        bossJump = null;
+        ctx.later(() => {
+          if (done) return;
+          vines.flat().forEach((v) => v.el.remove());
+          old.forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+          C = SECTIONS[sec];
+          vines = makeVines(C.rows);
+          layout();
+          vines.flat().forEach((v) => v.el.animate([{ translate: `0 ${-D}px`, opacity: 0 }, { translate: "0 0", opacity: 1 }], { duration: reduceMotion ? 1 : 350, easing: "ease-out" }));
+          level = -1; onVine = null;
+          pos = startPos();
+          if (sec === SECT - 1) banana.style.visibility = "visible"; // there it is: the GOLD BANANA
+          showGorilla(false);
+          card.firstChild.textContent = C.cardText;
+          card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+          tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16);
+          ctx.say(C.prompt);
+          setLive();
+        }, ms + 20);
+      }
+
       function win() {
         done = true;
         ctx.win();

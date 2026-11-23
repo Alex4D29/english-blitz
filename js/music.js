@@ -60,7 +60,7 @@
     "mouse-trap": "sneaky", "froggy-hop": "bouncy", "monkey-swing": "pirate", "snowman": "chill", "track-switch": "march",
     "bunny-burrow": "bouncy", "pizza-chef": "march", "treasure-dig": "pirate", "hoop-shot": "sporty", "penalty-kick": "sporty",
     "monster-boxing": "sporty", "archery": "march", "monster-golf": "chill", "strength-test": "sporty", "maze-run": "sneaky", "dance-off": "bouncy", "shield-breaker": "march", "bongo-bash": "bouncy",
-    "boss-banana": "pirate", "boss-baby": "spooky", "boss-robot": "march",
+    "boss-banana": "pirate", "boss-baby": "spooky", "boss-robot": "march", "boss-gorilla": "sporty", "tug-of-war": "sporty", "lake-leap": "chill", "baseball-bash": "sporty", "chicken-choir": "bouncy", "polly-crackers": "pirate",
   };
 
   // ---------- The menu theme (hand-written) ----------

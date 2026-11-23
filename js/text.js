@@ -51,7 +51,7 @@ window.TEXT = {
   musicLabel: "Music",
   musicVolLabel: "Music volume",
   listeningLabel: "Listening games",
-  listeningNote: "Off: games where you only hear the answer (Treasure Dig, Penalty Kick, Monster Boxing) are left out, and the other games show the answer instead of only saying it. Good for a noisy room or no speakers.",
+  listeningNote: "Off: games where you only hear the answer (Treasure Dig, Penalty Kick, Monster Boxing, Baseball Bash, Polly's Crackers) are left out, and the other games show the answer instead of only saying it. Good for a noisy room or no speakers.",
   on: "ON",
   off: "OFF",
   back: "BACK",

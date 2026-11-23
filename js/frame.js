@@ -535,6 +535,10 @@
     if (b.picked && !b.introDone) { // picked from PICK A GAME: it appears, then FINAL BATTLE!
       b.introDone = true;
       out.push((r) => Bs.intro(r, B, env), (r) => Bs.battleStart(r, B, env));
+    } else if (b.phase === "levels" && !b.teased && b.levels > 0 && !state.results.length) {
+      // The very start of a run: the boss you'll face is a mystery silhouette (the teacher's idea).
+      b.teased = true;
+      out.push((r) => Bs.tease(r, B, env));
     } else if (b.phase === "levels" && state.results.length >= b.levels) {
       b.phase = "showdown";
       out.push((r) => Bs.intro(r, B, env));
@@ -543,7 +547,7 @@
       if (b.you >= 2) { b.phase = "battle"; out.push((r) => Bs.battleStart(r, B, env)); }
       else if (b.them >= 2) { b.done = "lost"; out.push((r) => Bs.gloat(r, B, env)); }
     } else if (last && last.phase === "battle") {
-      if (last.won && b.hp <= 0) { b.done = "won"; const finished = (b.id === "banana" && state.lastGame === "shield-breaker") || (b.id === "robot" && state.lastGame === "wire-cut") || (b.id === "baby" && state.lastGame === "bongo-bash"); out.push((r) => Bs.defeat(r, B, env, { finished })); } // (the finale game already sliced Banana Boss in two / blew Robot Boss up)
+      if (last.won && b.hp <= 0) { b.done = "won"; const finished = (b.id === "gorilla" && state.lastGame === "tug-of-war") || (b.id === "banana" && state.lastGame === "shield-breaker") || (b.id === "robot" && state.lastGame === "wire-cut") || (b.id === "baby" && state.lastGame === "bongo-bash"); out.push((r) => Bs.defeat(r, B, env, { finished })); } // (the finale game already sliced Banana Boss in two / blew Robot Boss up)
       else if (last.won) out.push((r) => Bs.hit(r, B, b.hp, b.stage + 1, env));
       else {
         out.push((r) => Bs.miss(r, B, b.hp, b.hearts, env));

@@ -25,6 +25,8 @@
     cardLabel: "Hear it again",
     ding: "DING!",
     flop: "OOPS!",
+    gorillaDing: "OOH OOH!",   // Gorilla Boss rings the bell first…
+    yourTurn: "YOUR TURN!",    // …then it's you
   };
 
   // (band colours are the power bar's: PowerBar.colors, bottom to top)
@@ -86,6 +88,25 @@
   .ts-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); z-index:9; pointer-events:none; font-size:2.4rem; color:#ffd400; -webkit-text-stroke:2px #111;
     paint-order:stroke fill; text-shadow:0 4px 0 #111; white-space:nowrap; animation:ts-pop .35s cubic-bezier(.2,1.8,.4,1) both; }
   .ts-word.bad { color:#fff; font-size:1.8rem; }
+  /* Gorilla Boss's strength contest: the champ on his podium, pips for your hits and misses, a card that changes */
+  .ts-gor { position:absolute; left:0; top:0; z-index:4; pointer-events:none; display:flex; flex-direction:column; align-items:center; }
+  .ts-gor.go .bx-boss { animation:ts-gslam .45s ease-out; }
+  /* His mallet: pivots in his left fist, held up over his shoulder; the swing brings it down to the left onto the pad */
+  .ts-gmallet { position:absolute; left:8%; bottom:42%; width:12px; height:var(--gl); margin-left:-6px; z-index:5; transform-origin:50% 100%; transform:rotate(18deg); transition:transform .15s; }
+  .ts-gmallet::before { content:""; position:absolute; left:0; right:0; top:14%; bottom:0; background:#8b5a2b; border:3px solid #111; border-radius:3px; }
+  .ts-gmallet::after { content:""; position:absolute; left:-180%; right:-180%; top:0; height:max(18px, calc(var(--gz) * .16)); background:#e8173c; border:4px solid #111; border-radius:8px; }
+  .ts-gor.wind .ts-gmallet { transform:rotate(55deg); transition:transform .35s; }
+  .ts-gor.go .ts-gmallet { transform:rotate(-112deg); transition:transform .14s ease-in; }
+  .ts-pips { position:absolute; left:50%; top:6px; transform:translateX(-50%); z-index:6; display:flex; gap:4px; pointer-events:none; }
+  .ts-pip { width:22px; height:22px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1; }
+  .ts-pip.on { background:#ffd400; } .ts-pip.on::after { content:"💪"; }
+  .ts-pip.x.on { background:#444; } .ts-pip.x.on::after { content:"✕"; color:#fff; font-weight:900; }
+  .ts-gap { width:8px; }
+  .ts-drop { position:absolute; font-size:1.4rem; pointer-events:none; animation:ts-drip .9s ease-in forwards; }
+  .ts-card.next { animation:ts-next .45s cubic-bezier(.2,1.8,.4,1); }
+  @keyframes ts-gslam { 40% { transform:translateY(-14%) scale(1.05); } 70% { transform:translateY(4%) scale(1.08, .9); } }
+  @keyframes ts-drip { to { transform:translateY(40px); opacity:0; } }
+  @keyframes ts-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
   @keyframes ts-ring { 50% { rotate:-14deg; } }
   @keyframes ts-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
   @keyframes ts-flex { from { rotate:-5deg; } to { rotate:5deg; } }
@@ -110,6 +131,8 @@
     duration: 10000,
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
+    bossArt: true,        // Boss Battle: Gorilla Boss's strength contest (he rings the bell first, then you: 3 hits)
+    bossDuration: 20000,
 
     start(ctx) {
       injectCss();
@@ -117,8 +140,11 @@
       const { tone, sweep, noise } = ctx.sfx;
       // Bands = power bands: 3 at normal speed, 4 from 1.75× (Practice MEDIUM), 5 from 2.5× (HARD).
       const NZ = window.PowerBar.zoneCount(ctx.speed), BANDS = window.PowerBar.colors(NZ);
-      const C = ctx.choiceRows(1, NZ, { lowercase: true });
-      const row = ctx.shuffle(C.rows[0].slice());
+      // Gorilla Boss's strength contest: 3 hits, each with a new target (a rhythm game), against the champ.
+      const gorillaMode = !!(window.Boss && window.Boss.fighting(ctx) === "gorilla");
+      const GN = 3, S = gorillaMode ? ctx.choiceSteps(GN, NZ, { lowercase: true }) : null;
+      let C = S ? S[0] : ctx.choiceRows(1, NZ, { lowercase: true });
+      const row = ctx.shuffle((S ? C.row : C.rows[0]).slice());
 
       const wrap = document.createElement("div");
       wrap.className = "ts";
@@ -151,6 +177,16 @@
       mon.innerHTML = '<div class="ts-body"></div><div class="ts-top"></div><div class="ts-arm l"></div><div class="ts-arm r"></div><div class="ts-brow l"></div><div class="ts-brow r"></div>' +
         '<div class="ts-eye l"><i></i></div><div class="ts-eye r"><i></i></div><div class="ts-mouth"></div><div class="ts-mallet"></div><div class="ts-fist"></div>';
       fair.appendChild(mon);
+      // Gorilla Boss watches from his champion's podium, up above you.
+      let gor = null, gorBox = null;
+      if (gorillaMode) {
+        gorBox = document.createElement("div");
+        gorBox.className = "ts-gor";
+        gor = window.Boss.el("gorilla", "var(--gz)");
+        gorBox.insertAdjacentHTML("beforeend", '<div class="ts-gmallet"></div>'); // his own giant mallet, swung from the right
+        gorBox.appendChild(gor);
+        fair.insertBefore(gorBox, fx);
+      }
 
       let W = 0, H = 0, tw = 90, th = 300, bellH = 40, tx = 0;
       function layout() {
@@ -158,13 +194,21 @@
         tw = Math.max(86, Math.min(W * 0.3, 150));
         bellH = tw * 0.42;
         th = H * 0.86 - 16;
-        tx = W * 0.62;
+        // (the gorilla contest: you and the machine move left, so Gorilla Boss can stand to its right)
+        tx = gorillaMode ? Math.max(W * 0.46, Math.min(W * 0.62, W - tw * 0.5 - Math.min(H * 0.42, W * 0.3, 150) - 8)) : W * 0.62;
         tower.style.cssText = `left:${tx}px;top:${H * 0.86 - th}px;height:${th}px;--tw:${tw}px;--bell:${bellH}px;`;
         const mz = Math.max(100, Math.min(H * 0.42, 170));
         fair.style.setProperty("--mz", `${mz}px`);
         // Its mallet pivots in its fist, 0.27 mz right of its middle, and the head lands 0.545 mz further at the slam,
         // so stand it there to bring the mallet down on the pad (the tower's middle).
         mon.style.transform = `translate(${Math.max(mz * 0.5, tx - mz * 0.815)}px, ${H * 0.86 + 2}px)`;
+        if (gorBox) { // on the ground to the right of the machine, his mallet over his shoulder
+          const gz = Math.max(70, Math.min(H * 0.42, W * 0.3, 150));
+          const gx = Math.min(W - gz * 0.5 - 4, tx + tw * 0.5 + gz * 0.55);
+          fair.style.setProperty("--gz", `${gz}px`);
+          fair.style.setProperty("--gl", `${Math.max(30, gx - gz * 0.42 - tx)}px`); // mallet length: its head lands on the pad
+          gorBox.style.transform = `translate(${gx - gz * 0.5}px, ${H * 0.86 - gz + 2}px)`;
+        }
         // Words are sized to the post (76% of the tower), so long sight words fit.
         // (and to the band height, which shrinks with 4 or 5 bands)
         const bandH = (th - bellH) / NZ;
@@ -183,24 +227,126 @@
         onStart: () => mon.classList.add("raise"),
         onRelease: (zone) => smash(bands[zone]),
       });
-      bar.el.style.right = "8px"; bar.el.style.top = "10px"; bar.el.style.bottom = "16%";
+      bar.el.style.right = "8px"; bar.el.style.top = "10px"; bar.el.style.bottom = gorillaMode ? "58%" : "16%"; // (shorter in the gorilla contest: he stands below it)
 
+      let busy = gorillaMode, hits = 0, misses = 0; // (Gorilla Boss goes first)
       function smash(b) {
-        if (done || ctx.ended) return;
-        done = true;
+        if (done || busy || ctx.ended) return;
+        if (!gorillaMode) done = true;
+        busy = true;
         bar.lock();
-        mon.classList.remove("raise"); mon.classList.add("slam");
+        mon.classList.remove("raise", "flex", "oops"); mon.classList.add("slam");
         noise(0.12, "lowpass", 800, 100, 0.8); tone(90, 0.12, "square", 0.15); // WHAM on the pad
         const right = b.opt.right;
-        ctx.freezeTimer(); // reported when the puck arrives, so the frame doesn't move on before it's seen
+        // Reported when the puck arrives, so the frame doesn't move on before it's seen (the gorilla contest:
+        // only on the hit that decides it).
+        if (!gorillaMode || (right ? hits + 1 >= GN : misses + 1 >= 3)) ctx.freezeTimer();
         const goal = (b.i + 0.5) / NZ, t0 = performance.now(), ms = reduceMotion ? 1 : 520;
         sweep(200, 200 + goal * 900, 0.5, "square", 0.06); // the puck whizzes up
         (function rise(now) {
           const k = Math.min(1, (now - t0) / ms), e = 1 - (1 - k) * (1 - k);
           setPuck(goal * e);
           if (k < 1) { ctx.raf(rise); return; }
+          if (gorillaMode) { if (right) gDing(b); else gFlop(b); return; }
           if (right) ding(b); else flop(b);
         })(t0);
+      }
+
+      // ---------- Gorilla Boss's strength contest ----------
+      const pips = gorillaMode ? document.createElement("div") : null;
+      if (pips) {
+        pips.className = "ts-pips";
+        pips.innerHTML = '<span class="ts-pip"></span>'.repeat(GN) + '<span class="ts-gap"></span>' + '<span class="ts-pip x"></span>'.repeat(3);
+        fair.insertBefore(pips, fx);
+      }
+      const sweat = () => {
+        const r = gorBox.getBoundingClientRect(), f0 = fair.getBoundingClientRect();
+        const s = document.createElement("div");
+        s.className = "ts-drop"; s.textContent = "💦";
+        s.style.left = `${r.left - f0.left + r.width * 0.75}px`; s.style.top = `${r.top - f0.top + r.height * 0.1}px`;
+        fx.appendChild(s);
+        ctx.later(() => s.remove(), 900);
+      };
+      // He goes first: WHAM, the puck flies right up to the bell, DING!, and he pounds his chest.
+      function gorillaTurn() {
+        bar.lock();
+        gorBox.classList.add("wind");                       // he hoists his mallet…
+        ctx.later(gorillaSlam, 420);
+      }
+      function gorillaSlam() {
+        gorBox.classList.remove("wind");
+        gorBox.classList.add("go");                         // …and brings it down on the pad
+        noise(0.15, "lowpass", 700, 90, 0.9); tone(70, 0.15, "square", 0.15); // WHAM
+        const t0 = performance.now(), ms = reduceMotion ? 1 : 450;
+        (function up(now) {
+          const k = Math.min(1, (now - t0) / ms);
+          setPuck(Math.min(0.99, (1 - (1 - k) * (1 - k)) * 1.02));
+          if (k < 1) { ctx.raf(up); return; }
+          bell.classList.remove("ring"); void bell.offsetWidth; bell.classList.add("ring");
+          [0, 0.1, 0.2].forEach((d) => tone(1568, 0.4, "triangle", 0.15, d)); // DING DING
+          word(tx, H * 0.18, TEXT.gorillaDing, true);
+          window.Boss.setMood(gor, "laugh");
+          [0, 0.12, 0.24, 0.36].forEach((d) => tone(150, 0.08, "sine", 0.2, d + 0.3)); // chest pounding
+        })(t0);
+        ctx.later(() => {
+          if (done) return;
+          gorBox.classList.remove("go");
+          setPuck(0);
+          bell.classList.remove("ring");
+          window.Boss.setMood(gor, null);
+          word(tx, H * 0.18, TEXT.yourTurn, false);
+          bar.reset();
+          busy = false;
+        }, 1700);
+      }
+      function gDing(b) {
+        b.el.classList.add("lit");
+        if (b.i === NZ - 1) bell.classList.add("ring");
+        [0, 0.1].forEach((d) => tone(1568, 0.4, "triangle", 0.15, d)); // DING
+        word(tx, H * 0.2, TEXT.ding, false);
+        mon.classList.remove("slam"); mon.classList.add("flex");
+        if (b.opt.kind === "pic") ctx.say(b.opt.spoken);
+        pips.children[hits].classList.add("on");
+        hits++;
+        window.Boss.setMood(gor, hits >= GN ? "cry" : "hurt"); // he's getting worried…
+        sweat();
+        if (hits >= GN) { done = true; ctx.win(); ctx.confetti(fx, tx, H * 0.3, { count: 80 }); ctx.say(C.answer); return; }
+        ctx.later(() => {
+          if (done) return;
+          // The beat: the clock stops, the card pops to the next target, the voice says it, new bands.
+          ctx.pauseTimer(800);
+          C = S[hits];
+          card.firstChild.textContent = C.cardText;
+          card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+          tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16);
+          ctx.later(() => { if (!done) ctx.say(C.prompt); }, b.opt.kind === "pic" ? 350 : 0);
+          const nr = ctx.shuffle(C.row.slice());
+          bands.forEach((x, i) => { x.opt = nr[i]; x.sign.textContent = x.opt.text; x.el.classList.remove("lit"); });
+          layout();
+          bell.classList.remove("ring");
+          mon.classList.remove("flex");
+          window.Boss.setMood(gor, null);
+          bar.reset();
+          busy = false;
+        }, 750);
+      }
+      function gFlop(b) {
+        sweep(400, 120, 0.4, "sawtooth", 0.1); // flop
+        word(tx, H * 0.2, TEXT.flop, true);
+        mon.classList.remove("slam"); mon.classList.add("oops");
+        window.Boss.setMood(gor, "laugh");
+        [0, 0.15, 0.3].forEach((d) => tone(330, 0.1, "square", 0.07, d)); // ha ha ha
+        pips.children[GN + 1 + misses].classList.add("on");
+        misses++;
+        if (misses >= 3) { done = true; ctx.lose(); ctx.later(() => { bands.forEach((x) => x.el.classList.add(x.opt.right ? "right" : "dim")); ctx.say(C.answer); }, 350); return; }
+        ctx.later(() => {
+          if (done) return;
+          setPuck(0);
+          mon.classList.remove("oops");
+          window.Boss.setMood(gor, null);
+          bar.reset();
+          busy = false;
+        }, 800);
       }
       function ding(b) {
         ctx.win();
@@ -230,6 +376,7 @@
         w.textContent = text;
         w.style.left = `${Math.max(70, Math.min(W - 70, x))}px`; w.style.top = `${y}px`;
         fx.appendChild(w);
+        if (gorillaMode) ctx.later(() => w.remove(), 900); // (several in a contest)
       }
       function replay() { if (!done) ctx.say(C.prompt); }
 
@@ -242,7 +389,11 @@
       ro.observe(fair);
       ctx.say(C.prompt);
       // Show the target big in the middle for a moment before play starts (ctx.reveal).
-      ctx.reveal(card);
+      const revealMs = ctx.reveal(card);
+      if (gorillaMode) { // the champ goes first (the clock waits for him)
+        ctx.pauseTimer(2350); // (his wind-up, slam and DING)
+        ctx.later(gorillaTurn, revealMs + 80);
+      }
       ctx.later(() => ctx.hint(bar.el.querySelector(".pwb-btn"), null, { scale: 0.7 }), 80);
 
       // Tutorial: point at the card, then the right band, then charge to its colour and smash.

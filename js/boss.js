@@ -17,6 +17,9 @@
     haha: "HA HA HA!",
     ouch: ["OUCH!", "OOF!", "ARGH!"],
     bossWins: "BOSS WINS!",
+    who: "WHO'S THAT\nBOSS?",              // the mystery silhouette at the start of a run
+    whoSub: "???",
+    whoSay: "Who is the boss? Beat ten levels to find out!",
     grr: "GRRR!",
     miss: ["OOPS!", "NOO!", "MISSED!", "ARGH!"],   // the boss's tries in a showdown game
     done: "I WIN!",                                // …and when it gets there first
@@ -65,6 +68,21 @@
       // A dance battle, then box the robot (Boxing is a listening game: Dance Off again if those are off), then
       // the finale: cut the wires plugged into it until it blows up (Wire Cut's robot version; the teacher's design).
       stages: [["dance-off"], ["monster-boxing", "dance-off"], ["wire-cut", "dance-off"]],
+    },
+    gorilla: {
+      id: "gorilla", icon: "🦍", name: "GORILLA BOSS", color: "#c9a27a", dark: "#5a3b22",
+      intro: "Ooh ooh! I am Gorilla Boss! Strongest in the jungle!",
+      taunt: "Ooh ooh! Ha ha ha!",
+      angry: "Grrr! Not fair!",
+      battleLine: "Strength contest! Ooh ooh!",
+      defeatLine: "Waaah! My gold banana!",
+      defeatWord: "BYE BYE, BANANA!",
+      hitWord: "OOF!",
+      // A jungle strongman (the teacher's design): a strength contest (Test Your Strength: he rings the bell
+      // first), a race up the vines to the GOLD BANANA (Monkey Swing, 3 sections), then Tug of War: pull him
+      // face-first into the mud. Each stage won brings a gold banana; at the end he cries in the mud as his own flies away.
+      instruction: ["STRENGTH\nCONTEST! 💪", "RACE TO THE\nGOLD BANANA!", "TUG OF\nWAR! 🪢"],
+      stages: [["strength-test"], ["monkey-swing"], ["tug-of-war"]],
     },
   };
   const IDS = Object.keys(BOSSES);
@@ -172,6 +190,36 @@
   .bx-robot .bx-arm.l { left:10%; animation:bx-dance-l .4s ease-in-out infinite alternate; }
   .bx-robot .bx-arm.r { right:10%; transform-origin:0 50%; animation:bx-dance-r .4s ease-in-out infinite alternate; }
 
+  /* Gorilla Boss: a huge silverback show-off: a jutting unibrow over googly eyes, a toothy grin, flexing arms
+     and a gold champion's belt with a 🍌 buckle. Moods add "cry" (tears) and the class "muddy" (mud splotches). */
+  .bx-gorilla .bx-body { position:absolute; left:16%; right:16%; top:36%; bottom:0; background:#3d3d48; border:var(--bw) solid #111; border-radius:44% 44% 26% 26%; }
+  .bx-gorilla .bx-body::after { content:""; position:absolute; left:22%; right:22%; top:12%; height:40%; background:#6a6a78; border-radius:50% 50% 40% 40%; }   /* chest */
+  .bx-gorilla .bx-belt { position:absolute; left:18%; right:18%; top:74%; height:12%; z-index:2; background:linear-gradient(#ffe066, #e6b800); border:var(--bw) solid #111; border-radius:6px;
+    display:flex; align-items:center; justify-content:center; font-size:calc(var(--bs) * .09); line-height:1; }
+  .bx-gorilla .bx-arm { position:absolute; top:40%; width:24%; height:40%; background:#3d3d48; border:var(--bw) solid #111; border-radius:99px; z-index:1; transform-origin:50% 10%;
+    animation:bx-flex .6s ease-in-out infinite alternate; }
+  .bx-gorilla .bx-arm::after { content:""; position:absolute; left:-12%; right:-12%; bottom:-6%; height:32%; background:#2a2a32; border:var(--bw) solid #111; border-radius:50%; }   /* fists */
+  .bx-gorilla .bx-arm.l { left:2%; --r:16deg; } .bx-gorilla .bx-arm.r { right:2%; --r:-16deg; animation-delay:-.3s; }
+  .bx-gorilla .bx-head { position:absolute; left:24%; right:24%; top:2%; height:44%; z-index:2; background:#3d3d48; border:var(--bw) solid #111; border-radius:46% 46% 40% 40%; }
+  .bx-gorilla .bx-face { position:absolute; left:30%; right:30%; top:16%; height:30%; z-index:3; background:#c9a27a; border:var(--bw) solid #111; border-radius:42% 42% 48% 48%; }
+  .bx-gorilla .bx-brow.uni { left:27%; width:46%; top:13%; height:7%; background:#1c1c22; transform:none; z-index:5; }
+  .bx-gorilla .bx-eye { width:17%; height:17%; z-index:4; } .bx-gorilla .bx-eye.l { left:31%; top:17%; } .bx-gorilla .bx-eye.r { left:52%; top:18%; width:14%; height:14%; }
+  .bx-gorilla .bx-nose { position:absolute; left:43%; top:33%; width:14%; height:5%; z-index:4;
+    background:radial-gradient(circle at 25% 50%, #111 0 30%, transparent 34%), radial-gradient(circle at 75% 50%, #111 0 30%, transparent 34%); }
+  .bx-gorilla .bx-mouth { top:36%; width:30%; height:11%; z-index:4; }
+  .bx-gorilla .bx-tear { position:absolute; top:28%; width:5%; height:0; background:#5ec8ff; border-radius:0 0 99px 99px; z-index:6; display:none; }
+  .bx-gorilla .bx-tear.l { left:34%; } .bx-gorilla .bx-tear.r { left:60%; }
+  .bx-gorilla.cry .bx-tear { display:block; animation:bx-tear .5s linear infinite; } .bx-gorilla.cry .bx-tear.r { animation-delay:.25s; }
+  .bx-gorilla.cry .bx-mouth { animation:bx-wail .3s ease-in-out infinite alternate; border-radius:50%; }
+  .bx-gorilla.cry .bx-mouth::before { display:none; }
+  .bx-gorilla .bx-mud { position:absolute; inset:0; z-index:7; pointer-events:none; display:none;
+    background:radial-gradient(circle at 30% 20%, #6b4320 0 7%, transparent 8%), radial-gradient(circle at 62% 30%, #6b4320 0 9%, transparent 10%), radial-gradient(circle at 44% 58%, #6b4320 0 11%, transparent 12%),
+      radial-gradient(circle at 75% 70%, #6b4320 0 9%, transparent 10%), radial-gradient(circle at 22% 78%, #6b4320 0 8%, transparent 9%), radial-gradient(circle at 52% 88%, #6b4320 0 10%, transparent 11%); }
+  .bx-gorilla.muddy .bx-mud { display:block; }
+  @keyframes bx-flex { from { transform:rotate(var(--r)); } to { transform:rotate(calc(var(--r) * -.4)) translateY(-6%); } }
+  /* The gold banana: the prize for every stage won against Gorilla Boss */
+  .bx-gold { filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 10px #ffd400); }
+
   /* Dead: X eyes */
   .bx-boss.dead .bx-eye { background:#fff; }
   .bx-boss.dead .bx-eye i { left:12%; top:42%; width:76%; height:16%; border-radius:2px; transform:rotate(45deg); animation:none; box-shadow:none; }
@@ -184,6 +232,11 @@
   .bx-scene::before { content:""; position:absolute; inset:-50%; background:repeating-conic-gradient(rgba(255,255,255,.12) 0 10deg, transparent 10deg 20deg); animation:bx-spin 14s linear infinite; }
   .bx-scene > * { position:relative; }
   .bx-scene .bx-stagewrap { position:relative; }
+  .bx-scene.bx-dark { background:radial-gradient(circle at 50% 50%, #3a3a5a 0, #15152a 45%, #05050f 100%); }   /* the mystery boss: a spotlight in the dark */
+  .bx-shadow { filter:brightness(0) drop-shadow(0 0 14px rgba(255,255,255,.55)); }
+  .bx-sub { font-size:clamp(2rem, 9vw, 3.4rem); color:#ffd400; -webkit-text-stroke:2px #111; text-shadow:0 5px 0 #111; animation:bx-qq .6s steps(2) infinite; }
+  @keyframes bx-qq { 50% { opacity:.35; } }
+  .bx-name { white-space:pre-line; }
   .bx-name { font-size:clamp(1.6rem, 7vw, 2.6rem); color:#fff; -webkit-text-stroke:2px #111; text-shadow:0 5px 0 #111; letter-spacing:1px; text-align:center; }
   .bx-warn { position:absolute; left:-10%; right:-10%; height:46px; display:flex; align-items:center; justify-content:center; font-size:1.7rem; color:#111;
     background:repeating-linear-gradient(-45deg, #ffd400 0 22px, #111 22px 44px); border-block:4px solid #111; z-index:2; }
@@ -247,6 +300,9 @@
       '<div class="bx-mouth"></div><div class="bx-tear l"></div><div class="bx-tear r"></div>',
     robot: '<div class="bx-arm l"></div><div class="bx-arm r"></div><div class="bx-body"></div><div class="bx-head"></div>' +
       '<div class="bx-eye l big"><i></i></div><div class="bx-eye r"><i></i></div><div class="bx-mouth"></div>',
+    gorilla: '<div class="bx-arm l"></div><div class="bx-arm r"></div><div class="bx-body"></div><div class="bx-belt">🍌</div><div class="bx-head"></div>' +
+      '<div class="bx-face"></div><div class="bx-brow uni"></div><div class="bx-eye l big"><i></i></div><div class="bx-eye r"><i></i></div>' +
+      '<div class="bx-nose"></div><div class="bx-mouth"></div><div class="bx-tear l"></div><div class="bx-tear r"></div><div class="bx-mud"></div>',
   };
   // A boss character, `size` px square (a number), or any CSS length ("1.3em", "var(--mz)").
   function el(id, size) {
@@ -271,7 +327,7 @@
     return ctx && ctx.boss && ctx.boss.phase === "battle" ? ctx.boss.id : null;
   }
   function setMood(b, mood) {
-    b.classList.remove("laugh", "hurt", "angry", "dead", "happy");
+    b.classList.remove("laugh", "hurt", "angry", "dead", "happy", "cry");
     if (mood) { void b.offsetWidth; b.classList.add(mood); }
   }
 
@@ -340,8 +396,10 @@
   //   rv.onTimeUp(fn)        time ran out: the boss's winning move
   //   rv.mood(m), rv.bubble(text, ms)   a mood on every boss drawn; a speech bubble over the first
   // Its reaction to the result is automatic: angry if you win, laughing if you don't.
-  function rival(ctx) {
-    if (!ctx || !ctx.boss || ctx.boss.phase !== "showdown" || ctx.demo) return null;
+  // `opts.battle`: in the final battle too (Gorilla Boss races you up the vines to the gold banana).
+  function rival(ctx, opts = {}) {
+    if (!ctx || !ctx.boss || ctx.demo) return null;
+    if (ctx.boss.phase !== "showdown" && !(opts.battle && ctx.boss.phase === "battle")) return null;
     injectCss();
     const id = ctx.boss.id, bosses = [], timeUp = [];
     const r = {
@@ -422,6 +480,26 @@
     return f;
   }
 
+  // The start of a run: the boss you'll face later, as a mysterious black silhouette in a spotlight (the
+  // teacher's idea, like a fighting game's character reveal). Who could it be?
+  function tease(root, boss, env) {
+    const { s, size } = scene(root, boss);
+    s.classList.add("bx-dark");
+    const b = el(boss.id, size);
+    b.classList.add("bx-shadow");
+    const q = document.createElement("div");
+    q.className = "bx-name"; q.textContent = TEXT.who;
+    const sub = document.createElement("div");
+    sub.className = "bx-sub"; sub.textContent = TEXT.whoSub;
+    s.append(q, b, sub);
+    b.animate([{ transform: "scale(.2)", opacity: 0 }, { transform: "scale(1.08)", opacity: 1, offset: 0.7 }, { transform: "scale(1)" }], { duration: 700, easing: "ease-out" });
+    const { tone } = env.sfx;
+    [196, 233, 277, 330].forEach((f, i) => tone(f, 0.35, "triangle", 0.1, i * 0.22)); // dun dun dun DUN
+    tone(98, 0.8, "sawtooth", 0.06, 0.9);
+    env.say(TEXT.whoSay);
+    return 3000;
+  }
+
   // 💥 The boss appears after level 10: warning stripes and a siren, it drops in, says who it is.
   function intro(root, boss, env) {
     const { s, size } = scene(root, boss);
@@ -495,6 +573,12 @@
       fly(wrap, stageNext >= 3 ? "🥄" : "🍼", { x: 0, y: size * 0.9 }, { x: 0, y: -size * 0.05, fade: true }, 600, env, `${size * 0.25}px`); // milk after stage 1, baby food after stage 2
       env.later(() => { [0, 0.18, 0.36].forEach((t) => tone(300, 0.1, "sine", 0.1, t)); b.classList.add("calm"); }, 550);
       env.later(() => b.classList.remove("calm"), 1300);
+    } else if (boss.id === "gorilla") {
+      // The prize for every stage won: a gold banana pops out of its belt and flies off to you.
+      const g = fly(wrap, "🍌", { x: 0, y: size * 0.25 }, { x: -size * 0.9, y: size * 0.7 }, 900, env, `${size * 0.3}px`);
+      g.classList.add("bx-gold");
+      [0, 0.1, 0.2].forEach((t, i) => tone(1047 + i * 260, 0.12, "triangle", 0.08, t)); // ting ting ting
+      for (let i = 0; i < 5; i++) fly(wrap, "✨", { x: 0, y: size * 0.25 }, { x: (Math.random() - 0.6) * size, y: (Math.random() - 0.2) * size, fade: true }, 700, env, `${size * 0.12}px`);
     } else {
       for (let i = 0; i < 8; i++) {
         const a = Math.random() * 6.28;
@@ -556,6 +640,18 @@
       split(wrap, boss.id, size, 0);
       tone(90, 0.3, "square", 0.15); burst();
       for (let i = 0; i < 10; i++) fly(s, "🍌", { x: 0, y: 0 }, { x: (Math.random() - 0.5) * W, y: (Math.random() - 0.7) * H, fade: true }, 1100, env, "2rem");
+    } else if (boss.id === "gorilla") {
+      // In the mud, crying, as his gold banana flies away (the teacher's choice for the ending).
+      b.classList.remove("dead");
+      b.classList.add("muddy");
+      setMood(b, "cry");
+      const nana = fly(wrap, "🍌", { x: 0, y: size * 0.28 }, { x: size * 0.15, y: -H * 0.75, ease: "cubic-bezier(.5,0,.7,1)" }, 2200, env, `${size * 0.3}px`);
+      nana.classList.add("bx-gold");
+      for (let i = 0; i < 8; i++) env.later(() => fly(wrap, "✨", { x: (Math.random() - 0.5) * size * 0.4, y: size * 0.2 - i * size * 0.12 }, { x: (Math.random() - 0.5) * size, y: -size * 0.6 - i * size * 0.1, fade: true }, 800, env, `${size * 0.12}px`), 200 + i * 220);
+      [0, 0.12, 0.24].forEach((t, i) => tone(1047 + i * 260, 0.14, "triangle", 0.08, 0.1 + t)); // whoosh, away it goes
+      sweep(400, 1400, 1.2, "sine", 0.05, 0.2);
+      for (let i = 0; i < 4; i++) env.later(() => sweep(700, 380, 0.35, "triangle", 0.07), 500 + i * 650); // waaah
+      burst(100);
     } else if (boss.id === "robot" && opts.finished) {
       b.remove();
       [["🔩", -0.3, 0.3], ["⚙️", 0.05, 0.38], ["🔧", 0.32, 0.28], ["⚙️", -0.12, 0.12], ["🔩", 0.22, 0.05]].forEach(([e, x, y]) => {
@@ -626,5 +722,5 @@
     return 2800;
   }
 
-  window.Boss = { TEXT, BOSSES, IDS, SHOWDOWN, SPEED, HP, HEARTS, LEVELS, el, carrier, fighting, seat, rival, split, setMood, injectCss, intro, score, battleStart, hit, miss, defeat, gloat };
+  window.Boss = { TEXT, BOSSES, IDS, SHOWDOWN, SPEED, HP, HEARTS, LEVELS, el, carrier, fighting, seat, rival, split, setMood, injectCss, tease, intro, score, battleStart, hit, miss, defeat, gloat };
 })();
