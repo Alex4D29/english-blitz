@@ -33,8 +33,9 @@
       defeatLine: "Nooo! I'm a banana split!",
       defeatWord: "SLICED!",
       hitWord: "SLICE!",
-      // Fight the boss itself: slice banana clones, throw shurikens at flying bananas, bonk it out of the holes.
-      stages: [["samurai-slice", "shuriken-toss"], ["shuriken-toss", "samurai-slice"], ["whack-a-mole", "shuriken-toss"]],
+      // Fight the boss itself: slice banana clones, throw shurikens at flying bananas, and the finale, Shield
+      // Breaker: smash its banana shields and slice it in two (the teacher's design).
+      stages: [["samurai-slice", "shuriken-toss"], ["shuriken-toss", "whack-a-mole", "samurai-slice"], ["shield-breaker", "whack-a-mole"]],
     },
     baby: {
       id: "baby", icon: "👶", name: "BABY BOSS", color: "#ff9ccf", dark: "#b0457e",
@@ -42,11 +43,14 @@
       taunt: "Waaah ha ha!",
       angry: "Waaah! Not fair!",
       battleLine: "Find my milk! Waaah!",
-      defeatLine: "Mmm, milk. Night night.",
+      defeatLine: "Yawn... night night.",
       defeatWord: "SHHH... ZZZ",
       hitWord: "GULP!",
-      instruction: "FIND THE\nMILK! 🍼",
-      stages: [["ghost-hunt", "window-wiper"], ["egg-shuffle", "window-wiper", "ghost-hunt"], ["window-wiper", "ghost-hunt"]],
+      // Hungry → hungrier → sleepy (the teacher's story): ghosts have stolen its milk (Ghost Hunt), then it
+      // wants its baby food (Feed Me: spoons into its mouth), then Rock-a-Bye (Bongo Bash in a nursery: rock it
+      // to sleep). It's never hurt: each game draws the baby itself (bossArt).
+      instruction: ["FIND THE\nMILK! 🍼", "FEED THE\nBABY! 🥄", "ROCK-A-\nBYE! 🌙"], // one per stage
+      stages: [["ghost-hunt", "window-wiper"], ["feed-me", "egg-shuffle"], ["bongo-bash"]],
     },
     robot: {
       id: "robot", icon: "🤖", name: "ROBOT BOSS", color: "#7fd3ff", dark: "#2d6f99",
@@ -57,9 +61,10 @@
       defeatLine: "Beep... boop... you win!",
       defeatWord: "KA-BOOM!",
       hitWord: "BZZT!",
-      instruction: "DANCE\nBATTLE!",
-      // A dance battle, then box the robot (Boxing is a listening game: Dance Off again if those are off), then the final dance.
-      stages: [["dance-off"], ["monster-boxing", "dance-off"], ["dance-off"]],
+      instruction: ["DANCE\nBATTLE!", null, null], // one per stage (Boxing and the wires keep their own)
+      // A dance battle, then box the robot (Boxing is a listening game: Dance Off again if those are off), then
+      // the finale: cut the wires plugged into it until it blows up (Wire Cut's robot version; the teacher's design).
+      stages: [["dance-off"], ["monster-boxing", "dance-off"], ["wire-cut", "dance-off"]],
     },
   };
   const IDS = Object.keys(BOSSES);
@@ -135,6 +140,15 @@
   .bx-baby .bx-cheek.l { left:16%; } .bx-baby .bx-cheek.r { right:16%; }
   .bx-baby .bx-tear { position:absolute; top:38%; width:6%; height:0; background:#5ec8ff; border-radius:0 0 99px 99px; z-index:4; animation:bx-tear .5s linear infinite; }
   .bx-baby .bx-tear.l { left:26%; } .bx-baby .bx-tear.r { left:68%; animation-delay:.25s; }
+  /* Happy (fed): no tears, a big smile, a little bounce. Sleepy (being rocked): heavy eyelids, a yawn, no tears. */
+  .bx-baby.happy .bx-tear, .bx-baby.sleepy .bx-tear { display:none; }
+  .bx-baby.happy .bx-mouth { animation:none; width:34%; height:16%; top:48%; border-radius:4px 4px 99px 99px; }
+  .bx-baby.happy .bx-in { animation:bx-laugh .3s ease-in-out infinite alternate; }
+  .bx-baby.sleepy .bx-eye { height:13%; top:26%; border-radius:0 0 99px 99px; }
+  .bx-baby.sleepy .bx-eye i { top:0; }
+  .bx-baby.sleepy .bx-mouth { animation:none; width:16%; height:14%; border-radius:50%; }
+  .bx-baby.sleepier .bx-eye { height:7%; top:30%; }
+  .bx-baby.sleepier .bx-in { animation:bx-sleep 2.4s ease-in-out infinite alternate; }
   .bx-baby.calm .bx-tear { display:none; }
   .bx-baby.calm .bx-mouth { width:16%; height:8%; border-radius:0 0 99px 99px; animation:none; background:#111; }
   .bx-baby.calm .bx-eye { height:4%; top:30%; border-radius:99px; background:#111; }
@@ -251,13 +265,13 @@
     b.classList.add("bx-carrier");
     return b;
   }
-  // The boss version of a battle game is on (the game draws the boss itself): Banana and Robot only;
-  // Baby Boss is never hit, it gets its milk.
+  // The boss version of a battle game is on (the game draws the boss itself): the boss's id in the final
+  // battle. (Baby Boss is never hit: its games feed it and rock it to sleep.)
   function fighting(ctx) {
-    return ctx && ctx.boss && ctx.boss.phase === "battle" && ctx.boss.id !== "baby" ? ctx.boss.id : null;
+    return ctx && ctx.boss && ctx.boss.phase === "battle" ? ctx.boss.id : null;
   }
   function setMood(b, mood) {
-    b.classList.remove("laugh", "hurt", "angry", "dead");
+    b.classList.remove("laugh", "hurt", "angry", "dead", "happy");
     if (mood) { void b.offsetWidth; b.classList.add(mood); }
   }
 
@@ -478,7 +492,7 @@
       const sl = document.createElement("div"); sl.className = "bx-slash"; wrap.appendChild(sl);
       noise(0.2, "highpass", 3000, 6000, 0.3); sweep(1600, 400, 0.2, "sawtooth", 0.08);
     } else if (boss.id === "baby") {
-      fly(wrap, "🍼", { x: 0, y: size * 0.9 }, { x: 0, y: -size * 0.05, fade: true }, 600, env, `${size * 0.25}px`);
+      fly(wrap, stageNext >= 3 ? "🥄" : "🍼", { x: 0, y: size * 0.9 }, { x: 0, y: -size * 0.05, fade: true }, 600, env, `${size * 0.25}px`); // milk after stage 1, baby food after stage 2
       env.later(() => { [0, 0.18, 0.36].forEach((t) => tone(300, 0.1, "sine", 0.1, t)); b.classList.add("calm"); }, 550);
       env.later(() => b.classList.remove("calm"), 1300);
     } else {
@@ -508,9 +522,25 @@
     return 2200;
   }
 
+  // Banana Boss sliced in two: two halves (cut along a diagonal) of a `size` px boss fall apart inside
+  // `wrap` (a positioned box the boss's size). `ms` 0 puts them straight where they end up.
+  const HALVES = [["polygon(0 0, 100% 0, 100% 22%, 0 80%)", -1], ["polygon(0 80%, 100% 22%, 100% 100%, 0 100%)", 1]];
+  function split(wrap, id, size, ms = 900) {
+    return HALVES.map(([clip, dir]) => {
+      const h = el(id, size); h.classList.add("dead", "bx-half"); h.style.clipPath = clip;
+      wrap.appendChild(h);
+      const end = `translate(${dir * size * 0.5}px, ${dir * size * 0.35}px) rotate(${dir * 35}deg)`;
+      if (ms) h.animate([{ transform: "none" }, { transform: end, opacity: 0.9 }], { duration: ms, easing: "ease-in", fill: "forwards" });
+      else { h.style.transform = end; h.style.opacity = "0.9"; }
+      return h;
+    });
+  }
+
   // The boss is beaten: Banana Boss is sliced in two, Baby Boss drinks its milk and falls asleep,
-  // Robot Boss shorts out and explodes. Confetti either way.
-  function defeat(root, boss, env) {
+  // Robot Boss shorts out and explodes. Confetti either way. `opts.sliced`: Banana Boss was already
+  // sliced in two in the game (Shield Breaker's finale), so its halves are lying there already. Likewise `opts.finished` for
+  // Robot Boss: it already blew up in the game (its Wire Cut), so only its nuts and bolts are left.
+  function defeat(root, boss, env, opts = {}) {
     const { s, size, W, H } = scene(root, boss);
     const wrap = document.createElement("div");
     wrap.className = "bx-stagewrap";
@@ -521,21 +551,38 @@
     s.append(hpBar(boss, 0), wrap);
     const { tone, noise, sweep } = env.sfx;
     const burst = (n = 120) => env.confetti(s, W / 2, H * 0.45, { count: n });
-    if (boss.id === "banana") {
+    if (boss.id === "banana" && (opts.sliced || opts.finished)) {
+      b.remove();
+      split(wrap, boss.id, size, 0);
+      tone(90, 0.3, "square", 0.15); burst();
+      for (let i = 0; i < 10; i++) fly(s, "🍌", { x: 0, y: 0 }, { x: (Math.random() - 0.5) * W, y: (Math.random() - 0.7) * H, fade: true }, 1100, env, "2rem");
+    } else if (boss.id === "robot" && opts.finished) {
+      b.remove();
+      [["🔩", -0.3, 0.3], ["⚙️", 0.05, 0.38], ["🔧", 0.32, 0.28], ["⚙️", -0.12, 0.12], ["🔩", 0.22, 0.05]].forEach(([e, x, y]) => {
+        const p = document.createElement("div");
+        p.className = "bx-fly"; p.textContent = e; p.style.setProperty("--fs", `${size * 0.2}px`);
+        p.style.transform = `translate(calc(-50% + ${x * size}px), calc(-50% + ${y * size}px)) rotate(${Math.round(Math.random() * 80 - 40)}deg)`;
+        wrap.appendChild(p);
+      });
+      for (let i = 0; i < 5; i++) env.later(() => fly(wrap, "💨", { x: (Math.random() - 0.5) * size * 0.5, y: size * 0.2 }, { x: (Math.random() - 0.5) * size * 0.6, y: -size * 0.6, fade: true, ease: "ease-out" }, 1200, env, `${size * 0.18}px`), i * 250);
+      tone(90, 0.3, "square", 0.12); burst();
+    } else if (boss.id === "banana") {
       const sl = document.createElement("div"); sl.className = "bx-slash"; wrap.appendChild(sl);
       noise(0.25, "highpass", 3000, 6000, 0.35);
       env.later(() => {
         // Two halves cut along the slash fall apart.
         b.remove();
-        [["polygon(0 0, 100% 0, 100% 22%, 0 80%)", -1], ["polygon(0 80%, 100% 22%, 100% 100%, 0 100%)", 1]].forEach(([clip, dir]) => {
-          const h = el(boss.id, size); h.classList.add("dead", "bx-half"); h.style.clipPath = clip;
-          wrap.appendChild(h);
-          h.animate([{ transform: "none" }, { transform: `translate(${dir * size * 0.5}px, ${dir * size * 0.35}px) rotate(${dir * 35}deg)`, opacity: 0.9 }],
-            { duration: 900, easing: "ease-in", fill: "forwards" });
-        });
+        split(wrap, boss.id, size);
         tone(90, 0.3, "square", 0.15); burst();
         for (let i = 0; i < 10; i++) fly(s, "🍌", { x: 0, y: 0 }, { x: (Math.random() - 0.5) * W, y: (Math.random() - 0.7) * H, fade: true }, 1100, env, "2rem");
       }, 400);
+    } else if (boss.id === "baby" && opts.finished) {
+      // Rock-a-Bye already sent it to sleep: it's snoozing, with a lullaby and 💤.
+      b.classList.add("calm", "dead");
+      [523, 659, 784, 659, 523].forEach((f, i) => tone(f, 0.3, "sine", 0.08, i * 0.32));
+      for (let i = 0; i < 5; i++) env.later(() => fly(wrap, "💤", { x: size * 0.3, y: -size * 0.2 }, { x: size * 0.55, y: -size * 0.75, fade: true, ease: "ease-out" }, 1400, env, `${size * 0.16}px`), i * 450);
+      for (let i = 0; i < 6; i++) fly(s, "💖", { x: (Math.random() - 0.5) * size, y: size * 0.2 }, { x: (Math.random() - 0.5) * W * 0.8, y: -H * 0.45, fade: true }, 1600, env, "1.8rem");
+      burst(80);
     } else if (boss.id === "baby") {
       b.classList.remove("dead");
       fly(wrap, "🍼", { x: 0, y: size * 0.9 }, { x: 0, y: size * 0.02 }, 700, env, `${size * 0.3}px`);
@@ -579,5 +626,5 @@
     return 2800;
   }
 
-  window.Boss = { TEXT, BOSSES, IDS, SHOWDOWN, SPEED, HP, HEARTS, LEVELS, el, carrier, fighting, seat, rival, setMood, injectCss, intro, score, battleStart, hit, miss, defeat, gloat };
+  window.Boss = { TEXT, BOSSES, IDS, SHOWDOWN, SPEED, HP, HEARTS, LEVELS, el, carrier, fighting, seat, rival, split, setMood, injectCss, intro, score, battleStart, hit, miss, defeat, gloat };
 })();

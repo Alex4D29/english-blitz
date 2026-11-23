@@ -44,6 +44,8 @@
      with a skull, a curly moustache, and a grin with a gold tooth. */
   .td-top { flex:none; display:flex; align-items:flex-end; justify-content:center; gap:10px; width:100%; }
   .td-pirate { position:relative; flex:none; width:96px; height:110px; transform-origin:50% 100%; }
+  /* …standing on the beach, up at the top left above the X marks (the teacher asked for it; it used to stand beside the map) */
+  .td-pspot { position:absolute; left:0; top:0; width:96px; height:110px; z-index:3; transform-origin:50% 100%; }
   .td-pbody { position:absolute; left:4%; right:4%; top:30%; bottom:0; background:#2bb5a0; border:4px solid #111; border-radius:46% 46% 34% 34%; }
   .td-phat { position:absolute; left:-6%; right:-6%; top:6%; height:34%; background:#222; border:4px solid #111; border-radius:50% 50% 12% 12% / 70% 70% 12% 12%; z-index:2;
     transform-origin:50% 100%; transition:transform .4s cubic-bezier(.3,1.5,.5,1); }
@@ -239,7 +241,7 @@
       const fx = document.createElement("div");
       fx.className = "td-fx";
       beach.appendChild(fx);
-      // The pirate stands beside the map (tap it to hear the target again, too).
+      // The pirate stands on the beach (tap it to hear the target again, too); the map has the top to itself.
       const top = document.createElement("div");
       top.className = "td-top";
       const pirate = document.createElement("button");
@@ -249,7 +251,11 @@
       pirate.innerHTML = '<div class="td-pbody"></div><div class="td-phat"></div><div class="td-peye"><i></i></div><div class="td-ppatch"></div>' +
         '<div class="td-pstache"></div><div class="td-pmouth"></div>';
       pirate.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
-      top.append(pirate, map);
+      top.append(map);
+      const pspot = document.createElement("div");
+      pspot.className = "td-pspot";
+      pspot.appendChild(pirate);
+      beach.appendChild(pspot);
       wrap.append(top, beach);
       function pirateSays(text) {
         pirate.querySelector(".td-say")?.remove();
@@ -290,6 +296,10 @@
           h.el.style.top = `${Math.min(H - 6, h.y)}px`;
           h.sign.style.fontSize = h.s.kind === "word" ? `${Math.min(sp * 0.34, (sp * 1.1) / (h.s.text.length * 0.6))}px` : "";
         });
+        // The pirate: on the sand at the top left, feet just above the highest sign, scaled to fit under the sea.
+        const signTop = Math.min(...holes.map((h) => Math.min(H - 6, h.y) - sp * 1.5));
+        const k = Math.max(0.55, Math.min(1.1, (signTop - 36) / 110));
+        pspot.style.transform = `translate(${Math.max(6, W * 0.05) + 48 * (k - 1)}px, ${signTop - 4 - 110}px) scale(${k.toFixed(3)})`;
       }
       layout();
       const ro = new ResizeObserver(layout);

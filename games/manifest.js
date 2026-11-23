@@ -29,6 +29,8 @@ window.GAME_FILES = [
   "bunny-burrow",
   "pizza-chef",
   "dance-off",
+  "shield-breaker",
+  "bongo-bash",
   "treasure-dig",
   "hoop-shot",
   "penalty-kick",

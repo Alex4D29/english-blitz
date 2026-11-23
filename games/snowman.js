@@ -12,7 +12,7 @@
       steps: [
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],
         ["⛄", "Tap the snowball with the same one. It rolls onto the snowman!"],
-        ["⬆️", "Big ball, middle ball, head… build it all the way up!"],
+        ["🔁", "Then the card changes: find the new one. Big ball, middle ball, head… build it all the way up!"],
       ],
       tips: [
         "Tap the card to hear it again.",
@@ -32,6 +32,8 @@
   .sw-card { flex:none; min-width:84px; height:72px; padding:0 18px; border-radius:18px; font:inherit; font-size:2.6rem; line-height:1; background:#fff; color:#111;
     border:5px solid #111; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; touch-action:manipulation; }
   .sw-card .spk { font-size:1.3rem; opacity:.6; }
+  .sw-card.next { animation:sw-next .45s cubic-bezier(.2,1.8,.4,1); }   /* a new target each step */
+  @keyframes sw-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
   .sw-scene { position:relative; flex:1; min-height:0; width:100%; max-width:520px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
     background:linear-gradient(180deg, #9fd4ff, #dff1ff); }
   .sw-ground { position:absolute; left:-5%; right:-5%; bottom:-20px; height:80px; background:#fff; border-top:5px solid #111; border-radius:50% 50% 0 0; }
@@ -124,7 +126,20 @@
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const R = speed >= 1.5 ? 4 : 3, N = speed >= 2 ? 4 : 3;
       const { tone, sweep, noise } = ctx.sfx;
-      const C = ctx.choiceRows(R, N, { lowercase: true });
+      // Each step has a NEW target ("A"… pick a… "B"… pick b…), with a beat in between where the clock stops
+      // while the next one is shown and said (the teacher's idea, like the rhythm games).
+      const S = ctx.choiceSteps(R, N, { lowercase: true });
+      let C = S[0];
+      const BEAT_MS = 800;
+      // The beat: the clock stops, the card pops to the next target and the voice says it.
+      function nextTarget(saidWord) {
+        ctx.pauseTimer(BEAT_MS);
+        C = S[step];
+        card.firstChild.textContent = C.cardText;
+        card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+        ctx.sfx.tone(98, 0.08, "square", 0.1); ctx.sfx.tone(98, 0.08, "square", 0.1, 0.16);
+        ctx.later(() => { if (!done) ctx.say(C.prompt); }, saidWord ? 350 : 0);
+      }
 
       const wrap = document.createElement("div");
       wrap.className = "sw";
@@ -206,7 +221,7 @@
       let opts = [];
       function showStep() {
         tray.innerHTML = "";
-        opts = C.rows[step].map((item, i) => {
+        opts = C.row.map((item, i) => {
           const b = document.createElement("button");
           b.className = "sw-opt" + (step === 3 ? " hat" : "") + (item.kind === "pic" ? " pic" : "");
           b.textContent = item.text;
@@ -262,7 +277,7 @@
           step++;
           busy = false;
           if (step >= R) win();
-          else showStep();
+          else { nextTarget(o.item.kind === "pic"); showStep(); }
         }, reduceMotion ? 10 : 390);
       }
 
@@ -330,10 +345,11 @@
       ctx.reveal(card);
 
       // Tutorial: point at the card, then at each step tap the right one once the game is ready for it.
-      ctx.tutorial(C.target, async (f) => {
+      ctx.tutorial(S.map((s) => s.target), async (f) => {
         await f.point(card);
         for (let r = 0; r < R; r++) {
-          await f.until(() => !busy && step === r && opts.length && C.rows[r].includes(opts[0].item) && opts[0].el.isConnected, 5000);
+          await f.until(() => !busy && step === r && opts.length && S[r].row.includes(opts[0].item) && opts[0].el.isConnected, 5000);
+          if (r) await f.point(card, 500); // the new one
           await f.tap(() => opts.find((o) => o.item.right).el);
         }
       });

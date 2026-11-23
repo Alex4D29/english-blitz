@@ -9,7 +9,8 @@
 //
 // Right slice: the bandit splits in two along the swipe, with a confetti explosion.
 // Wrong slice: the sword clangs off, that bandit goes sad (droops, cries) and the right one glows.
-// One slice per round. A tap doesn't slice: it shows the SLICE! hint again where the finger landed.
+// Slice 3 to win (⭐ pips, top left): the target stays the same and each slice brings a fresh wave of
+// bandits (a wrong slice still loses). A tap doesn't slice: it shows the SLICE! hint again where the finger landed.
 // Tap the samurai to hear it again. Faster speeds add bandits (5 at 1.5×, 6 at 2×), and from
 // 1.5× they slowly circle the samurai.
 (function () {
@@ -29,10 +30,10 @@
           ["🔍", "Bandits are all around! Find the bandit holding that word."]],
       }[list.type] || [];
       return { en: {
-        steps: [...find, ["⚔️", "Swipe your finger across that bandit to slice it!"]],
+        steps: [...find, ["⚔️", "Swipe your finger across that bandit to slice it! Slice 3 to win. ⭐⭐⭐"]],
         tips: [
           "Tapping doesn't slice. Swipe right across the bandit!",
-          "You only get one slice. Slice the wrong bandit and it gets sad, and the right one glows.",
+          "Slice 3 bandits to win: after each one, a new gang rushes in. Slice a wrong bandit and it gets sad, the right one glows, and the game is over.",
           "Tap the samurai to hear it again.",
           "When the game speeds up, there are more bandits and they circle around.",
         ],
@@ -49,6 +50,7 @@
   const SAMURAI_COLORS = ["#1e6bff", "#b04dff", "#00b37a", "#ff8a00"];
   const FOE_COLORS = ["#ff2e3b", "#1e9bff", "#1fd65f", "#ff8a00", "#b04dff", "#ff4fb3"];
   const SLICE_MIN = 22; // px a finger must travel before it counts as a slice, not a tap
+  const NEED = 3;     // right slices to win (each brings a fresh wave of bandits)
 
   const CSS = `
   .ss { position:absolute; inset:0; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
@@ -122,6 +124,11 @@
   .ss-foe.cut .ss-half > .ss-bod { animation:none; visibility:visible; }
 
   .ss-fx { position:absolute; inset:0; pointer-events:none; z-index:8; overflow:visible; }
+  /* 3 to slice: ⭐ pips in the top-left corner; the rest of a wave run away before the next rushes in */
+  .ss-pips { position:absolute; left:8px; top:8px; display:flex; gap:5px; z-index:7; pointer-events:none; }
+  .ss-pip { width:26px; height:26px; border:3px solid #111; border-radius:50%; background:#fff; box-shadow:0 3px 0 #111; display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1; }
+  .ss-pip.on { background:#ffd400; } .ss-pip.on::after { content:"⭐"; }
+  .ss-foe.flee { transition:opacity .35s ease-in; opacity:0; }
   .ss-slash { position:absolute; height:12px; margin-top:-6px; border-radius:99px; background:#fff; border:4px solid #111; transform-origin:0 50%; }
   .ss-trail { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:9; overflow:visible; }
 
@@ -167,7 +174,7 @@
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
-    duration: 7000,
+    duration: 12000, // 3 bandits to slice (it used to be one, which was over too quickly)
     input: "slice",
     tutorial: true,
     bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting) // has a ctx.tutorial script
@@ -180,56 +187,67 @@
       const n = speed >= 2 ? 6 : speed >= 1.5 ? 5 : 4;
       const orbit = speed >= 1.5 && !reduceMotion ? 0.12 * (speed - 1) : 0; // radians per second
       const letterName = (it) => it.say || it.text.toUpperCase(); // TTS reads a lone "a" as "uh"
-      let done = false;
+      let done = false, hits = 0;
 
       // ---------- Content: what the samurai shows and what each bandit holds ----------
       // foe: { text, kind: "letter" | "pic" | "word", right, spoken }
-      let samText, samKind, prompt, answer, foes, answerItem; // answerItem: the list item this round is about
+      // Slice 3 to win (the teacher found one slice over too quickly): the target stays the same, and each
+      // slice brings a fresh wave of bandits (new distractors; phonics: a different picture of the letter).
+      let samText, samKind, prompt, answer, answerItem; // answerItem: the list item this round is about
+      let makeFoes;                                     // (w) => the bandits of wave w
       if (type === "letter") {
         const target = ctx.items[0];
         answerItem = target;
         const upper = Math.random() < 0.5; // samurai capital → bandits lowercase, and vice versa
         // I and l look the same across cases, so never put them together.
         const il = (a, b) => [a, b].map((x) => x.text.toUpperCase()).sort().join("") === "IL";
-        const others = ctx.pickOptions(target, n + 2).filter((o) => o !== target && !il(o, target));
-        const opts = [target, ...others.slice(0, n - 1)]; // the right answer always makes the cut
         samText = upper ? target.text.toUpperCase() : target.text.toLowerCase();
         samKind = "letter";
         prompt = answer = letterName(target);
-        foes = opts.map((o) => ({ text: upper ? o.text.toLowerCase() : o.text.toUpperCase(), kind: "letter", right: o === target, spoken: letterName(o) }));
+        makeFoes = () => {
+          const others = ctx.pickOptions(target, n + 2).filter((o) => o !== target && !il(o, target));
+          const opts = [target, ...others.slice(0, n - 1)]; // the right answer always makes the cut
+          return opts.map((o) => ({ text: upper ? o.text.toLowerCase() : o.text.toUpperCase(), kind: "letter", right: o === target, spoken: letterName(o) }));
+        };
       } else if (type === "phonics") {
         const pool = ctx.items.filter((it) => ctx.phonics.pics(it).length);
         const target = pool[0];
         answerItem = target;
-        const set = ctx.phonics.set(target, 1, n - 1);
-        const right = set.right[0];
+        const set = ctx.phonics.set(target, NEED, (n - 1) * NEED);
         samText = target.text.toUpperCase();
         samKind = "letter";
         prompt = letterName(target);
-        answer = TEXT.answer(letterName(target), right.word);
-        foes = [right, ...set.wrong].map((p) => ({ text: p.emoji, kind: "pic", right: p === right, spoken: p.word }));
+        answer = TEXT.answer(letterName(target), set.right[0].word);
+        makeFoes = (w) => {
+          const right = set.right[w % set.right.length];
+          let wrong = set.wrong.slice(w * (n - 1), (w + 1) * (n - 1));
+          if (wrong.length < n - 1) wrong = ctx.shuffle(set.wrong.slice()).slice(0, n - 1);
+          return [right, ...wrong].map((p) => ({ text: p.emoji, kind: "pic", right: p === right, spoken: p.word }));
+        };
       } else if (type === "cvc") {
         const pool = ctx.items.filter((it) => it.emoji);
         const target = pool[0];
         answerItem = target;
-        const picks = [];
-        for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
-          if (picks.length >= n - 1) break;
-          if (o !== target && o.emoji && !picks.includes(o)) picks.push(o);
-        }
         samText = target.text;
         samKind = "word";
         prompt = answer = target.say || target.text;
-        foes = [target, ...picks].map((o) => ({ text: o.emoji, kind: "pic", right: o === target, spoken: o.say || o.text }));
+        makeFoes = () => {
+          const picks = [];
+          for (const o of [...ctx.pickOptions(target, 12), ...ctx.shuffle(pool.slice())]) {
+            if (picks.length >= n - 1) break;
+            if (o !== target && o.emoji && !picks.includes(o)) picks.push(o);
+          }
+          return [target, ...picks].map((o) => ({ text: o.emoji, kind: "pic", right: o === target, spoken: o.say || o.text }));
+        };
       } else { // hfw: the samurai only hears the word
         const target = ctx.items[0];
         answerItem = target;
         samText = ctx.canSpeak ? TEXT.listen : target.text; // listening games off: show the word
         samKind = ctx.canSpeak ? "listen" : "word";
         prompt = answer = target.say || target.text;
-        foes = [target, ...ctx.pickOptions(target, n + 1).filter((o) => o !== target).slice(0, n - 1)].map((o) => ({ text: o.text, kind: "word", right: o === target, spoken: o.say || o.text }));
+        makeFoes = () => [target, ...ctx.pickOptions(target, n + 1).filter((o) => o !== target).slice(0, n - 1)]
+          .map((o) => ({ text: o.text, kind: "word", right: o === target, spoken: o.say || o.text }));
       }
-      foes = ctx.shuffle(foes);
       const bossId = window.Boss ? window.Boss.fighting(ctx) : null; // Boss Battle: the bandits are boss clones
 
       // ---------- DOM ----------
@@ -264,7 +282,14 @@
       const trailPaths = [...trailSvg.querySelectorAll("path")];
       wrap.append(ring, sam);
 
-      const items = foes.map((f, i) => {
+      const pips = document.createElement("div");
+      pips.className = "ss-pips";
+      pips.innerHTML = '<span class="ss-pip"></span>'.repeat(NEED);
+      wrap.appendChild(pips);
+
+      // A wave of bandits (they go in before the effects layers, so slashes draw on top).
+      let items = [], wave = 0;
+      const buildWave = (w) => ctx.shuffle(makeFoes(w)).map((f, i) => {
         const el = document.createElement("div");
         el.className = "ss-foe";
         el.setAttribute("role", "button");
@@ -296,10 +321,11 @@
           boss = window.Boss.carrier(bossId, "1.3em");
           el.querySelector(".ss-bod").prepend(boss);
         }
-        wrap.appendChild(el);
+        wrap.insertBefore(el, fx.isConnected ? fx : null);
         const foe = { ...f, el, txt, boss, x: 0, y: 0, hw: 40, hh: 40, alive: true }; // hw/hh: half size in px
         return foe;
       });
+      items = buildWave(0);
       wrap.append(fx, trailSvg);
       ctx.root.appendChild(wrap);
 
@@ -344,7 +370,7 @@
       const ro = new ResizeObserver(measure);
       ro.observe(wrap);
 
-      const t0 = performance.now();
+      let t0 = performance.now(); // (reset for each wave, so it rushes in)
       function place(now) {
         const t = (now - t0) / 1000;
         // Rush in from outside for the first 0.4 s, then creep slowly closer as time runs out.
@@ -454,6 +480,9 @@
           f.alive = false;
           splitFoe(f, angle);
           shing();
+          hits++;
+          pips.children[hits - 1].classList.add("on");
+          if (hits < NEED) { nextWave(f); return; }
           ctx.later(() => { ctx.confetti(fx, f.x, f.y, { count: 90 }); popSound(); }, 60);
           ctx.later(() => { wrap.classList.remove("strike"); wrap.classList.add("won"); }, 320);
           ctx.say(answer);
@@ -467,6 +496,31 @@
           ctx.say(answer);
           ctx.lose();
         }
+      }
+      // Not the last one yet: a little confetti, the others run away, and a fresh wave rushes in.
+      function nextWave(f) {
+        ctx.later(() => { ctx.confetti(fx, f.x, f.y, { count: 30 }); popSound(); }, 60);
+        if (f.kind === "pic") ctx.say(f.spoken); // "ball!"
+        items.forEach((g) => {
+          if (!g.alive) return;
+          g.alive = false;
+          const dx = g.x - cx, dy = g.y - cy, len = Math.hypot(dx, dy) || 1;
+          g.el.classList.add("flee");
+          g.el.animate([{ transform: g.el.style.transform }, { transform: `translate(${g.x + (dx / len) * W * 0.6}px, ${g.y + (dy / len) * H * 0.6}px)` }],
+            { duration: reduceMotion ? 1 : 380, easing: "ease-in", fill: "forwards" });
+        });
+        ctx.later(() => wrap.classList.remove("strike"), 320);
+        ctx.later(() => {
+          if (ctx.ended) return;
+          items.forEach((g) => g.el.remove());
+          wave++;
+          items = buildWave(wave);
+          measure();
+          t0 = performance.now();
+          place(t0);
+          done = false;
+          ctx.say(prompt); // the target again for the new wave (sight words are only heard)
+        }, 650);
       }
       function showAnswer() {
         const r = items.find((f) => f.right);
@@ -534,7 +588,7 @@
 
       // Tutorial: point at the samurai's plate, then swipe through the right bandit, straight out from
       // the samurai. (Neighbours sit beside it on the ring, so a swipe across the ring can catch one first.)
-      const rightFoe = items.find((x) => x.right);
+      let rightFoe = items.find((x) => x.right);                 // (the current wave's)
       const across = (k) => () => { // a point on the swipe line, k = -1 (inner end) … 1 (outer end), in ctx.root px
         const w = wrap.getBoundingClientRect(), g = ctx.root.getBoundingClientRect();
         const dx = rightFoe.x - cx, dy = rightFoe.y - cy, len = Math.hypot(dx, dy) || 1;
@@ -543,8 +597,14 @@
       };
       ctx.tutorial(answerItem, async (f) => {
         await f.point(sam.querySelector(".ss-plate"));
-        await f.point(rightFoe.el, 700);
-        await f.slice(across(-1), across(1));
+        for (let n = 0; n < NEED && !ctx.ended; n++) {               // one bandit a wave, three waves
+          await f.until(() => !done && hits === n && items.some((x) => x.right && x.alive), 3000);
+          rightFoe = items.find((x) => x.right && x.alive);
+          await f.wait(450);                                       // let the wave rush in
+          await f.point(rightFoe.el, 600);
+          await f.slice(across(-1), across(1));
+          await f.until(() => hits > n || ctx.ended, 2000);
+        }
       });
 
       return function cleanup() {

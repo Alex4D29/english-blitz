@@ -15,7 +15,7 @@
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],
         ["🎯", "Find the target with the same one. Green is near, yellow is in the middle, red is far."],
         ["💪", "Hold to fill the power bar, then let go! (Or tap to start and tap again to shoot.)"],
-        ["⭐", "Hit 3 targets to win!"],
+        ["🔁", "Then the card changes: aim for the new one. Hit 3 targets to win!"],
       ],
       tips: [
         "Green power reaches the green target, yellow the yellow one, red the red one.",
@@ -36,6 +36,8 @@
   .ar-card { min-width:84px; height:72px; padding:0 18px; border-radius:18px; font:inherit; font-size:2.6rem; line-height:1; background:#fff; color:#111;
     border:5px solid #111; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; touch-action:manipulation; }
   .ar-card .spk { font-size:1.3rem; opacity:.6; }
+  .ar-card.next { animation:ar-next .45s cubic-bezier(.2,1.8,.4,1); }   /* a new target for each hit */
+  @keyframes ar-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
   .ar-pips { display:flex; flex-direction:column; gap:6px; }
   .ar-row { display:flex; gap:5px; }
   .ar-pip { width:24px; height:24px; border:3px solid #111; border-radius:50%; background:#fff; font-size:13px; display:flex; align-items:center; justify-content:center; }
@@ -117,7 +119,11 @@
       const GOAL = 3, MISSES = 3;
       // Targets = power bands: 3 at normal speed, 4 from 1.75× (Practice MEDIUM), 5 from 2.5× (HARD).
       const NZ = window.PowerBar.zoneCount(ctx.speed), RINGS = window.PowerBar.colors(NZ);
-      const C = ctx.choiceRows(GOAL, NZ, { lowercase: true });
+      // Each hit brings a NEW target ("A"… hit a… "B"… hit b…), with a beat in between where the clock stops
+      // while the next one is shown and said (the teacher's idea). A miss keeps the same target.
+      const S = ctx.choiceSteps(GOAL, NZ, { lowercase: true });
+      let C = S[0];
+      const BEAT_MS = 800;
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -206,7 +212,7 @@
       // ---------- Rows of options ----------
       let step = 0, misses = 0, done = false, busy = false;
       function showRow(flip) {
-        const row = ctx.shuffle(C.rows[step].slice());
+        const row = ctx.shuffle(C.row.slice());
         targets.forEach((t, i) => {
           t.opt = row[i];
           t.sign.textContent = t.opt.text;
@@ -259,7 +265,16 @@
         pips.querySelector(".hits").children[step].classList.add("on");
         step++;
         if (step >= GOAL) { win(); return; }
-        ctx.later(() => { arrow.remove(); showRow(true); bar.reset(); busy = false; }, 650);
+        ctx.later(() => {
+          // The beat: the clock stops, the card pops to the next target and the voice says it.
+          ctx.pauseTimer(BEAT_MS);
+          C = S[step];
+          card.firstChild.textContent = C.cardText;
+          card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+          tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16);
+          if (!done) ctx.say(C.prompt);
+          arrow.remove(); showRow(true); bar.reset(); busy = false;
+        }, 650);
       }
       function miss(t, arrow) {
         word(bullseye(t), TEXT.miss, true);
@@ -343,7 +358,7 @@
       ctx.later(() => ctx.hint(bar.el.querySelector(".pwb-btn"), null, { scale: 0.7 }), 80);
 
       // Tutorial: point at the card, at the right target, then charge the bar to its colour and shoot (3 times).
-      ctx.tutorial(C.target, async (f) => {
+      ctx.tutorial(S.map((s) => s.target), async (f) => {
         const btn = bar.el.querySelector(".pwb-btn");
         await f.point(card, 900);
         for (let n = 0; n < 6 && step < GOAL && !done; n++) {

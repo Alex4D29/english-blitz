@@ -98,6 +98,14 @@
             mask:radial-gradient(farthest-side, transparent calc(100% - 11px), #000 calc(100% - 10px)); }
   .gh-f.charge .gh-ring { opacity:1; }
   .gh-poof { position:absolute; font-size:2.4rem; line-height:1; transform:translate(-50%, -50%); animation:gh-poof .7s ease-out forwards; }
+  /* Baby Boss's milk hunt: every ghost clutches a stolen 🍼, and Baby wails in its cot in the corner, lit by a night-light */
+  .gh-milk { position:absolute; right:-16%; top:40%; font-size:calc(var(--gw) * .36); line-height:1; transform:rotate(22deg); }
+  .gh-cot { position:absolute; right:3%; bottom:2%; z-index:3; pointer-events:none; width:var(--cz); height:var(--cz); }
+  .gh-cot::before { content:""; position:absolute; inset:-30%; border-radius:50%; background:radial-gradient(circle, rgba(255,230,150,.5), transparent 65%); z-index:-1; }
+  .gh-cot .bx-boss { position:absolute; left:0; top:-12%; }
+  .gh-cot::after { content:""; position:absolute; left:-8%; right:-8%; bottom:0; height:40%; border:5px solid #111; border-radius:10px; z-index:2;
+    background:repeating-linear-gradient(90deg, #f0c27a 0 10px, transparent 10px 24px), linear-gradient(#f0c27a 0 16%, transparent 16% 84%, #f0c27a 84%); }   /* the cot's bars */
+  .gh-fly { position:absolute; font-size:calc(var(--gw) * .5); line-height:1; transform:translate(-50%, -50%); z-index:5; pointer-events:none; }
 
   @keyframes gh-in     { from { transform:scale(.6); opacity:0; } }
   @keyframes gh-shake  { 0%, 100% { transform:translateX(0); } 25% { transform:translateX(-5%); } 75% { transform:translateX(5%); } }
@@ -129,6 +137,7 @@
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
     duration: 10000,
+    bossArt: true, // Boss Battle: Baby Boss's milk hunt (the ghosts have stolen its milk; Baby wails in its cot)
     input: "drag",
     tutorial: true, // has a ctx.tutorial script
 
@@ -199,13 +208,23 @@
         '<div class="gh-ghosts"></div><div class="gh-dark"></div><div class="gh-faces"></div><div class="gh-fx"></div>';
       const dark = room.querySelector(".gh-dark");
       const fx = room.querySelector(".gh-fx");
+      // Boss Battle: Baby Boss wails in its cot in the corner (lit by a night-light); the ghosts stole its milk.
+      const babyMode = !!(window.Boss && window.Boss.fighting(ctx) === "baby");
+      let baby = null;
+      if (babyMode) {
+        const cot = document.createElement("div");
+        cot.className = "gh-cot";
+        baby = window.Boss.el("baby", "var(--cz)");
+        cot.appendChild(baby);
+        room.insertBefore(cot, fx);
+      }
       wrap.append(card, room);
       ctx.root.appendChild(wrap);
 
       const ghosts = tags.map((tag) => {
         const el = document.createElement("div");
         el.className = "gh-g";
-        el.innerHTML = `<div class="gh-in">${BODY}<div class="gh-tag"></div></div>`;
+        el.innerHTML = `<div class="gh-in">${BODY}<div class="gh-tag"></div>${babyMode ? '<div class="gh-milk">🍼</div>' : ""}</div>`;
         const t = el.querySelector(".gh-tag");
         t.textContent = tag.text;
         if (tag.kind === "pic") t.classList.add("pic");
@@ -228,6 +247,7 @@
         gh = gw * 1.15;
         R = Math.max(70, gw * 0.95);
         room.style.setProperty("--gw", `${gw}px`);
+        if (babyMode) room.style.setProperty("--cz", `${Math.max(70, Math.min(w * 0.24, h * 0.3, 140))}px`);
         ghosts.forEach((g) => {
           if (g.tag.kind !== "word") return;
           g.tagEl.style.fontSize = `${Math.min(gw * 0.3, (gw * 0.84) / (g.tag.text.length * 0.6))}px`;
@@ -454,12 +474,33 @@
           });
         }
         ctx.say(answer);
+        if (babyMode) milkToBaby(g);
         // The others flee from the noise.
         ghosts.forEach((o) => { if (o !== g && o.state === "roam") { o.stateT = 0; scare(o); } });
       }
 
+      // Baby Boss's milk: the bottle the right ghost was holding flies to the baby, who gulps it down and cheers up.
+      function milkToBaby(g) {
+        const b = room.querySelector(".gh-cot").getBoundingClientRect(), r = room.getBoundingClientRect();
+        const to = { x: b.left - r.left + b.width * 0.5, y: b.top - r.top + b.height * 0.35 };
+        const m = document.createElement("div");
+        m.className = "gh-fly";
+        m.textContent = "🍼";
+        fx.appendChild(m);
+        m.animate([{ left: `${g.x}px`, top: `${g.y}px`, transform: "translate(-50%, -50%) rotate(0)" },
+          { left: `${(g.x + to.x) / 2}px`, top: `${Math.min(g.y, to.y) - gw}px`, transform: "translate(-50%, -50%) rotate(200deg)", offset: 0.5 },
+          { left: `${to.x}px`, top: `${to.y}px`, transform: "translate(-50%, -50%) rotate(380deg) scale(.7)" }],
+        { duration: reduceMotion ? 1 : 650, easing: "ease-in-out", fill: "forwards" });
+        ctx.later(() => {
+          m.remove();
+          window.Boss.setMood(baby, "happy");
+          [0, 0.18, 0.36].forEach((d) => tone(330, 0.1, "sine", 0.12, d)); // gulp gulp gulp
+        }, reduceMotion ? 10 : 660);
+      }
+
       ctx.onTimeout(() => {
         done = true;
+        if (baby) window.Boss.setMood(baby, "angry"); // waaah!
         lightsUp();
         ghosts.forEach((g) => {
           g.face.classList.remove("charge", "lit");

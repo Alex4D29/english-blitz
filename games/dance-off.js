@@ -15,7 +15,7 @@
       steps: [
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],
         ["🕺", "Tap the dance pad with the same one!"],
-        ["⭐", "Get 3 moves right to win the dance."],
+        ["🔁", "Then the card changes: dance to the new one. Get 3 moves right to win!"],
       ],
       tips: [
         "Tap the card to hear it again.",
@@ -95,11 +95,15 @@
   .do-me.yay { animation:do-twirl .6s ease-in-out 2; }
   .do-me.sad .do-mouth { border-radius:50% 50% 10% 10% / 86% 86% 14% 14%; height:14%; top:64%; }
   .do-me.sad .do-mouth::after { display:none; }
-  .do-robot { position:absolute; right:2%; top:2%; z-index:3; pointer-events:none; }
-  /* Boss Battle showdown: the boss dances too, up in the corner: a move now and then, a big finish at time up */
-  .do-rival { position:absolute; right:2%; top:calc(var(--rbs) * .4); z-index:3; pointer-events:none; }   /* (room above for its speech bubble) */
-  .do-rival.m0 .bx-boss { animation:do-bm0 .5s ease-in-out; } .do-rival.m1 .bx-boss { animation:do-bm1 .5s ease-in-out; } .do-rival.m2 .bx-boss { animation:do-bm2 .5s ease-in-out; }
-  .do-rival.fin .bx-boss { animation:do-bm0 .4s ease-in-out 3; }
+  /* Boss Battle: the boss (Robot Boss in its battle, any boss in the showdown) stands on the dance floor in the
+     bottom-right corner cell, grooving away the whole time, with a bigger move now and then */
+  .do-boss { grid-column:3; grid-row:3; align-self:end; justify-self:end; position:relative; z-index:3; pointer-events:none; animation:do-groove .5s ease-in-out infinite alternate; }
+  .do-boss.m0 .bx-boss { animation:do-bm0 .5s ease-in-out; } .do-boss.m1 .bx-boss { animation:do-bm1 .5s ease-in-out; } .do-boss.m2 .bx-boss { animation:do-bm2 .5s ease-in-out; }
+  .do-boss.fin .bx-boss { animation:do-bm0 .4s ease-in-out 3; }
+  @keyframes do-groove { from { transform:translateY(0) rotate(-7deg); } to { transform:translateY(-8%) rotate(7deg); } }
+  /* Each move brings a new target: the card swaps with a pop */
+  .do-card.next { animation:do-next .45s cubic-bezier(.2,1.8,.4,1); }
+  @keyframes do-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
   @keyframes do-bm0 { 50% { transform:translateY(-22%) rotate(-10deg); } }
   @keyframes do-bm1 { 50% { transform:translateX(-14%) rotate(-18deg) scaleY(.9); } }
   @keyframes do-bm2 { to { transform:rotate(360deg); } }
@@ -119,7 +123,7 @@
   @keyframes do-twirl { 50% { transform:rotate(180deg) scale(1.15); } 100% { transform:rotate(360deg); } }
   @keyframes do-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.5); } 30% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.15); }
     to { opacity:0; transform:translate(-50%, -110%) rotate(-8deg); } }
-  @media (prefers-reduced-motion: reduce) { .do-stage::before, .do-ball, .do-eye i, .do-me, .do-stage.party .do-floor { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .do-stage::before, .do-ball, .do-eye i, .do-me, .do-stage.party .do-floor, .do-boss, .do-card.next { animation:none !important; } }
   `;
   let cssDone = false;
   function injectCss() {
@@ -137,7 +141,7 @@
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
-    duration: 12000, // (10 s was too hard at MEDIUM and HARD speeds)
+    duration: 14000, // (10 s, then 12 s, were too hard at MEDIUM and HARD speeds; the beats between moves don't count either)
     input: "tap",
     tutorial: true,
     bossArt: true, // Boss Battle: draws the boss itself when it's fought (ctx.boss, Boss.fighting)
@@ -147,7 +151,11 @@
       const speed = ctx.speed || 1;
       const { tone, sweep, noise } = ctx.sfx;
       const R = speed >= 1.5 ? 4 : 3;
-      const C = ctx.choiceRows(R, 4, { lowercase: true });
+      // A rhythm game: every move has a NEW target ("A"… tap a… "B"… tap b…), with a beat in between where
+      // the clock stops while the next one is shown and said (the teacher's idea).
+      const S = ctx.choiceSteps(R, 4, { lowercase: true });
+      let C = S[0];                              // the current move
+      const BEAT_MS = 800;
       const robotBattle = ctx.boss && ctx.boss.phase === "battle" && ctx.boss.id === "robot" && window.Boss;
 
       // ---------- DOM ----------
@@ -195,17 +203,16 @@
         const pad = { ...p, el, sign: el.querySelector(".do-sign"), opt: null };
         return pad;
       });
+      // Boss Battle: the boss stands on the dance floor in the bottom-right corner, grooving the whole time.
+      // Robot Boss's battle: it gets zapped by your moves. The showdown: whichever boss it is dances along
+      // (a bigger move every so often) and finishes with a big pose just as time runs out.
+      const bossSpot = (b) => { const d = document.createElement("div"); d.className = "do-boss"; d.appendChild(b); grid.appendChild(d); return d; };
       let robot = null;
-      if (robotBattle) { robot = window.Boss.el("robot", 80); robot.classList.add("do-robot"); stage.appendChild(robot); }
-      // Boss Battle showdown: whichever boss it is dances too, up in the corner (a move every so often), and
-      // finishes its dance with a big pose just as time runs out.
+      if (robotBattle) { robot = window.Boss.el("robot", "var(--rbs)"); bossSpot(robot); }
       const rv = window.Boss && Boss.rival(ctx);
       let rival = null;
       if (rv) {
-        rival = document.createElement("div");
-        rival.className = "do-rival";
-        rival.appendChild(rv.el("var(--rbs)"));
-        stage.appendChild(rival);
+        rival = bossSpot(rv.el("var(--rbs)"));
         rv.tries(R, (i) => {
           if (done) return;
           rival.classList.remove("m0", "m1", "m2"); void rival.offsetWidth; rival.classList.add(`m${i % 3}`);
@@ -224,8 +231,7 @@
       function layout() {
         gs = Math.max(200, Math.min(stage.clientWidth - 16, stage.clientHeight - 16, 520));
         stage.style.setProperty("--gs", `${gs}px`);
-        if (robot) robot.style.setProperty("--bs", `${Math.round(gs * 0.28)}px`);
-        if (rival) stage.style.setProperty("--rbs", `${Math.round(gs * 0.28)}px`);
+        stage.style.setProperty("--rbs", `${Math.round(gs * 0.3)}px`); // the boss: about one floor tile
         pads.forEach(fitSign);
       }
       function fitSign(p) {
@@ -236,7 +242,7 @@
       // ---------- Moves ----------
       let step = 0, done = false, busy = false, slips = 0;
       function showRow(flip) {
-        const row = ctx.shuffle(C.rows[step].slice());
+        const row = ctx.shuffle(C.row.slice());
         pads.forEach((p, i) => {
           p.opt = row[i];
           p.sign.textContent = p.opt.text;
@@ -271,9 +277,19 @@
           stage.classList.remove("flash");
           if (step >= R) { win(); return; }
           pose(null);
-          showRow(true);
-          busy = false;
+          nextMove(p.opt.kind === "pic");
         }, 420);
+      }
+      // The beat between moves: the clock stops, the card pops to the next target and the voice says it.
+      function nextMove(saidWord) {
+        ctx.pauseTimer(BEAT_MS);
+        C = S[step];
+        card.firstChild.textContent = C.cardText;
+        card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+        tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16); noise(0.05, "highpass", 5000, 8000, 0.15, 0.08); // ba-dum-tss
+        ctx.later(() => { if (!done) ctx.say(C.prompt); }, saidWord ? 350 : 0); // (after the picture's word)
+        showRow(true);
+        ctx.later(() => { busy = false; }, 250);
       }
       // The first wrong pad: the monster stumbles, the ❤️ breaks, and the same move comes back reshuffled.
       function stumble(p) {
@@ -341,11 +357,12 @@
       ctx.say(C.prompt);
       ctx.reveal(card);
 
-      // Tutorial: point at the card, then tap the right pad for each move.
-      ctx.tutorial(C.target, async (f) => {
+      // Tutorial: point at the card, then tap the right pad for each move (looking at the card again each time).
+      ctx.tutorial(S.map((s) => s.target), async (f) => {
         await f.point(card);
         for (let n = 0; n < R && !done; n++) {
           await f.until(() => !busy && step === n, 3000);
+          if (n) await f.point(card, 500); // the new one
           await f.tap(() => pads.find((p) => p.opt.right).el);
           await f.until(() => step > n || done, 2000);
         }

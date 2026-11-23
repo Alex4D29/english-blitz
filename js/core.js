@@ -139,7 +139,7 @@
         for (const o of [...shuffle(close.slice()), ...others]) { if (wrong.length >= N - 1) break; if (!wrong.includes(o)) wrong.push(o); }
         rows.push(shuffle([target, ...wrong].map((o) => ({ text: o.emoji, kind: "pic", right: o === target, spoken: o.say || o.text }))));
       }
-    } else if (type === "letter" && opts.lowercase && Math.random() < 0.5) {
+    } else if (type === "letter" && opts.lowercase && (opts.forceLower !== undefined ? opts.forceLower : Math.random() < 0.5)) {
       const target = pool[0];
       out.target = target;
       out.cardText = target.text.toUpperCase();
@@ -168,6 +168,20 @@
       }
     }
     return out;
+  }
+  // R one-row steps, each with a DIFFERENT target (rhythm games: "A"… tap a… "B"… tap b…). Each step is
+  // what choiceRows(…, 1, N) gives (cardText, prompt, answer, target, listen) plus `row`. ABC games stay
+  // all same-case or all capital → lowercase for the whole round.
+  function choiceSteps(pool, type, R, N, opts = {}) {
+    const o = { ...opts, forceLower: opts.lowercase ? Math.random() < 0.5 : false };
+    const used = new Set(), steps = [];
+    for (let s = 0; s < R; s++) {
+      const fresh = pool.filter((it) => !used.has(it.text)), old = pool.filter((it) => used.has(it.text));
+      const c = choiceRows(fresh.length ? [...fresh, ...old] : pool, type, 1, N, o); // the target comes from the front
+      used.add(c.target.text);
+      steps.push({ ...c, row: c.rows[0] });
+    }
+    return steps;
   }
 
   // ---------- Audio ----------
@@ -372,7 +386,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet, lowerLookalikes, choiceRows,
+    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,

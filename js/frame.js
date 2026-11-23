@@ -191,6 +191,13 @@
     els.bar.classList.toggle("mid", f <= 0.6 && f > 0.3);
     els.bar.classList.toggle("low", f <= 0.3);
   }
+  // Night (ctx.nightTheme: Rock-a-Bye): a deep navy sunburst for this round only; endGame puts the theme back.
+  function setNight() {
+    state.night = true;
+    document.documentElement.style.setProperty("--bg", "#151a45");
+    document.documentElement.style.setProperty("--bg2", "#0d1133");
+    document.querySelector('meta[name="theme-color"]').content = "#151a45";
+  }
   function setTheme(i) {
     state.theme = i % THEMES.length;
     const [a, b] = THEMES[state.theme];
@@ -234,7 +241,9 @@
       const ids = b.phase === "showdown" ? C.shuffle(window.Boss.SHOWDOWN.filter((id) => id !== state.lastGame)) : B.stages[Math.min(2, b.stage)];
       for (const id of ids) {
         const g = C.MICROGAMES.find((x) => x.id === id);
-        const ls = g && usable(g) ? lists.filter((l) => (g.contentTypes || []).includes(l.type)) : [];
+        // (a boss version can take more content than the game itself: `bossContentTypes`, e.g. Feed Me)
+        const types = (b.phase === "battle" && g && g.bossContentTypes) || (g && g.contentTypes) || [];
+        const ls = g && usable(g) ? listsInPlay().filter((l) => types.includes(l.type)) : [];
         if (ls.length) { state.lastGame = g.id; return { game: g, list: C.pick(ls) }; }
       }
     }
@@ -415,6 +424,7 @@
   // ---------- Round loop ----------
   function endGame() {
     state.token++;
+    if (state.night) { state.night = false; setTheme(state.theme); } // a night-time game (ctx.nightTheme) is over
     state.reported = true;
     cancelAnimationFrame(state.timerRaf);
     if (state.cleanup) guard("cleanup", state.cleanup);
@@ -493,8 +503,10 @@
       later(() => { shout(els.banner, label, "round"); if (window.Music) Music.jingle(state.round - 1); else C.sfx.whoosh(); }, t);
       t += ROUND_MS;
     }
-    // In the final battle a boss can have its own instruction (Baby Boss: FIND THE MILK!).
-    const bossIns = bossFight() && state.boss.phase === "battle" && window.Boss.BOSSES[state.boss.id].instruction;
+    // In the final battle a boss can have its own instruction for each stage (Baby Boss: FIND THE MILK!),
+    // or null to keep the game's.
+    const bi = bossFight() && state.boss.phase === "battle" && window.Boss.BOSSES[state.boss.id].instruction;
+    const bossIns = Array.isArray(bi) ? bi[Math.min(2, state.boss.stage)] : bi;
     later(() => {
       // The game's picture above its title, so non-readers can tell which game is coming.
       els.banner.querySelector(".banner-icon").textContent = game.icon || "";
@@ -531,7 +543,7 @@
       if (b.you >= 2) { b.phase = "battle"; out.push((r) => Bs.battleStart(r, B, env)); }
       else if (b.them >= 2) { b.done = "lost"; out.push((r) => Bs.gloat(r, B, env)); }
     } else if (last && last.phase === "battle") {
-      if (last.won && b.hp <= 0) { b.done = "won"; out.push((r) => Bs.defeat(r, B, env)); }
+      if (last.won && b.hp <= 0) { b.done = "won"; const finished = (b.id === "banana" && state.lastGame === "shield-breaker") || (b.id === "robot" && state.lastGame === "wire-cut") || (b.id === "baby" && state.lastGame === "bongo-bash"); out.push((r) => Bs.defeat(r, B, env, { finished })); } // (the finale game already sliced Banana Boss in two / blew Robot Boss up)
       else if (last.won) out.push((r) => Bs.hit(r, B, b.hp, b.stage + 1, env));
       else {
         out.push((r) => Bs.miss(r, B, b.hp, b.hearts, env));
@@ -554,7 +566,7 @@
       els.game.innerHTML = "";
       let ms = 1500;
       try { ms = s(els.game); } catch (err) { console.error("boss scene:", err); }
-      later(next, ms);
+      later(() => whenQuiet(next), ms); // let the boss finish its line first (it used to be cut off)
     }
     next();
   }
@@ -845,12 +857,24 @@
     later(() => { if (anim.playState !== "finished") anim.cancel(); card.classList.remove("fx-reveal"); }, REVEAL_MS + 30);
   }
 
+  // Time used so far in the round, leaving out any pause (ctx.pauseTimer): during a pause it holds still,
+  // and once the pause is over its length is added to t0 for good.
+  function settlePause(c, now) {
+    if (c.pauseTo && now >= c.pauseTo) { c.t0 += c.pauseTo - c.pauseFrom; c.pauseTo = 0; }
+  }
+  function elapsedOf(c, now) {
+    settlePause(c, now);
+    return (c.pauseTo ? c.pauseFrom : now) - c.t0;
+  }
+
   function startGame(game, list, opts = {}) {
     const token = ++state.token;
     const alive = () => token === state.token;
     const demo = !!opts.demo;
     const speed = demo ? 1 : state.speed; // demos always play at 1×, so they're easy to follow
-    const paceMs = Math.round((game.duration || BASE_MS) / speed);
+    // A boss version of a game can have its own time limit (`bossDuration`: Wire Cut's robot finale needs 3 cuts).
+    const bossDur = !demo && bossFight() && state.boss.phase === "battle" && game.bossDuration;
+    const paceMs = Math.round((bossDur || game.duration || BASE_MS) / speed);
     const timeLimit = demo ? Math.max(paceMs, 20000) : Math.max(paceMs, warmupMsFor(state.round));
     state.reported = false;
     state.gameActive = true;
@@ -906,10 +930,21 @@
       timeFrac: () => {
         const c = state.current;
         if (!alive() || !c || demo) return 0;
-        return Math.max(0, Math.min(1, ((c.frozenAt || performance.now()) - c.t0) / c.timeLimit));
+        return Math.max(0, Math.min(1, elapsedOf(c, c.frozenAt || performance.now()) / c.timeLimit));
       },
       // Stop the clock: the player's choice is made and the game is only animating the outcome
       // (Pachinko's falling ball). The game must still call win() or lose() itself.
+      // Stop the clock for a beat (ms), then let it carry on: rhythm games use it between targets, while
+      // the next one is shown and said. The timer bar holds still meanwhile.
+      pauseTimer: (ms) => {
+        const c = state.current;
+        if (!alive() || state.reported || !c || c.frozenAt || demo) return;
+        const now = performance.now();
+        settlePause(c, now);
+        c.pauseFrom = now; c.pauseTo = now + ms;
+      },
+      // A night-time round (Rock-a-Bye): the whole screen goes dark navy until the round ends.
+      nightTheme: () => { if (alive()) setNight(); },
       freezeTimer: () => {
         if (!alive() || state.reported || !state.current || state.current.frozenAt) return;
         state.current.frozenAt = performance.now();
@@ -937,6 +972,8 @@
       lowerLookalikes: (target) => C.lowerLookalikes(items, target), // letters whose lowercase looks like target's (b → d, p, h)
       // R rows of N options, one right per row (sequence games). See Core.choiceRows.
       choiceRows: (R, N, opts = {}) => C.choiceRows(items, list.type, R, N, { canSpeak: C.canSpeak && state.listening, ...opts }),
+      // R steps of N options, each step with a different target (rhythm games). See Core.choiceSteps.
+      choiceSteps: (R, N, opts = {}) => C.choiceSteps(items, list.type, R, N, { canSpeak: C.canSpeak && state.listening, ...opts }),
       // Phonics: pictures that start with a letter, and wrong pictures from other letters.
       phonics: {
         pics: C.startPics,                                     // (item) => [{ word, emoji }] starting with item.text
@@ -999,7 +1036,7 @@
     let lastSec = Infinity;
     const tick = () => {
       if (!alive() || state.reported || state.current.frozenAt) return;
-      const elapsed = performance.now() - state.current.t0;
+      const elapsed = elapsedOf(state.current, performance.now());
       setBar(Math.min(1, 1 - elapsed / timeLimit));
       if (seat) seat.progress(elapsed / timeLimit);
       const secs = Math.ceil((timeLimit - elapsed) / 1000);
@@ -1024,7 +1061,7 @@
       return;
     }
     const { game, timeLimit, t0, onTimeout, onEnd } = state.current;
-    const timeMs = Math.max(0, Math.round(Math.min((state.current.frozenAt || performance.now()) - t0, timeLimit)));
+    const timeMs = Math.max(0, Math.round(Math.min(elapsedOf(state.current, state.current.frozenAt || performance.now()), timeLimit)));
     els.game.classList.add("locked");
     state.results.push({ gameId: game.id, won, timedOut, timeMs, timeLimit, speed: state.speed });
     // Boss Battle: keep the showdown score / the battle's HP and hearts (the cut-scenes follow in nextRound).

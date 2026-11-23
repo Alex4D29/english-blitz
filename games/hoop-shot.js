@@ -14,7 +14,7 @@
       steps: [
         list.type === "hfw" ? ["👂", "Listen to the word, like \"the\"."] : ["👀", "Look at the card at the top."],
         ["🏀", "Tap the hoop with the same one to shoot!"],
-        ["⭐", "Score 3 baskets to win."],
+        ["🔁", "Then the card changes: shoot at the new one. Score 3 baskets to win!"],
       ],
       tips: [
         "Tap the card to hear it again.",
@@ -36,6 +36,8 @@
   .hs-card { min-width:84px; height:72px; padding:0 18px; border-radius:18px; font:inherit; font-size:2.6rem; line-height:1; background:#fff; color:#111;
     border:5px solid #111; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; touch-action:manipulation; }
   .hs-card .spk { font-size:1.3rem; opacity:.6; }
+  .hs-card.next { animation:hs-next .45s cubic-bezier(.2,1.8,.4,1); }   /* a new target for each basket */
+  @keyframes hs-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
   .hs-pips { display:flex; flex-direction:column; gap:6px; }
   .hs-row { display:flex; gap:5px; }
   .hs-pip { width:24px; height:24px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; }
@@ -145,7 +147,11 @@
       const moving = speed >= 1.5 && !reduceMotion;
       // One row of options per basket: ABC is half same-case, half capital → lowercase; phonics gets a
       // different picture of the letter each time.
-      const C = ctx.choiceRows(GOAL, N, { lowercase: true });
+      // Each basket has a NEW target ("A"… shoot a… "B"… shoot b…), with a beat in between where the clock
+      // stops while the next one is shown and said (the teacher's idea: like playing along to a rhythm).
+      const S = ctx.choiceSteps(GOAL, N, { lowercase: true });
+      let C = S[0];
+      const BEAT_MS = 800;
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -242,7 +248,7 @@
       // ---------- Rows of signs ----------
       let step = 0, misses = 0, done = false, flying = false;
       function showRow(flip) {
-        const row = ctx.shuffle(C.rows[step].slice());
+        const row = ctx.shuffle(C.row.slice());
         hoops.forEach((h, i) => {
           h.opt = row[i];
           h.sign.textContent = h.opt.text;
@@ -287,6 +293,13 @@
           ball.style.opacity = String(1 - k);
           if (k < 1) { ctx.raf(drop); return; }
           if (step >= GOAL) { win(); return; }
+          // The beat: the clock stops, the card pops to the next target and the voice says it.
+          ctx.pauseTimer(BEAT_MS);
+          C = S[step];
+          card.firstChild.textContent = C.cardText;
+          card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+          tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16);
+          ctx.later(() => { if (!done) ctx.say(C.prompt); }, h.opt.kind === "pic" ? 250 : 0);
           showRow(true);
           newBall();
         })(t0);
@@ -430,10 +443,11 @@
       ctx.reveal(card);
 
       // Tutorial: point at the card, then shoot at the right hoop three times (the signs change each time).
-      ctx.tutorial(C.target, async (f) => {
+      ctx.tutorial(S.map((s) => s.target), async (f) => {
         await f.point(card);
         for (let n = 0; n < GOAL && !done; n++) {
           await f.until(() => !flying && step === n, 4000);
+          if (n) await f.point(card, 500); // the new one
           await f.tap(() => hoops.find((h) => h.opt.right).el.querySelector(".hs-board"));
           await f.until(() => step > n || done, 3000);
         }

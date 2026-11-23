@@ -19,7 +19,7 @@
           ["🔔", "Listen! Tap the bell to hear it."],
           ["🎯", `Find the pad on the monster with ${what}.`],
           ["🥊", "Tap it to punch! POW!"],
-          ["⭐", "Three punches and it's a knockout!"],
+          ["🔁", "Ding! Then listen for the next one and punch that. Three punches and it's a knockout!"],
         ],
         tips: [
           "A wrong pad: the monster blocks or dodges. Three misses and YOU get knocked out!",
@@ -171,7 +171,11 @@
       const { tone, sweep, noise } = ctx.sfx;
       const GOAL = 3, MISSES = 3, N = 3;
       // One row of three options per punch. A listening game: the card text is never shown.
-      const C = ctx.choiceRows(GOAL, N);
+      // Each punch brings a NEW target ("A"… punch a… "B"… punch b…): a combo. Between punches the clock stops
+      // for a beat while the bell dings and the voice says the next one (the teacher's idea). A miss keeps it.
+      const S = ctx.choiceSteps(GOAL, N);
+      let C = S[0];
+      const BEAT_MS = 800;
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -254,7 +258,7 @@
       // ---------- Rows of options ----------
       let step = 0, misses = 0, done = false, busy = false;
       function showRow(flip) {
-        const row = ctx.shuffle(C.rows[step].slice());
+        const row = ctx.shuffle(C.row.slice());
         pads.forEach((p, i) => {
           p.opt = row[i];
           p.el.textContent = p.opt.text;
@@ -289,7 +293,15 @@
         pips.querySelector(".hits").children[step].classList.add("on");
         step++;
         if (step >= GOAL) { ctx.later(knockout, 300); return; }
-        ctx.later(() => { mon.classList.remove("hit"); showRow(true); busy = false; }, 450);
+        ctx.later(() => {
+          // The beat: the clock stops, the bell dings and the voice says the next one.
+          ctx.pauseTimer(BEAT_MS);
+          C = S[step];
+          bell.classList.remove("ring"); void bell.offsetWidth; bell.classList.add("ring");
+          tone(1568, 0.2, "triangle", 0.07);
+          ctx.later(() => { if (!done) ctx.say(C.prompt); }, p.opt.kind === "pic" ? 250 : 0);
+          mon.classList.remove("hit"); showRow(true); busy = false;
+        }, 450);
       }
 
       function miss(p) {
@@ -422,7 +434,7 @@
       ctx.say(C.prompt);
 
       // Tutorial: point at the bell (listen!), then punch the right pad three times (they change each time).
-      ctx.tutorial(C.target, async (f) => {
+      ctx.tutorial(S.map((s) => s.target), async (f) => {
         await f.point(bell, 1000);
         for (let n = 0; n < 6 && step < GOAL && !done; n++) { // until three punches land
           await f.until(() => !busy || done, 4000);

@@ -112,6 +112,265 @@
     document.head.appendChild(style);
   }
 
+  // ---------- Baby Boss's dinner (the teacher's idea: after its milk it wants baby food) ----------
+  // Baby Boss sits in a high chair with its mouth wide open (wailing). The target is on its bib; spoons of
+  // baby food at the bottom hold the options. Drag the right spoon into its mouth (or tap it): NOM NOM!, it
+  // cheers up for a moment, then the beat (the clock stops), the bib flips to a new target and new spoons come.
+  // Wrong food: PTOO! it spits it out and wriggles and cries (a ✕); 3 of those lose. 3 spoonfuls win (BURP!).
+  // Works with every list type (`bossContentTypes`), unlike Feed Me itself.
+  const BTEXT = { nom: ["NOM NOM!", "YUM!", "MMM!"], ptoo: "PTOO!", burp: "BURP!", waah: "WAAAH!" };
+  const FOODS = ["#ffb347", "#9be07a", "#ff8fa3", "#ffe066", "#c8a2ff"]; // carrot, peas, berry, banana, plum purées
+  const BCSS = `
+  .fb { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px; }
+  .fb-pips { flex:none; display:flex; gap:14px; align-items:center; min-height:30px; }
+  .fb-row { display:flex; gap:5px; }
+  .fb-pip { width:24px; height:24px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; }
+  .fb-pip.on { background:#ffd400; } .fb-pip.on::after { content:"🥄"; }
+  .fb-pip.miss { background:#444; } .fb-pip.miss::after { content:"✕"; color:#fff; font-weight:900; }
+  .fb-room { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
+    background:linear-gradient(180deg, transparent 72%, #c98a4b 72%), repeating-linear-gradient(90deg, #ffd6e8 0 30px, #ffe6f1 30px 60px); touch-action:none; }
+  .fb-chair { position:absolute; left:0; top:0; z-index:2; pointer-events:none; }
+  .fb-chair .bx-boss { position:relative; }
+  .fb-tray { position:absolute; left:-12%; right:-12%; top:84%; height:13%; background:#7ec8ff; border:5px solid #111; border-radius:12px; z-index:3; }
+  /* The target, on Baby's bib */
+  .fb-bib { position:absolute; left:50%; top:76%; transform:translate(-50%, -50%); min-width:28%; padding:2px 8px; z-index:4; background:#fff; color:#111; border:4px solid #111;
+    border-radius:10px 10px 40% 40%; box-shadow:0 0 0 4px #ff9ccf; font-size:calc(var(--bz) * .15); line-height:1.15; text-align:center; white-space:nowrap; pointer-events:auto; cursor:pointer; }
+  .fb-bib.next { animation:fb-next .45s cubic-bezier(.2,1.8,.4,1); }
+  /* Spoons of baby food: a silver spoon, a dollop of purée, the option on a label */
+  .fb-spoon { position:absolute; left:0; top:0; width:var(--sw); height:calc(var(--sw) * 1.5); margin:calc(var(--sw) * -.75) 0 0 calc(var(--sw) * -.5); z-index:5; padding:0; border:0;
+    background:none; font:inherit; cursor:grab; touch-action:none; }
+  .fb-spoon.in { animation:fb-in .3s cubic-bezier(.2,1.6,.4,1) both; }
+  .fb-handle { position:absolute; left:42%; width:16%; top:52%; bottom:0; background:linear-gradient(90deg, #e8edf2, #aab4be); border:4px solid #111; border-radius:99px; }
+  .fb-bowl { position:absolute; left:4%; right:4%; top:0; height:58%; background:linear-gradient(135deg, #f4f7fa, #b9c4ce); border:4px solid #111; border-radius:50%; }
+  .fb-food { position:absolute; left:12%; right:12%; top:8%; height:42%; background:var(--fc); border:3px solid #111; border-radius:50% 50% 44% 44%;
+    display:flex; align-items:center; justify-content:center; }
+  .fb-lbl { padding:1px 5px; background:#fff; border:3px solid #111; border-radius:8px; color:#111; font-size:calc(var(--sw) * .3); line-height:1.1; white-space:nowrap; }
+  .fb-spoon.drag { z-index:8; cursor:grabbing; }
+  .fb-spoon.right .fb-bowl { box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; }
+  .fb-spoon.dim { opacity:.4; }
+  .fb-fx { position:absolute; inset:0; pointer-events:none; z-index:9; overflow:visible; }
+  .fb-pop { position:absolute; line-height:1; pointer-events:none; transform:translate(-50%, -50%); }
+  .fb-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); font-size:2rem; color:#ffd400; -webkit-text-stroke:2px #111; paint-order:stroke fill;
+    text-shadow:0 4px 0 #111; white-space:nowrap; pointer-events:none; animation:fb-word .9s ease-out forwards; z-index:10; }
+  .fb-word.bad { color:#ff4d6d; } .fb-word.big { font-size:2.8rem; animation-duration:2s; }
+  @keyframes fb-next { 0% { transform:translate(-50%, -50%) scale(.4); } 60% { transform:translate(-50%, -50%) scale(1.25); } 100% { transform:translate(-50%, -50%); } }
+  @keyframes fb-in { from { translate:0 60%; opacity:0; } }
+  @keyframes fb-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.5); } 25% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.15); }
+    75% { opacity:1; } to { opacity:0; transform:translate(-50%, -100%) rotate(-8deg); } }
+  @media (prefers-reduced-motion: reduce) { .fb-bib.next, .fb-spoon.in, .fb-word { animation:none !important; } }
+  `;
+  function startBaby(ctx) {
+    if (!document.getElementById("fb-css")) {
+      const s = document.createElement("style"); s.id = "fb-css"; s.textContent = BCSS; document.head.appendChild(s);
+    }
+    const speed = ctx.speed || 1;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const { tone, sweep, noise } = ctx.sfx;
+    const NEED = 3, MISSES = 3, BEAT_MS = 800;
+    const N = speed >= 1.75 ? 4 : 3;
+    const S = ctx.choiceSteps(NEED, N, { lowercase: true });
+    let C = S[0];
+
+    const wrap = document.createElement("div");
+    wrap.className = "fb";
+    const pips = document.createElement("div");
+    pips.className = "fb-pips";
+    pips.innerHTML = `<div class="fb-row hits">${'<span class="fb-pip"></span>'.repeat(NEED)}</div><div class="fb-row misses">${'<span class="fb-pip"></span>'.repeat(MISSES)}</div>`;
+    const room = document.createElement("div");
+    room.className = "fb-room";
+    const chair = document.createElement("div");
+    chair.className = "fb-chair";
+    const baby = window.Boss.el("baby", "var(--bz)");
+    const bib = document.createElement("div");
+    bib.className = "fb-bib";
+    bib.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); replay(); });
+    chair.append(baby, bib);
+    chair.insertAdjacentHTML("beforeend", '<div class="fb-tray"></div>');
+    const fx = document.createElement("div");
+    fx.className = "fb-fx";
+    room.append(chair, fx);
+    wrap.append(pips, room);
+    ctx.root.appendChild(wrap);
+
+    // ---------- Layout: Baby in the middle at the top, the spoons in a row along the bottom ----------
+    let W = 0, H = 0, B = 200, sw = 70, mouth = { x: 0, y: 0 }, spoons = [];
+    function layout() {
+      W = room.clientWidth; H = room.clientHeight;
+      sw = Math.max(58, Math.min((W - 20) / N - 14, H * 0.22, 100));
+      B = Math.max(130, Math.min(H - sw * 1.5 - 24, W * 0.62, 280));
+      room.style.setProperty("--bz", `${B}px`);
+      room.style.setProperty("--sw", `${sw}px`);
+      chair.style.transform = `translate(${W / 2 - B / 2}px, 8px)`;
+      chair.style.width = chair.style.height = `${B}px`;
+      mouth = { x: W / 2, y: 8 + B * 0.46 };
+      spoons.forEach((s) => { if (!s.drag && !s.used) place(s, home(s.i)); });
+    }
+    const home = (i) => ({ x: (W / N) * (i + 0.5), y: H - sw * 0.75 - 8 });
+    const place = (s, p) => { s.p = p; s.el.style.transform = `translate(${p.x}px, ${p.y}px)`; };
+
+    // ---------- Spoons ----------
+    function dealSpoons(anim) {
+      spoons.forEach((s) => s.el.remove());
+      spoons = ctx.shuffle(C.row.slice()).map((opt, i) => {
+        const el = document.createElement("button");
+        el.className = "fb-spoon" + (anim ? " in" : "");
+        el.style.setProperty("--fc", FOODS[i % FOODS.length]);
+        el.setAttribute("aria-label", `Feed ${opt.spoken}`);
+        el.innerHTML = '<div class="fb-handle"></div><div class="fb-bowl"></div><div class="fb-food"><span class="fb-lbl"></span></div>';
+        const lbl = el.querySelector(".fb-lbl");
+        lbl.textContent = opt.text;
+        if (opt.kind === "word") lbl.style.fontSize = `${Math.min(sw * 0.26, (sw * 0.95) / (opt.text.length * 0.6))}px`;
+        room.insertBefore(el, fx);
+        const s = { el, opt, i, p: { x: 0, y: 0 }, drag: null, used: false };
+        place(s, home(i));
+        el.addEventListener("pointerdown", (e) => {
+          if (done || busy || ctx.ended || s.used) return;
+          e.preventDefault();
+          const r = room.getBoundingClientRect();
+          s.drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: s.p.x - (e.clientX - r.left), oy: s.p.y - (e.clientY - r.top), moved: 0 };
+          el.classList.add("drag");
+          try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointers */ }
+        });
+        el.addEventListener("pointermove", (e) => {
+          if (!s.drag || e.pointerId !== s.drag.id) return;
+          const r = room.getBoundingClientRect();
+          s.drag.moved = Math.max(s.drag.moved, Math.hypot(e.clientX - s.drag.sx, e.clientY - s.drag.sy));
+          place(s, { x: e.clientX - r.left + s.drag.ox, y: e.clientY - r.top + s.drag.oy });
+        });
+        const drop = (e) => {
+          if (!s.drag || e.pointerId !== s.drag.id) return;
+          const d = s.drag;
+          s.drag = null;
+          el.classList.remove("drag");
+          // a tap (5-year-olds tap drag games), or dropped near the mouth: feed it; anywhere else: back it goes
+          if (d.moved < 12 || Math.hypot(s.p.x - mouth.x, s.p.y - sw * 0.4 - mouth.y) < B * 0.42) feed(s);
+          else slide(s, home(s.i), 200);
+        };
+        el.addEventListener("pointerup", drop);
+        el.addEventListener("pointercancel", drop);
+        return s;
+      });
+    }
+    function slide(s, to, ms, then) {
+      const from = s.p, t0 = performance.now();
+      (function go(now) {
+        const k = Math.min(1, (now - t0) / (reduceMotion ? 1 : ms)), e = 1 - (1 - k) * (1 - k);
+        place(s, { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e });
+        if (k < 1) ctx.raf(go); else if (then) then();
+      })(t0);
+    }
+
+    // ---------- Feeding ----------
+    let step = 0, misses = 0, done = false, busy = false;
+    function feed(s) {
+      if (done || busy || ctx.ended || s.used) return;
+      busy = true;
+      s.used = true;
+      // up to the mouth (the bowl at the lips)
+      slide(s, { x: mouth.x, y: mouth.y + sw * 0.4 }, 260, () => (s.opt.right ? nom(s) : ptoo(s)));
+    }
+    function nom(s) {
+      s.el.querySelector(".fb-food").style.visibility = "hidden";
+      // the empty spoon goes away again, so it doesn't cover the face (or the bib)
+      ctx.later(() => s.el.animate([{ opacity: 1 }, { opacity: 0, translate: "0 60px" }], { duration: 250, fill: "forwards" }), 250);
+      window.Boss.setMood(baby, "happy");
+      [0, 0.15, 0.3].forEach((d) => noise(0.06, "bandpass", 900, 600, 0.3, d)); // nom nom nom
+      tone(660, 0.08, "triangle", 0.1, 0.35); tone(880, 0.1, "triangle", 0.1, 0.43);
+      word({ x: mouth.x, y: mouth.y - B * 0.42 }, BTEXT.nom[step % 3], false);
+      if (s.opt.kind === "pic") ctx.say(s.opt.spoken);
+      pips.querySelector(".hits").children[step].classList.add("on");
+      step++;
+      if (step >= NEED) { done = true; ctx.win(); ctx.later(burp, 450); return; }
+      ctx.later(nextTarget, 600);
+    }
+    // The beat: the clock stops, the bib flips to a new target, the voice says it, new spoons come.
+    function nextTarget() {
+      if (done) return;
+      ctx.pauseTimer(BEAT_MS);
+      C = S[step];
+      showTarget(true);
+      tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16);
+      ctx.later(() => { if (!done) ctx.say(C.prompt); }, 150);
+      window.Boss.setMood(baby, null); // more! waaah!
+      dealSpoons(true);
+      ctx.later(() => { busy = false; }, 250);
+    }
+    function ptoo(s) {
+      // it spits the food back out: a splat flies off, the baby wriggles and cries
+      const food = s.el.querySelector(".fb-food");
+      food.style.visibility = "hidden";
+      sweep(300, 900, 0.12, "sawtooth", 0.1); noise(0.12, "bandpass", 1200, 600, 0.3); // PTOO
+      const blob = document.createElement("div");
+      blob.className = "fb-pop"; blob.textContent = "🤢"; blob.style.fontSize = `${sw * 0.5}px`;
+      blob.style.left = `${mouth.x}px`; blob.style.top = `${mouth.y}px`;
+      fx.appendChild(blob);
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      blob.animate([{ transform: "translate(-50%, -50%) scale(.6)" }, { transform: `translate(calc(-50% + ${dir * W * 0.35}px), calc(-50% + ${H * 0.25}px)) scale(1.3) rotate(${dir * 200}deg)`, opacity: 0 }],
+        { duration: reduceMotion ? 1 : 700, easing: "ease-out", fill: "forwards" });
+      ctx.later(() => blob.remove(), 720);
+      window.Boss.setMood(baby, "angry"); // wriggling and crying
+      word({ x: mouth.x, y: mouth.y - B * 0.42 }, BTEXT.ptoo, true);
+      misses++;
+      pips.querySelector(".misses").children[misses - 1].classList.add("miss");
+      s.el.classList.add("dim");
+      slide(s, home(s.i), 260);
+      if (misses >= MISSES) { done = true; ctx.lose(); ctx.later(() => { showRight(); ctx.say(C.answer); }, 450); return; }
+      ctx.later(() => { window.Boss.setMood(baby, null); busy = false; }, 650);
+    }
+    function burp() {
+      window.Boss.setMood(baby, "happy");
+      sweep(140, 90, 0.35, "sawtooth", 0.15); // BURP
+      word({ x: mouth.x, y: mouth.y - B * 0.42 }, BTEXT.burp, false, true);
+      ctx.confetti(fx, mouth.x, mouth.y, { count: 90 });
+      ctx.say(C.answer);
+    }
+    function showRight() { spoons.forEach((s) => { if (!s.used) s.el.classList.add(s.opt.right ? "right" : "dim"); }); }
+    function showTarget(anim) {
+      bib.textContent = C.cardText;
+      bib.style.fontSize = C.cardText.length > 2 ? `${Math.min(B * 0.13, (B * 0.46) / (C.cardText.length * 0.6))}px` : "";
+      if (anim) { bib.classList.remove("next"); void bib.offsetWidth; bib.classList.add("next"); }
+    }
+    function word(at, text, bad, big) {
+      const e = document.createElement("div");
+      e.className = "fb-word" + (bad ? " bad" : "") + (big ? " big" : "");
+      e.textContent = text;
+      e.style.left = `${Math.max(70, Math.min(W - 70, at.x))}px`; e.style.top = `${Math.max(big ? 52 : 30, at.y)}px`;
+      fx.appendChild(e);
+      ctx.later(() => e.remove(), big ? 2000 : 900);
+    }
+    function replay() { if (!done) ctx.say(C.prompt); }
+
+    ctx.onTimeout(() => { done = true; window.Boss.setMood(baby, "angry"); word({ x: mouth.x, y: mouth.y - B * 0.42 }, BTEXT.waah, true); showRight(); ctx.say(C.answer); });
+    function onKey(e) {
+      const i = parseInt(e.key, 10) - 1;
+      if (i >= 0 && i < N) { e.preventDefault(); const s = spoons.find((x) => x.i === i); if (s) feed(s); }
+      else if (e.key === " ") { e.preventDefault(); replay(); }
+    }
+    document.addEventListener("keydown", onKey);
+
+    showTarget(false);
+    dealSpoons(false);
+    layout();
+    const ro = new ResizeObserver(layout);
+    ro.observe(room);
+    ctx.say(C.prompt);
+    ctx.reveal(bib);
+    ctx.later(() => ctx.hint(spoons.length ? spoons.map((s) => s.el) : room, { x: mouth.x, y: mouth.y }, { small: true, gap: true }), 80);
+
+    // Tutorial (the boss battle has none, but just in case): drag the right spoon into the mouth, 3 times.
+    ctx.tutorial(S.map((s) => s.target), async (f) => {
+      await f.point(bib, 800);
+      for (let n = 0; n < NEED && !done; n++) {
+        await f.until(() => !busy && step === n, 3000);
+        const s = spoons.find((x) => x.opt.right && !x.used);
+        if (!s) break;
+        await f.drag(s.el, { x: mouth.x, y: mouth.y + sw * 0.6 }, 700);
+        await f.until(() => step > n || done, 2000);
+      }
+    });
+    return () => { done = true; ro.disconnect(); document.removeEventListener("keydown", onKey); };
+  }
+
   registerMicrogame({
     id: "feed-me",
     name: TEXT.name,
@@ -119,11 +378,15 @@
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["phonics", "cvc"], // needs a picture for every item
+    bossContentTypes: ["letter", "phonics", "cvc", "hfw"], // (Baby Boss's dinner works with anything)
     duration: 6000,
+    bossDuration: 14000,  // Baby Boss's dinner: 3 spoonfuls
     input: "drag",
     tutorial: true, // has a ctx.tutorial script
+    bossArt: true,  // Boss Battle: Baby Boss's dinner (startBaby above)
 
     start(ctx) {
+      if (window.Boss && window.Boss.fighting(ctx) === "baby") return startBaby(ctx);
       injectCss();
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
