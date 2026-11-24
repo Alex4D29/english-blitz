@@ -24,6 +24,8 @@ window.TEXT = {
   newCharSay: "New character!",
   yay: "YAY!",
   resetCharsLabel: "Characters",
+  playersLabel: "Players",
+  playersNote: "Up to 10 players. Each has their own characters, bosses and adventure map. Tap a name to change it; 🗑️ twice to delete.",
   resetChars: "RESET",
   resetCharsDone: "Characters reset!",
   pickTutorial: "Pick a game to watch!",
@@ -128,6 +130,11 @@ window.TEXT = {
   again: "PLAY AGAIN",
   menu: "MENU",
   funTitle: { 1: "GOOD\nTRY!", 2: "GREAT!", 3: "AMAZING!" },
+  // 🗺️ Adventure
+  map: "MAP",
+  advRetry: "TRY\nAGAIN!",
+  adventure: "ADVENTURE",
+  adventureDesc: "Explore the islands, beat the bosses!",
   challengeTitle: "WELL\nDONE!",
   newRecord: "NEW HIGH SCORE!",
   starsLabel: (n) => `${n} of 3 stars`,
@@ -149,6 +156,7 @@ window.TEXT = {
     askWatch: "Do you want to watch first?",
     cheer: "Hooray!",            // the victory cheer at the end of every run
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
+    advRetry: "So close! Try again!",
     done: "Well done!",
     record: "New high score!", // not "new record": TTS stresses "record" like the verb
     bossWin: "You beat the boss! Amazing!",

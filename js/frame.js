@@ -75,11 +75,12 @@
     practice: $("#practice"), howto: $("#howto"), content: $("#content"),
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
     askWatch: $("#askWatch"), watchYes: $("#watchYes"), watchNo: $("#watchNo"),
-    funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"), versusBtn: $("#versusBtn"),
+    funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"), versusBtn: $("#versusBtn"), adventureBtn: $("#adventureBtn"),
     bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     words: $("#words"), wordsGrid: $("#wordsGrid"), wordsCount: $("#wordsCount"), wordsDoneBtn: $("#wordsDoneBtn"), wordsClearBtn: $("#wordsClearBtn"),
     myWordsNote: $("#myWordsNote"), myWordsBtn: $("#myWordsBtn"), wordsEditBtn: $("#wordsEditBtn"), myWordsSetNote: $("#myWordsSetNote"),
+    playerBtn: $("#playerBtn"), playersBox: $("#playersBox"),
     charBtn: $("#charBtn"), resChar: $("#resChar"), resetCharsBtn: $("#resetCharsBtn"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
@@ -109,6 +110,7 @@
     picker: "practice",         // what the game grid is for: "practice" or "tutorial"
     practiceSpeed: Number(C.storage.get(PRACTICE_SPEED_KEY, 1)) || 1, // Practice difficulty (1, 1.75 or 2.5)
     bossPick: null,             // a boss picked in PICK A GAME (its final battle only); null = the full run
+    adv: null,                  // 🗺️ Adventure: the level being played { island, level, games, speed, boss } (js/adventure.js)
     boss: null,                 // Boss Battle: { id, phase: levels | showdown | battle, you, them, stage, hp, hearts, last, done, scened }
     listening: C.storage.get(LISTENING_KEY, true) !== false, // listening games on (Settings)
     phase: "idle",              // idle | transition | playing | feedback | over | paused
@@ -248,9 +250,12 @@
   // then a game that can use it (never the same game twice in a row when there's a choice).
   function chooseRound() {
     const only = isPractice() ? state.practiceGame : onlyGame;
-    const usable = (g) => (!only || g.id === only) && !state.broken.has(g.id) && allowed(g);
+    // 🗺️ Adventure: only that island's games (any game, if none of them can use the content in play).
+    let island = state.mode && state.mode.id === "adventure" && state.adv ? state.adv.games : null;
+    const usable = (g) => (!only || g.id === only) && !state.broken.has(g.id) && allowed(g) && (!island || island.includes(g.id));
     const gamesFor = (list) => C.MICROGAMES.filter((g) => usable(g) && (g.contentTypes || []).includes(list.type));
-    const lists = listsInPlay().filter((l) => gamesFor(l).length);
+    let lists = listsInPlay().filter((l) => gamesFor(l).length);
+    if (!lists.length && island) { island = null; lists = listsInPlay().filter((l) => gamesFor(l).length); }
     if (!lists.length) return null;
     // Boss Battle: the showdown picks from the games the boss can race in, and each battle stage
     // from its own short list (in order of preference), as long as the content in play suits it.
@@ -1214,12 +1219,25 @@
         statRow("✅", T.stats.cleared, `${cleared} / ${m.totalGames}`) +
         statRow("🎯", T.stats.accuracy, `${accuracy}%`);
       C.say(T.spoken.stars[stars]);
+    } else if (m.id === "adventure") {
+      // 🗺️ An Adventure level: a star per game won (0 means try again), saved on the player's map.
+      const stars = Math.min(3, cleared);
+      els.resTitle.textContent = stars ? T.funTitle[stars] : T.advRetry;
+      els.stars.hidden = false;
+      els.stars.setAttribute("aria-label", T.starsLabel(stars));
+      els.stars.innerHTML = [0, 1, 2].map((i) => `<span class="star ${i < stars ? "on" : "off"}" style="animation-delay:${0.3 + i * 0.3}s">★</span>`).join("");
+      for (let i = 0; i < stars; i++) later(() => C.sfx.star(i), 300 + i * 300);
+      els.resStats.innerHTML = statRow("✅", T.stats.cleared, `${cleared} / ${m.totalGames}`);
+      if (state.adv && window.Adventure) window.Adventure.record(state.adv, stars);
+      happyEnd = stars > 0;
+      C.say(stars ? T.spoken.stars[stars] : T.spoken.advRetry);
     } else if (m.id === "boss") {
       // Boss Battle: levels cleared, the showdown score, and the collection of bosses beaten so far.
       const b = state.boss, B = window.Boss.BOSSES[b.id], won = b.done === "won";
       const beaten = new Set(C.storage.get(BOSS_KEY, []) || []);
       if (won) { beaten.add(b.id); C.storage.set(BOSS_KEY, [...beaten]); }
       if (won) run.bossWon = b.id;
+      if (won && state.adv && window.Adventure) window.Adventure.record(state.adv, 3); // 🗺️ an island's boss beaten
       run.bossesBeaten = [...beaten];
       happyEnd = won;
       const levels = results.slice(0, b.levels).filter((r) => r.won).length;
@@ -1252,6 +1270,8 @@
       }
       C.say(isRecord ? T.spoken.record : T.spoken.done);
     }
+    // (🗺️ Adventure: MAP instead of MENU)
+    els.menuBtn.innerHTML = state.adv ? `🗺️ <span>${T.map}</span>` : `🏠 <span>${T.menu}</span>`;
     restartAnim(els.resTitle);
     // Your character at the top: the victory cheer at the end of every run (the teacher asked for it), then any
     // new characters this run unlocked (NEW CHARACTER!).
@@ -1279,6 +1299,7 @@
     Object.assign(state, {
       mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(), played: new Set(),
     });
+    if (id === "adventure" && state.adv) state.speed = state.adv.speed || 1; // (later levels on an island are a bit faster)
     // Boss Battle: a random boss waits at the end (?boss=banana|baby|robot picks one, for testing).
     const q = new URLSearchParams(location.search), bossParam = q.get("boss");
     state.boss = id !== "boss" ? null : {
@@ -1299,6 +1320,7 @@
 
   function goTitle() {
     clearRound();
+    state.adv = null;
     state.phase = "idle";
     setTheme(0);
     showScreen("title");
@@ -1483,6 +1505,7 @@
   function contentGo() {
     if (state.pendingMode === "practice") showPractice("practice");
     else if (state.pendingMode === "versus") { clearRound(); window.Versus.open(); }
+    else if (state.pendingMode === "adventure") { clearRound(); window.Adventure.open(); }
     else askWatch(state.pendingMode || "fun");
   }
 
@@ -1597,6 +1620,7 @@
     });
   }
   function quitPlay() {
+    if (state.adv && window.Adventure) { clearRound(); window.Adventure.open(state.adv.island); return; } // 🗺️ back to the map
     if (isPractice() || (isBoss() && state.boss.picked)) showPractice("practice"); else goTitle();
   }
   function practiceHelp() {
@@ -1628,6 +1652,7 @@
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
   els.versusBtn.addEventListener("click", () => chooseContent("versus")); // ⚔️ two players, side by side (js/versus.js)
+  els.adventureBtn.addEventListener("click", () => chooseContent("adventure")); // 🗺️ the map (js/adventure.js)
   els.contentGoBtn.addEventListener("click", contentGo);
   els.watchYes.addEventListener("click", () => answerWatch(true));
   els.watchNo.addEventListener("click", () => answerWatch(false));
@@ -1651,6 +1676,7 @@
     musicVol.disabled = !musicOn;
     listeningBtn.setAttribute("aria-pressed", String(state.listening));
     listeningBtn.textContent = state.listening ? T.on : T.off;
+    if (window.Players) window.Players.renderManager(els.playersBox, renderCharBtn);
     renderMyWordsSetting();
   }
   musicBtn.addEventListener("click", () => {
@@ -1671,9 +1697,26 @@
   // The title menu's 👤 button shows your character; tap it to choose another.
   function renderCharBtn() {
     if (!window.Mascot) return;
+    // The title menu's player chip: who's playing (tap to switch). Only when there's more than one save.
+    if (window.Players) {
+      const p = window.Players.active();
+      els.playerBtn.hidden = window.Players.list().length < 2 || !p;
+      if (p) {
+        const fig = els.playerBtn.querySelector(".fig");
+        fig.innerHTML = "";
+        fig.appendChild(window.Mascot.el(34));
+        els.playerBtn.querySelector(".nm").textContent = p.name;
+      }
+    }
     const mini = els.charBtn.querySelector(".char-mini");
     mini.innerHTML = "";
     mini.appendChild(window.Mascot.el(38));
+  }
+  els.playerBtn.addEventListener("click", () => { C.unlock(); window.Players.openPicker({ onDone: playerReady }); });
+  // After WHO'S PLAYING?: their character on the menu; a brand-new player picks one first.
+  function playerReady() {
+    renderCharBtn();
+    if (window.Mascot && !window.Mascot.chosen()) window.Mascot.openPicker({ onDone: renderCharBtn });
   }
   els.charBtn.addEventListener("click", () => { C.unlock(); window.Mascot.openPicker({ onDone: renderCharBtn }); });
   els.resetCharsBtn.addEventListener("click", () => { // Settings: start the characters over (unlocks and the choice)
@@ -1685,7 +1728,8 @@
   els.backBtn.addEventListener("click", () => showScreen("title"));
   els.quitBtn.addEventListener("click", quitPlay);
   els.againBtn.addEventListener("click", () => (state.mode.id === "practice" ? startMode("practice") : askWatch(state.mode.id)));
-  els.menuBtn.addEventListener("click", goTitle);
+  // (🗺️ Adventure: MAP goes back to the map instead)
+  els.menuBtn.addEventListener("click", () => { if (state.adv && window.Adventure) { clearRound(); window.Adventure.open(); } else goTitle(); });
 
 
   // ---------- No accidental zooming ----------
@@ -1708,10 +1752,10 @@
       els.loading.hidden = false;
       return;
     }
-    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = els.versusBtn.disabled = false;
-    renderCharBtn();
-    // The very first run: choose your character (after that, from the title menu's 👤 button).
-    if (window.Mascot && !window.Mascot.chosen()) window.Mascot.openPicker({ onDone: renderCharBtn });
+    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = els.versusBtn.disabled = els.adventureBtn.disabled = false;
+    // WHO'S PLAYING? when the iPad has more than one save; a new player (or the very first run) picks a character.
+    if (window.Players && window.Players.list().length > 1) window.Players.openPicker({ onDone: playerReady });
+    else playerReady();
   }
   const files = window.GAME_FILES || [];
   let pending = files.length;
@@ -1729,6 +1773,9 @@
   // For js/versus.js: what to play, and the screens.
   window.FrameAPI = {
     listsInPlay, allowed, prepItems, showScreen, setTheme, goTitle, renderCharBtn,
+    // 🗺️ Adventure: play a level (3 of the island's games) or its boss (that boss's final battle).
+    playLevel: (adv) => { state.adv = adv; state.bossPick = null; startMode("adventure"); },
+    playBoss: (adv) => { state.adv = adv; state.bossPick = adv.boss; startMode("boss"); },
     canSpeak: () => C.canSpeak && state.listening,
     hideAll: () => { ["title", "settings", "content", "words", "practice", "howto", "play", "results"].forEach((n) => { els[n].hidden = true; }); state.screen = "versus"; updateScrollbar(); },
   };

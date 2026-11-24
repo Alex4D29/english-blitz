@@ -304,7 +304,7 @@
     if (run.bossesBeaten && run.bossesBeaten.length >= 4) add("king"); // (any 4 of the 5 bosses: the teacher kept it at 4)
     return out;
   }
-  function reset() { store(UNLOCK_KEY, []); store(PLAYED_KEY, []); try { localStorage.removeItem(CHAR_KEY); } catch (err) { /* ok */ } }
+  function reset() { store(UNLOCK_KEY, []); store(PLAYED_KEY, []); C().storage.remove(CHAR_KEY); }
   const lineOf = (c) => c.line || (c.letter ? `${c.letter} for ${c.word}!` : `I'm ${c.name}!`);
 
   // ---------- Drawing ----------

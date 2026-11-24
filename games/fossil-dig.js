@@ -16,7 +16,8 @@
         ["🖌️", "Find the one that matches and RUB it, back and forth, to dig it out!"],
       ],
       tips: [
-        "Dig up the wrong one and it's just junk, like an old boot. Keep digging!",
+        "Digging takes LOTS of rubbing: go for it!",
+        "Dig up the wrong one and it's just junk, like an old boot, and there's not much time left!",
         "Tap the card to hear it again.",
       ],
     } }),
@@ -26,7 +27,8 @@
     junk: "JUNK!",
     hmm: "HMM…",
   };
-  const NEED = 9;           // rubbing distance to dig one out, in slab heights
+  const NEED = 26;          // rubbing distance to dig one out, in slab heights: about 3 s of hard rubbing (9 was too quick: the teacher wanted
+                            // you to really go for it, so a wrong dig leaves little time to find another)
   const JUNK = ["🥾", "🧦", "🥫", "🩴", "🧸", "🔩"];
   const SLABS = ["#e9dcc3", "#ddd0b8", "#efe3cc", "#e2d4bc"];
 
@@ -115,7 +117,7 @@
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const { tone, sweep, noise } = ctx.sfx;
-      const N = speed >= 1.5 ? 4 : 3;
+      const N = speed >= 1.5 ? 6 : 4; // (the teacher wanted 4 or 6)
       const C = ctx.choiceRows(1, N, { lowercase: true });
       const row = C.rows[0];
 
@@ -163,7 +165,7 @@
       let W = 0, H = 0, sw = 100, sh = 80;
       function layout() {
         W = site.clientWidth; H = site.clientHeight;
-        const cols = N === 3 ? 3 : 2, rows = N === 3 ? 1 : 2;
+        const cols = N === 6 ? 3 : 2, rows = 2;
         sw = Math.min((W - 24) / cols - 14, 170);
         sh = Math.min(sw * 0.8, (H * 0.78) / rows - 12);
         sw = Math.min(sw, sh * 1.35);
@@ -172,7 +174,7 @@
         slots.forEach((s, i) => {
           const c = i % cols, r = Math.floor(i / cols);
           s.x = W * (c + 0.5) / cols;
-          s.y = rows === 1 ? H * 0.6 : H * (0.36 + r * 0.38);
+          s.y = H * (0.36 + r * 0.38);
           s.el.style.left = `${s.x}px`; s.el.style.top = `${s.y}px`;
           const len = Math.max(1, [...s.o.text].length);
           s.slab.style.fontSize = s.o.kind === "word" ? `${Math.min(sh * 0.5, (sw * 0.86) / (len * 0.62))}px` : `${sh * 0.62}px`;
@@ -310,7 +312,7 @@
         };
         await f.point(card, 800);
         const a = pt(-sw * 0.35), b = pt(sw * 0.35);
-        for (let k = 0; k < 3 && !done; k++) await f.path([a, b, a, b, a, b, a, b, a], 110);
+        for (let k = 0; k < 12 && !done; k++) await f.path([a, b, a, b, a, b, a, b, a], 90); // (it takes a lot of rubbing)
       });
       return () => { done = true; ro.disconnect(); document.removeEventListener("keydown", onKey); };
     },

@@ -12,11 +12,13 @@
 
 <!-- Title -->
 <section id="title" class="screen scroll">
+  <button class="player-chip" id="playerBtn" hidden><span class="fig" aria-hidden="true"></span><span class="nm"></span></button>
   <h1 class="shout logo" data-text="title"></h1>
   <div class="menu">
     <button class="mode-btn fun" id="funBtn" disabled><span class="ico" aria-hidden="true">🎈</span><span class="mode-txt"><span data-text="fun"></span><span class="mode-desc" data-text="funDesc"></span></span></button>
     <button class="mode-btn challenge" id="challengeBtn" disabled><span class="ico" aria-hidden="true">🔥</span><span class="mode-txt"><span data-text="challenge"></span><span class="mode-desc" data-text="challengeDesc"></span></span></button>
     <button class="mode-btn boss" id="bossBtn" disabled><span class="ico" aria-hidden="true">👑</span><span class="mode-txt"><span data-text="boss"></span><span class="mode-desc" data-text="bossDesc"></span></span></button>
+    <button class="mode-btn adventure" id="adventureBtn" disabled><span class="ico" aria-hidden="true">🗺️</span><span class="mode-txt"><span data-text="adventure"></span><span class="mode-desc" data-text="adventureDesc"></span></span></button>
     <button class="mode-btn versus" id="versusBtn" disabled><span class="ico" aria-hidden="true">⚔️</span><span class="mode-txt"><span data-text="versus"></span><span class="mode-desc" data-text="versusDesc"></span></span></button>
     <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span class="mode-txt"><span data-text="practice"></span><span class="mode-desc" data-text="practiceDesc"></span></span></button>
     <button class="mode-btn tutorials" id="tutorialsBtn" disabled><span class="ico" aria-hidden="true">👀</span><span class="mode-txt"><span data-text="tutorials"></span><span class="mode-desc" data-text="tutorialsDesc"></span></span></button>
@@ -97,6 +99,12 @@
       <span class="set-name" data-text="resetCharsLabel"></span>
       <button class="set-toggle" id="resetCharsBtn" data-text="resetChars"></button>
     </div>
+    <div class="set-row">
+      <span class="set-ico" aria-hidden="true">👥</span>
+      <span class="set-name" data-text="playersLabel"></span>
+    </div>
+    <div id="playersBox"></div>
+    <p class="set-note" data-text="playersNote"></p>
   </div>
   <button class="chunky" id="backBtn">⬅️ <span data-text="back"></span></button>
 </section>
@@ -163,8 +171,10 @@
 <script src="data/lists.js"></script>
 <script src="js/modes.js"></script>
 <script src="js/mascot.js"></script>
+<script src="js/players.js"></script>
 <script src="js/boss.js"></script>
 <script src="js/versus.js"></script>
+<script src="js/adventure.js"></script>
 <script src="games/manifest.js"></script>
 <script src="js/frame.js"></script>
 </body>

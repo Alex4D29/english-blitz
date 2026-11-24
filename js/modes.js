@@ -38,6 +38,16 @@ window.MODES = {
     speedStep: 0,
     maxSpeed: 1,
   },
+  // 🗺️ ADVENTURE (js/adventure.js): one level = 3 games from that island, at the level's speed (state.adv.speed),
+  // for 0–3 stars. Boss levels use Boss Battle's final battle instead.
+  adventure: {
+    id: "adventure",
+    totalGames: 3,
+    lives: 0,
+    speedUpEvery: 0,
+    speedStep: 0,
+    maxSpeed: 2.5,
+  },
   // One chosen game, over and over, at 1×, until the player leaves. No results screen.
   practice: {
     id: "practice",

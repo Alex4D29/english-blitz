@@ -379,10 +379,17 @@
   }
 
   // ---------- Storage (never throws: private mode / blocked storage just means no saving) ----------
+  // PLAYER SAVES (js/players.js; the teacher: up to 10 children share one iPad): these keys are kept per
+  // player (`key@p3`), everything else (settings, MY WORDS…) belongs to the iPad. storage.player is the
+  // active save's id; the frame and games don't need to know.
+  const PER_PLAYER = ["wwe.char", "wwe.chars", "wwe.played", "wwe.boss.beaten", "wwe.challenge.best", "wwe.adventure"];
+  const keyOf = (key) => (storage.player && PER_PLAYER.includes(key) ? `${key}@${storage.player}` : key);
   const storage = {
+    player: null,
+    PER_PLAYER,
     get(key, fallback = null) {
       try {
-        const v = localStorage.getItem(key);
+        const v = localStorage.getItem(keyOf(key));
         return v == null ? fallback : JSON.parse(v);
       } catch (err) {
         return fallback;
@@ -390,10 +397,19 @@
     },
     set(key, value) {
       try {
-        localStorage.setItem(key, JSON.stringify(value));
+        localStorage.setItem(keyOf(key), JSON.stringify(value));
       } catch (err) {
         console.error("storage:", err);
       }
+    },
+    remove(key) {
+      try { localStorage.removeItem(keyOf(key)); } catch (err) { /* blocked storage */ }
+    },
+    // Raw access to the whole iPad's storage (players.js: migrating and deleting saves).
+    raw: {
+      get(k) { try { return localStorage.getItem(k); } catch (err) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (err) { /* blocked */ } },
+      remove(k) { try { localStorage.removeItem(k); } catch (err) { /* blocked */ } },
     },
   };
 
