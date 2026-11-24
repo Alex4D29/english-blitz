@@ -25,6 +25,9 @@
     locked: (boss) => `🔒 Beat ${boss} to get here!`,
     stars: (n, of) => `⭐ ${n} / ${of}`,
     say: (name) => `${name.toLowerCase()}!`,
+    sailing: (name) => `SAILING TO\n${name}!`,
+    worldTitle: "🌍 ADVENTURE",
+    worldSay: "Where shall we sail?",
   };
 
   const CSS = `
@@ -59,6 +62,62 @@
   .ad-me .ms { margin:calc(var(--mz) * -1.05) 0 0 calc(var(--mz) * -.5); }
   .ad-lock { position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); }
   .ad-lock span { padding:12px 18px; background:#fff; border:5px solid #111; border-radius:18px; font-size:clamp(1.1rem, 5vw, 1.6rem); text-align:center; }
+  /* 🌍 The world map: the sea, the islands on a dotted route, your ship */
+  .aw-sea { position:relative; flex:1; min-height:0; border:5px solid #111; border-radius:24px; overflow:hidden; box-shadow:0 7px 0 #111;
+    background:radial-gradient(circle at 20% 30%, rgba(255,255,255,.18) 0 8%, transparent 9%) 0 0 / 120px 90px,
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,.12) 0 6%, transparent 7%) 0 0 / 90px 70px, linear-gradient(#5cc4ff, #1e7fd6); }
+  .aw-fish { font-size:clamp(1.2rem, 4vw, 1.8rem); opacity:.7; animation:aw-swim 2.4s ease-in-out infinite alternate; }
+  .aw-isle { position:absolute; width:var(--iz); height:var(--iz); margin:calc(var(--iz) / -2) 0 0 calc(var(--iz) / -2); border:0; padding:0; background:none; font:inherit;
+    cursor:pointer; touch-action:manipulation; z-index:2; }
+  .aw-isle .land { position:absolute; inset:14% 0 6%; border-radius:50%; border:5px solid #111; box-shadow:0 6px 0 rgba(0,0,0,.3);
+    background:radial-gradient(ellipse at 50% 35%, var(--g1) 0 46%, var(--g2) 60%, #f4d28a 61% 78%, #e6bd6e 79%); }
+  .aw-isle .ic { position:absolute; left:50%; top:30%; transform:translate(-50%, -50%); font-size:calc(var(--iz) * .5); line-height:1; }
+  .aw-isle .lbl { position:absolute; left:50%; top:96%; transform:translateX(-50%); white-space:nowrap; font-size:clamp(.8rem, 2.8vw, 1.1rem); padding:2px 8px;
+    background:#fff; color:#111; border:3px solid #111; border-radius:99px; -webkit-text-stroke:0; text-shadow:none; }
+  .aw-isle .st { position:absolute; left:50%; top:70%; transform:translateX(-50%); font-size:calc(var(--iz) * .16); white-space:nowrap; color:#fff; -webkit-text-stroke:1px #111; paint-order:stroke fill; font-weight:900; }
+  .aw-isle .crown { position:absolute; right:0; top:0; font-size:calc(var(--iz) * .32); }
+  .aw-isle.locked .land, .aw-isle.locked .ic { filter:grayscale(1) brightness(.85); }
+  .aw-isle.locked .lock { position:absolute; left:50%; top:34%; transform:translate(-50%, -50%); font-size:calc(var(--iz) * .26); white-space:nowrap; }
+  .aw-isle:not(.locked):active { transform:scale(.95); }
+  .aw-ship { position:absolute; left:0; top:0; z-index:3; pointer-events:none; --sz:calc(var(--iz) * .7); --mez:calc(var(--sz) * .5); width:var(--sz); height:var(--sz);
+    margin:calc(var(--sz) / -1.2) 0 0 calc(var(--sz) / -2); }
+  .aw-ship > * { position:absolute; }
+  .aw-ship .hull { left:0; right:0; bottom:0; height:30%; background:linear-gradient(#b8743a 0 50%, #8f5526 50%); border:4px solid #111; clip-path:polygon(0 0, 100% 0, 86% 100%, 14% 100%); }
+  .aw-ship .sail { left:44%; bottom:28%; width:46%; height:58%; border:4px solid #111; border-radius:4px 20px 4px 4px; background:repeating-linear-gradient(180deg, #fff 0 18%, #e8173c 18% 30%); }
+  .aw-ship .me { left:0; bottom:24%; }
+  .aw-ship > * { animation:aw-bob 1.1s ease-in-out infinite alternate; } /* (on the parts: the ship itself is placed with transform) */
+  @keyframes aw-bob { from { translate:0 0; rotate:-3deg; } to { translate:0 -6%; rotate:3deg; } }
+  @keyframes aw-swim { to { translate:16px -6px; } }
+  /* ⛵ Sailing to an island: sky, sea, the island growing on the horizon, your ship bobbing over the waves */
+  .ad-sail { --shz:min(46vw, 38vh, 260px); --mez:calc(var(--shz) * .44); position:relative; flex:1; min-height:0; overflow:hidden; border:5px solid #111; border-radius:24px;
+    box-shadow:0 7px 0 #111; background:linear-gradient(#7fd4ff 0 58%, #2f8fe0 58%); cursor:pointer; }
+  .ad-sail .sun { position:absolute; left:12%; top:8%; width:14%; aspect-ratio:1; border-radius:50%; background:#fff3a8; box-shadow:0 0 40px 14px rgba(255,240,150,.8); }
+  .ad-sail .gull { position:absolute; left:30%; top:16%; font-size:2rem; animation:ad-gull 1.6s ease-in-out infinite alternate; }
+  .ad-sail .isle { position:absolute; left:78%; top:60%; width:min(40vw, 300px); transform-origin:50% 100%; }
+  .ad-sail .mound { width:100%; aspect-ratio:3; border-radius:50% 50% 0 0 / 100% 100% 0 0; background:#f4d28a; border:5px solid #111; border-bottom:0; }
+  .ad-sail .ic { position:absolute; left:50%; bottom:40%; transform:translateX(-50%); font-size:min(22vw, 170px); line-height:1; }
+  .ad-sail .ship { position:absolute; left:-30%; bottom:22%; width:var(--shz); height:var(--shz); animation:ad-bob 1.1s ease-in-out infinite alternate; transform-origin:50% 90%; }
+  .ad-sail .hull { position:absolute; left:0; right:0; bottom:0; height:30%; background:linear-gradient(#b8743a 0 50%, #8f5526 50%); border:5px solid #111;
+    clip-path:polygon(0 0, 100% 0, 86% 100%, 14% 100%); z-index:3; }
+  .ad-sail .hull::after { content:""; position:absolute; left:10%; right:10%; top:22%; height:12%; background:#ffd400; }
+  .ad-sail .mast { position:absolute; left:58%; bottom:26%; width:5%; height:70%; background:#6b4a1f; border:3px solid #111; z-index:1; }
+  .ad-sail .sail { position:absolute; left:32%; bottom:36%; width:52%; height:52%; z-index:2; border:5px solid #111; border-radius:6px 30px 6px 6px;
+    background:repeating-linear-gradient(180deg, #fff 0 18%, #e8173c 18% 30%); animation:ad-billow 1.4s ease-in-out infinite alternate; transform-origin:100% 50%; }
+  .ad-sail .flag { position:absolute; left:61%; bottom:92%; width:16%; height:9%; background:#ffd400; border:3px solid #111; clip-path:polygon(0 0, 100% 50%, 0 100%); animation:ad-flap .25s ease-in-out infinite alternate; transform-origin:0 50%; }
+  .ad-sail .me { position:absolute; left:6%; bottom:24%; z-index:2; }
+  .ad-sail .waves { position:absolute; left:0; right:-120px; bottom:0; height:30%; z-index:4; pointer-events:none;
+    background:radial-gradient(circle at 30px 0, transparent 26px, #2f8fe0 27px) 0 0 / 60px 100%; border-top:0; animation:ad-waves 1.4s linear infinite; opacity:.95; }
+  .ad-sail .waves::before { content:""; position:absolute; left:0; right:0; top:0; height:10px; background:radial-gradient(circle at 30px -14px, transparent 28px, #fff 29px 34px, transparent 35px) 0 0 / 60px 20px; }
+  .ad-sail .waves.b { height:14%; z-index:5; animation-duration:1s; filter:brightness(.85); }
+  .ad-sail .say { position:absolute; left:50%; top:6%; transform:translateX(-50%); z-index:6; font-size:clamp(1.8rem, 8vw, 3rem); line-height:1; text-align:center; white-space:pre-line; color:#fff;
+    -webkit-text-stroke:2px #111; paint-order:stroke fill; text-shadow:0 5px 0 #111; animation:ad-say .6s cubic-bezier(.2,1.8,.4,1) both; }
+  @keyframes ad-bob { from { transform:translateY(0) rotate(-4deg); } to { transform:translateY(-6%) rotate(4deg); } }
+  @keyframes ad-billow { to { transform:scaleX(.92); } }
+  @keyframes ad-flap { to { transform:scaleY(.6); } }
+  @keyframes ad-waves { to { transform:translateX(-60px); } }
+  @keyframes ad-gull { to { transform:translate(30px, -10px); } }
+  @keyframes ad-say { from { transform:translateX(-50%) scale(.3); opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { .ad-sail * { animation:none !important; } }
   @keyframes ad-pulse { from { transform:scale(1); box-shadow:0 6px 0 #111, 0 0 0 0 rgba(255,212,0,.9); } to { transform:scale(1.1); box-shadow:0 6px 0 #111, 0 0 0 12px rgba(255,212,0,.25); } }
   `;
   let cssDone = false;
@@ -66,14 +125,14 @@
 
   const C = () => window.Core;
   const F = () => window.FrameAPI;
-  const load = () => { const p = C().storage.get(KEY, null) || {}; return { stars: p.stars || {} }; };
+  const load = () => { const p = C().storage.get(KEY, null) || {}; return { stars: p.stars || {}, at: p.at }; }; // at: the island your ship is at
   const starsOf = (p, i, j) => p.stars[`${ISLANDS[i].id}-${j}`] || 0;
   const islandOpen = (p, i) => i === 0 || starsOf(p, i - 1, LEVELS - 1) > 0;
   const levelOpen = (p, i, j) => islandOpen(p, i) && (j === 0 || starsOf(p, i, j - 1) > 0);
   // The level to play next on an island (the first not yet passed), or the boss once all are.
   const nextLevel = (p, i) => { for (let j = 0; j < LEVELS; j++) if (!starsOf(p, i, j)) return j; return LEVELS - 1; };
 
-  let root = null, shown = 0, hop = null, quiet = false;
+  let root = null, shown = 0, hop = null, quiet = false, sailTo = null;
 
   // The frame reports a level's stars (best kept). A first pass makes your character hop on next time.
   function record(adv, stars) {
@@ -83,9 +142,13 @@
     if (stars > before) p.stars[k] = stars;
     C().storage.set(KEY, p);
     if (!before && stars) hop = { island: adv.island, from: adv.level };
+    // A boss beaten for the first time: next time the map opens, you sail to the next island.
+    const i = ISLANDS.findIndex((x) => x.id === adv.island);
+    if (adv.level === LEVELS - 1 && !before && stars && i + 1 < ISLANDS.length) sailTo = i + 1;
   }
 
-  function open(islandId) {
+  // opts.sail: start with the ship sailing to the island (starting Adventure from the title menu).
+  function open(islandId, opts = {}) {
     injectCss();
     if (!root) { root = document.createElement("div"); root.id = "adventure"; document.body.appendChild(root); }
     root.hidden = false;
@@ -93,11 +156,143 @@
     if (window.Music) Music.play("menu");
     const p = load();
     // Show the island just played, else the furthest one that's open.
+    // A boss just beaten: the world map, and the ship sets off to the next island by itself.
+    if (sailTo != null) { const t = sailTo; sailTo = null; world({ autoTo: t }); return; }
+    // From the title menu: the world map.
+    if (!islandId) { world({}); return; }
     let i = ISLANDS.findIndex((x) => x.id === (islandId || (hop && hop.island)));
-    if (i < 0) { i = 0; while (i + 1 < ISLANDS.length && islandOpen(p, i + 1)) i++; }
+    if (i < 0) i = 0;
     shown = i;
-    render();
+    if (opts.sail) sail(i, render); else render();
+    void p;
   }
+
+  // 🌍 THE WORLD MAP (the teacher's idea): the sea with all the islands on a dotted route, your character on
+  // their ship beside the island they're at. Tap an open island: the ship sails there, then the close-up
+  // SAILING TO… scene, then that island's map. Locked islands are grey under clouds with a 🔒.
+  const WORLD = [[16, 74], [42, 56], [76, 70], [70, 26], [30, 24]]; // % positions, in route order
+  function world(opts) {
+    const p = load();
+    let at = typeof p.at === "number" && islandOpen(p, p.at) ? p.at : 0;
+    if (typeof p.at !== "number") { while (at + 1 < ISLANDS.length && islandOpen(p, at + 1)) at++; }
+    F().setTheme(1);
+    root.innerHTML = "";
+    const top = document.createElement("div");
+    top.className = "ad-top";
+    const x = document.createElement("button"); x.className = "ad-x"; x.textContent = "✕"; x.setAttribute("aria-label", "Back");
+    x.addEventListener("click", close);
+    const title = document.createElement("div"); title.className = "ad-title";
+    title.innerHTML = '<div class="nm shout"></div>';
+    title.firstChild.textContent = TEXT.worldTitle;
+    let total = 0;
+    ISLANDS.forEach((_, a) => { for (let j = 0; j < LEVELS; j++) total += Math.min(3, starsOf(p, a, j)); });
+    const tot = document.createElement("div"); tot.className = "ad-total shout"; tot.textContent = TEXT.stars(total, ISLANDS.length * LEVELS * 3);
+    top.append(x, title, tot);
+    const sea = document.createElement("div");
+    sea.className = "aw-sea";
+    root.append(top, sea);
+    const W = sea.clientWidth, H = sea.clientHeight;
+    const iz = Math.max(70, Math.min(W * 0.2, H * 0.26, 150));
+    sea.style.setProperty("--iz", `${iz}px`);
+    const pt = (k) => ({ x: (WORLD[k][0] / 100) * W, y: (WORLD[k][1] / 100) * H });
+    // The sea route between the islands.
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "ad-path");
+    let d = `M${pt(0).x} ${pt(0).y}`;
+    for (let k = 1; k < ISLANDS.length; k++) { const a = pt(k - 1), b = pt(k); d += ` Q${(a.x + b.x) / 2} ${(a.y + b.y) / 2 + (k % 2 ? 50 : -50)} ${b.x} ${b.y}`; }
+    svg.innerHTML = `<path d="${d}" fill="none" stroke="#fff" stroke-width="7" stroke-dasharray="4 16" stroke-linecap="round" opacity=".85"/>`;
+    sea.appendChild(svg);
+    ["🐟", "🐳", "⛵", "🐙", "🦈"].forEach((e, k) => {
+      const f = document.createElement("div"); f.className = "ad-deco aw-fish"; f.textContent = e;
+      f.style.left = `${[55, 90, 8, 48, 92][k]}%`; f.style.top = `${[88, 46, 38, 12, 90][k]}%`;
+      f.style.animationDelay = `${-k * 0.7}s`;
+      sea.appendChild(f);
+    });
+    ISLANDS.forEach((isl, k) => {
+      const open = islandOpen(p, k);
+      let s = 0;
+      for (let j = 0; j < LEVELS; j++) s += Math.min(3, starsOf(p, k, j));
+      const b = document.createElement("button");
+      b.className = "aw-isle" + (open ? "" : " locked") + (starsOf(p, k, LEVELS - 1) ? " beaten" : "");
+      b.style.setProperty("--g1", isl.bg[0]); b.style.setProperty("--g2", isl.bg[1]);
+      const c = pt(k);
+      b.style.left = `${c.x}px`; b.style.top = `${c.y}px`;
+      b.innerHTML = `<div class="land"></div><div class="ic"></div><div class="lbl shout"></div><div class="st"></div>${open ? "" : '<div class="lock">☁️🔒☁️</div>'}` +
+        (starsOf(p, k, LEVELS - 1) ? '<div class="crown">👑</div>' : "");
+      b.querySelector(".ic").textContent = isl.icon;
+      b.querySelector(".lbl").textContent = isl.name;
+      b.querySelector(".st").textContent = open ? `⭐ ${s}` : "";
+      b.setAttribute("aria-label", open ? isl.name : `${isl.name}, locked`);
+      b.addEventListener("click", () => {
+        C().unlock();
+        if (!open) { C().sfx.tone(200, 0.1, "square", 0.08); b.animate([{ rotate: "0deg" }, { rotate: "-6deg" }, { rotate: "6deg" }, { rotate: "0deg" }], { duration: 300 }); return; }
+        go(k);
+      });
+      sea.appendChild(b);
+    });
+    // Your ship, moored beside the island you're at.
+    const ship = document.createElement("div");
+    ship.className = "aw-ship";
+    ship.innerHTML = '<div class="sail"></div><div class="me"></div><div class="hull"></div>';
+    ship.querySelector(".me").appendChild(window.Mascot.el("var(--mez)"));
+    sea.appendChild(ship);
+    const dock = (k) => { const c = pt(k); return { x: c.x - iz * 0.75, y: c.y + iz * 0.3 }; };
+    const place = (q) => { ship.style.transform = `translate(${q.x}px, ${q.y}px)`; };
+    place(dock(at));
+    let busy = false;
+    function go(k) {
+      if (busy) return;
+      busy = true;
+      const q = load();
+      q.at = k;
+      C().storage.set(KEY, { stars: q.stars, at: k });
+      if (k === at) { sail(k, () => { shown = k; render(); }); return; }
+      // Sail along the route to the island, then the close-up.
+      const a = dock(at), b = dock(k);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + 40 };
+      ship.classList.add("go");
+      ship.animate([{ transform: `translate(${a.x}px, ${a.y}px)` }, { transform: `translate(${mid.x}px, ${mid.y}px)`, offset: 0.5 }, { transform: `translate(${b.x}px, ${b.y}px)` }],
+        { duration: reduce() ? 1 : 1600, easing: "ease-in-out", fill: "forwards" });
+      C().sfx.tone(196, 0.3, "square", 0.08); C().sfx.tone(196, 0.3, "square", 0.08, 0.35); // toot toot
+      for (let n = 0; n < 2; n++) C().sfx.noise(0.8, "lowpass", 600, 300, 0.22, n * 0.8);
+      setTimeout(() => { at = k; place(b); sail(k, () => { shown = k; render(); }); }, reduce() ? 20 : 1700);
+    }
+    if (opts.autoTo != null) setTimeout(() => { if (root.contains(ship)) go(opts.autoTo); }, 900);
+    C().say(TEXT.worldSay);
+  }
+
+  // ⛵ Your character on a little sailing ship, bobbing over the waves towards the island as it grows on the
+  // horizon (the teacher's idea); then the map. A tap skips it.
+  function sail(i, then) {
+    const isl = ISLANDS[i];
+    F().setTheme(1);
+    root.innerHTML = "";
+    const sc = document.createElement("div");
+    sc.className = "ad-sail";
+    sc.innerHTML = `<div class="sun"></div><div class="gull">🐦</div><div class="isle"><div class="mound"></div><div class="ic"></div></div>` +
+      `<div class="ship"><div class="mast"></div><div class="sail"></div><div class="flag"></div><div class="me"></div><div class="hull"></div></div>` +
+      `<div class="waves"></div><div class="waves b"></div><div class="say shout"></div>`;
+    sc.querySelector(".ic").textContent = isl.icon;
+    sc.querySelector(".say").textContent = TEXT.sailing(isl.name);
+    const me = window.Mascot.el("var(--mez)");
+    window.Mascot.mood(me, "cheer");
+    sc.querySelector(".me").appendChild(me);
+    root.appendChild(sc);
+    const isle = sc.querySelector(".isle"), ship = sc.querySelector(".ship");
+    const ms = reduce() ? 1 : 3600;
+    isle.animate([{ transform: "translate(-50%, -100%) scale(.25)" }, { transform: "translate(-50%, -100%) scale(1)" }], { duration: ms, easing: "ease-in", fill: "forwards" });
+    ship.animate([{ left: "-30%" }, { left: "32%" }], { duration: ms, easing: "ease-out", fill: "forwards" });
+    const { tone, noise, sweep } = C().sfx;
+    [0, 0.35].forEach((t) => tone(196, 0.3, "square", 0.08, t)); // toot toot!
+    for (let k = 0; k < 4; k++) noise(0.8, "lowpass", 600, 300, 0.25, k * 0.9); // whoosh of the waves
+    sweep(1800, 2400, 0.15, "sine", 0.05, 1.2); sweep(2200, 1700, 0.15, "sine", 0.05, 1.4); // a gull
+    C().say(TEXT.sailing(isl.name).replace("\n", " ").toLowerCase());
+    let left = false;
+    const go = () => { if (left) return; left = true; clearTimeout(t); sc.removeEventListener("pointerdown", go); tone(523, 0.1, "triangle", 0.1); tone(784, 0.14, "triangle", 0.1, 0.1); then(); };
+    const t = setTimeout(go, ms + 700);
+    sc.addEventListener("pointerdown", go);
+  }
+  const reduce = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function close() {
     if (root) { root.hidden = true; root.innerHTML = ""; }
     F().goTitle();
@@ -112,14 +307,15 @@
     const top = document.createElement("div");
     top.className = "ad-top";
     const x = document.createElement("button"); x.className = "ad-x"; x.textContent = "✕"; x.setAttribute("aria-label", "Back");
-    x.addEventListener("click", close);
+    x.addEventListener("click", () => { C().unlock(); world({}); }); // (back to the world map)
     const title = document.createElement("div"); title.className = "ad-title";
     const prev = document.createElement("button"); prev.className = "ad-arrow"; prev.textContent = "◀"; prev.disabled = i === 0;
     const next = document.createElement("button"); next.className = "ad-arrow"; next.textContent = "▶"; next.disabled = i === ISLANDS.length - 1;
     prev.addEventListener("click", () => { C().unlock(); shown = Math.max(0, i - 1); hop = null; render(); });
     next.addEventListener("click", () => { C().unlock(); shown = Math.min(ISLANDS.length - 1, i + 1); hop = null; render(); });
     const nm = document.createElement("div"); nm.className = "nm shout"; nm.textContent = `${isl.icon} ${isl.name}`;
-    title.append(prev, nm, next);
+    title.append(nm); // (islands are chosen on the world map now)
+    void prev; void next;
     let total = 0;
     ISLANDS.forEach((_, a) => { for (let j = 0; j < LEVELS; j++) total += Math.min(3, starsOf(p, a, j)); });
     const tot = document.createElement("div"); tot.className = "ad-total shout"; tot.textContent = TEXT.stars(total, ISLANDS.length * LEVELS * 3);
@@ -208,6 +404,6 @@
   }
 
   // Turning the iPad redraws the map.
-  window.addEventListener("resize", () => { if (root && !root.hidden && root.firstChild) { const h = hop; hop = null; quiet = true; render(); quiet = false; hop = h; } });
+  window.addEventListener("resize", () => { if (root && !root.hidden && root.querySelector(".ad-map")) { /* (not mid-sail) */ const h = hop; hop = null; quiet = true; render(); quiet = false; hop = h; } });
   window.Adventure = { open, close, record, ISLANDS };
 })();

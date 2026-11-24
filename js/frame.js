@@ -1505,7 +1505,7 @@
   function contentGo() {
     if (state.pendingMode === "practice") showPractice("practice");
     else if (state.pendingMode === "versus") { clearRound(); window.Versus.open(); }
-    else if (state.pendingMode === "adventure") { clearRound(); window.Adventure.open(); }
+    else if (state.pendingMode === "adventure") { clearRound(); window.Adventure.open(); } // (🌍 the world map)
     else askWatch(state.pendingMode || "fun");
   }
 
@@ -1700,7 +1700,7 @@
     // The title menu's player chip: who's playing (tap to switch). Only when there's more than one save.
     if (window.Players) {
       const p = window.Players.active();
-      els.playerBtn.hidden = window.Players.list().length < 2 || !p;
+      els.playerBtn.hidden = !p; // (always: it's also how a new player is added)
       if (p) {
         const fig = els.playerBtn.querySelector(".fig");
         fig.innerHTML = "";

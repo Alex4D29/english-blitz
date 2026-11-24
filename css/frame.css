@@ -451,3 +451,11 @@ body.demo #stage::before {
 .player-chip .fig { display: inline-flex; }
 #playerBtn[hidden] + * { margin-top: auto; } /* (keeps the title centred when there's only one player) */
 #playersBox { width: 100%; margin: 4px 0; }
+
+/* The title menu's four main modes in 2 columns (the teacher's layout): FUN · ENDLESS / BOSS · ADVENTURE */
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px, 2.5vw, 18px); width: min(100%, 640px); }
+.mode-grid .mode-btn { width: 100%; min-height: min(22dvh, 170px); flex-direction: column; gap: 6px; padding: 12px 8px; text-align: center;
+  font-size: clamp(1.2rem, 5.4vw, 2.1rem); }
+.mode-grid .mode-txt { align-items: center; }
+.mode-grid .mode-desc { font-size: clamp(.75rem, 3.2vw, 1.05rem); }
+.menu > .mode-btn.versus { width: min(100%, 640px); }

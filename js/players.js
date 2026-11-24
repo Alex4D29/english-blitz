@@ -8,6 +8,7 @@
   const TEXT = {
     who: "WHO'S\nPLAYING?",
     add: "NEW\nPLAYER",
+    addBtn: "＋ ADD PLAYER",
     name: (n) => `PLAYER ${n}`,
     hi: (name) => `Hi ${name}!`,
     go: "Let's play!",
@@ -35,6 +36,8 @@
   .pl-row input { flex:1; min-width:0; font:inherit; font-size:1.1rem; padding:8px 10px; border:3px solid #111; border-radius:10px; }
   .pl-row .del { flex:none; width:52px; height:44px; border:3px solid #111; border-radius:10px; background:#fff; font:inherit; font-size:1.1rem; cursor:pointer; }
   .pl-row .del.sure { background:#ff5a6e; color:#fff; font-size:.85rem; }
+  .pl-add { align-self:center; font-size:1.2rem !important; padding:10px 18px !important; background:#e6f9ff !important; }
+  .pl-row.on input { background:#fff6c2; font-weight:700; }
   `;
   let cssDone = false;
   function injectCss() { if (cssDone) return; cssDone = true; const s = document.createElement("style"); s.textContent = CSS; document.head.appendChild(s); }
@@ -140,7 +143,7 @@
     m.className = "pl-manage";
     list().forEach((p) => {
       const row = document.createElement("div");
-      row.className = "pl-row";
+      row.className = "pl-row" + (p.id === S().player ? " on" : ""); // (the one playing now is highlighted)
       row.appendChild(window.Mascot.el(40, charOf(p.id)));
       const inp = document.createElement("input");
       inp.type = "text"; inp.maxLength = 14; inp.value = p.name; inp.setAttribute("aria-label", "Player name");
@@ -162,6 +165,20 @@
       row.append(inp, del);
       m.appendChild(row);
     });
+    // ＋ ADD PLAYER (the teacher couldn't find a way to add one): a new save, which picks its character now.
+    if (list().length < MAX) {
+      const add = document.createElement("button");
+      add.className = "chunky pl-add";
+      add.textContent = TEXT.addBtn;
+      add.addEventListener("click", () => {
+        C().unlock();
+        const p = create();
+        if (!p) return;
+        use(p.id);
+        window.Mascot.openPicker({ onDone: () => { renderManager(box, onChange); if (onChange) onChange(); } });
+      });
+      m.appendChild(add);
+    }
     box.appendChild(m);
   }
 
