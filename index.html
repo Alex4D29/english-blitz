@@ -31,7 +31,7 @@
   <h1 class="shout" data-text="whatToPlay"></h1>
   <p class="card" data-text="pickContent"></p>
   <div id="contentGrid" role="group"></div>
-  <div id="myWordsBox"></div>
+  <p class="words-note" id="myWordsNote" hidden></p>
   <div class="buttons">
     <button class="chunky hot" id="contentGoBtn">▶️ <span data-text="play"></span></button>
     <button class="chunky" id="contentBackBtn">⬅️ <span data-text="back"></span></button>
@@ -85,6 +85,13 @@
       <button class="set-toggle" id="listeningBtn" aria-pressed="true"></button>
     </div>
     <p class="set-note" data-text="listeningNote"></p>
+    <div class="set-row">
+      <span class="set-ico" aria-hidden="true">⭐</span>
+      <span class="set-name" data-text="myWordsLabel"></span>
+      <button class="set-toggle" id="myWordsBtn" aria-pressed="false"></button>
+    </div>
+    <button class="chunky words-edit" id="wordsEditBtn">✏️ <span data-text="editWords"></span></button>
+    <p class="set-note" id="myWordsSetNote"></p>
     <div class="set-row">
       <span class="set-ico" aria-hidden="true">👤</span>
       <span class="set-name" data-text="resetCharsLabel"></span>

@@ -181,7 +181,7 @@
       function twins(pool, all) {
         let best = null;
         for (const t of pool.slice(0, 30)) {
-          const others = ctx.shuffle(all.filter((o) => o !== t && o.text !== t.text));
+          const others = ctx.shuffle(all.filter((o) => o !== t && o.text !== t.text && !window.Core.soundsLike(o.text, t.text))); // (never "two" among "to"s)
           for (const o of others) {
             const s = alike(t, o);
             if (!best || s < best[2]) best = [t, o, s];

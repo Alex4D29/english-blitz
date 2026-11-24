@@ -41,6 +41,7 @@ window.TEXT = {
   // ⭐ MY WORDS (Word of the Week, the teacher's idea): every target comes from the words you choose
   myWords: { name: "MY WORDS", sample: "⭐", label: "Only the words you choose" },
   myWordsOn: "Playing MY WORDS: the targets are only your words.",
+  myWordsLabel: "My words",
   editWords: "CHOOSE WORDS",
   wordsTitle: "MY WORDS",
   wordsNote: "Tap to add or remove. Start with a few new ones, then add more week by week!",
@@ -50,6 +51,24 @@ window.TEXT = {
   wordsNone: "Choose some words first!",
   wordsSections: { letter: "ABC + PHONICS (letters)", cvc: "CVC WORDS", hfw: "SIGHT WORDS" },
   wordsNoPic: "(no picture: used in word games only)",
+  // Quick sets in the word chooser: one tap adds a whole group (the teacher asked for each of these).
+  // A set picks words by `letters` (starting with), `vowel` (CVC words with that middle vowel) or `words` (any list).
+  wordsSetGroups: [
+    { head: "TRICKY SOUNDS (for Japanese learners)", sets: [
+      { name: "L vs R", letters: ["L", "R"] }, { name: "B vs V", letters: ["B", "V"] }, { name: "F vs H", letters: ["F", "H"] }] },
+    { head: "WORD GROUPS", sets: [
+      { name: "🔢 Numbers", words: ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"] },
+      { name: "🎨 Colours", words: ["red", "blue", "yellow", "green", "brown", "black", "white"] },
+      { name: "🏃 Action words", words: ["go", "come", "see", "look", "play", "run", "jump", "eat", "make", "help", "ride", "walk", "sing", "sleep",
+        "draw", "drink", "wash", "find", "take", "give", "think", "say", "laugh", "fly", "call", "tell", "work", "want", "like", "sit", "hop", "dig", "hug"] },
+      { name: "🏠 Things", words: ["day", "school", "house", "water", "friend"] },
+      { name: "🙋 Pronouns", words: ["he", "she", "we", "me", "you", "they", "them", "her", "his", "my", "your", "our", "it"] },
+      { name: "✨ Describing words", words: ["good", "new", "old", "little", "funny", "pretty", "small", "fast", "cold", "long", "big", "hot", "sad", "mad", "wet", "fat"] },
+      { name: "❓ Question words", words: ["what", "when", "where", "who", "why", "how", "which"] },
+      { name: "📍 Position words", words: ["in", "on", "up", "down", "under", "over", "into", "out", "off", "around", "here", "there"] }] },
+    { head: "CVC BY VOWEL", sets: [
+      { name: "_a_", vowel: "a" }, { name: "_e_", vowel: "e" }, { name: "_i_", vowel: "i" }, { name: "_o_", vowel: "o" }, { name: "_u_", vowel: "u" }] },
+  ],
 
   // 👀 Watch first? pop-up after PLAY in Fun and Challenge.
   askWatch: "WATCH\nFIRST?",

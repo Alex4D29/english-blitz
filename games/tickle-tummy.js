@@ -219,11 +219,14 @@
         put(q(".tt-tummy"), cx, cy + bh * 0.04, bw * 0.8, bh * 0.76);
         const lw = Math.max(26, bw * 0.12);
         const legs = qa(".tt-leg");
-        put(legs[0], cx - bw * 0.42, cy - bh * 0.4, lw, lw * 1.5, -40);
-        put(legs[1], cx + bw * 0.42, cy - bh * 0.4, lw, lw * 1.5, 40);
-        put(legs[2], cx - bw * 0.36, cy + bh * 0.36, lw, lw * 1.5, -140);
-        put(legs[3], cx + bw * 0.36, cy + bh * 0.36, lw, lw * 1.5, 140);
-        legs.forEach((l, i) => { l.style.transform = ""; l.style.rotate = ""; l.style.setProperty("transform", `rotate(${[-40, 40, -140, 140][i]}deg)`); });
+        // Each leg grows out of the edge of the round body: its base sits just inside the ellipse at angle t (from
+        // straight up), pointing outward (they used to float off the body: the teacher).
+        [-52, 52, -132, 132].forEach((t, i) => {
+          const r = t * Math.PI / 180, bx = cx + Math.sin(r) * bw * 0.44, by = cy - Math.cos(r) * bh * 0.44;
+          const l = legs[i];
+          l.style.left = `${bx - lw / 2}px`; l.style.top = `${by - lw * 1.5}px`; l.style.width = `${lw}px`; l.style.height = `${lw * 1.5}px`;
+          l.style.transform = `rotate(${t}deg)`;
+        });
         put(q(".tt-tail"), cx + bw * 0.5, cy + bh * 0.15, lw, lw * 2.4);
         put(q(".tt-head"), cx, headY, hz, hz * 0.9);
         put(q(".tt-ear.l"), cx - hz * 0.3, headY - hz * 0.42, hz * 0.34, hz * 0.34, -18);

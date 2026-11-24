@@ -46,7 +46,17 @@
   // The target plus n-1 distractors from the same pool, shuffled. Its hand-picked
   // `tricky` items come first, then look-alike words. At least one distractor is
   // random when there's room, so a round isn't only near-misses.
+  // Words that SOUND the same: never one as the target with the other among the answers (the listening games
+  // would have two right answers). The teacher asked for "two"/"to" and "four"/"for"; the rest are here so
+  // more can be added to the lists safely.
+  const SOUND_ALIKE = [["to", "two", "too"], ["for", "four"], ["no", "know"], ["there", "their"], ["one", "won"], ["eight", "ate"],
+    ["by", "buy", "bye"], ["see", "sea"], ["here", "hear"], ["red", "read"], ["right", "write"], ["our", "hour"], ["new", "knew"], ["be", "bee"]];
+  const soundMap = new Map();
+  SOUND_ALIKE.forEach((g) => g.forEach((w) => soundMap.set(w, g)));
+  const soundsLike = (a, b) => a !== b && !!soundMap.get(String(a).toLowerCase()) && soundMap.get(String(a).toLowerCase()).includes(String(b).toLowerCase());
+
   function pickOptions(pool, target, n) {
+    pool = pool.filter((it) => !soundsLike(it.text, target.text)); // (never "two" with "to")
     const byText = new Map(pool.map((it) => [it.text, it]));
     const tricky = shuffle((target.tricky || []).map((t) => byText.get(t)).filter((it) => it && it !== target));
     const near = shuffle(pool.filter((it) => it !== target && !tricky.includes(it) && looksAlike(it.text, target.text)));
@@ -390,7 +400,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps,
+    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, soundsLike,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,

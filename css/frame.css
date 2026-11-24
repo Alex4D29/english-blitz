@@ -441,3 +441,5 @@ body.demo #stage::before {
 .word-chip .em { font-size: 1.1em; }
 .word-chip[aria-pressed="true"] { background: #ffd400; transform: translateY(2px); box-shadow: 0 2px 0 var(--ink), 0 0 0 3px #fff inset; }
 .word-chip[aria-pressed="true"]::before { content: "⭐"; font-size: .8em; }
+.word-chip.set { font-size: clamp(1.2rem, 5.5vw, 1.6rem); padding: 10px 18px; background: #ffe0f0; }
+.word-chip.set[aria-pressed="true"] { background: #ff6fb0; color: #fff; -webkit-text-stroke: 1px var(--ink); }

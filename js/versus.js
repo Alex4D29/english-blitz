@@ -9,6 +9,7 @@
     setup: "WHO'S\nPLAYING?",
     p: (n) => `PLAYER ${n}`,
     fight: "⚔️ GO!",
+    firstTo: "FIRST TO",
     back: "⬅️ BACK",
     round: (n) => `ROUND ${n}`,
     point: "POINT!",
@@ -21,7 +22,10 @@
     quit: "Quit",
     say: { go: "Ready? Go!", point: (n) => `Point for player ${n}!`, win: (n) => `Player ${n} wins!` },
   };
-  const GOAL = 5;            // points to win the match
+  const GOALS = [3, 5, 7];   // points to win the match: a choice on the setup screen (the teacher asked)
+  const GOAL_KEY = "wwe.vs.goal";
+  let goal = 5;
+  try { const g = JSON.parse(localStorage.getItem(GOAL_KEY)); if (GOALS.includes(g)) goal = g; } catch (err) { /* ok */ }
   const START_LOCK = 500;
   // Every game works in a half: they all draw inside their own root and track each finger separately, so two
   // players can drag at the same time (the teacher's wish list had drag and slice games too). VERSUS_SKIP leaves any out.
@@ -67,6 +71,10 @@
   .vs-picker .row { display:flex; align-items:center; gap:6px; }
   .vs-picker .arrow { width:46px; height:46px; border-radius:50%; border:4px solid #111; background:var(--pc); color:#fff; font:inherit; font-size:1.3rem; cursor:pointer; touch-action:manipulation; }
   .vs-picker .nm { font-size:1.1rem; }
+  .vs-goal { display:flex; align-items:center; gap:10px; }
+  .vs-goal .shout { font-size:clamp(1.3rem, 5.5vw, 1.8rem); }
+  .vs-goal button { min-width:64px; height:58px; border-radius:14px; border:4px solid #111; background:#fff; box-shadow:0 4px 0 #111; font:inherit; font-size:1.6rem; cursor:pointer; touch-action:manipulation; }
+  .vs-goal button[aria-pressed="true"] { background:#ffd400; transform:translateY(2px); box-shadow:0 2px 0 #111; }
   .vs-go { font-size:clamp(1.6rem, 7vw, 2.4rem) !important; padding:12px 30px !important; background:#4dd36b !important; }
   .vs-end-buttons { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .vs-champ { display:flex; align-items:flex-end; gap:20px; }
@@ -161,7 +169,19 @@
     });
     const back = el("button", "chunky"); back.textContent = TEXT.back;
     back.addEventListener("click", close);
-    box.append(h, pickers, go, back);
+    // FIRST TO 3 / 5 / 7 points.
+    const goals = el("div", "vs-goal", '<span class="shout">' + TEXT.firstTo + "</span>");
+    GOALS.forEach((g) => {
+      const b = el("button"); b.textContent = g; b.setAttribute("aria-pressed", String(g === goal));
+      b.addEventListener("click", () => {
+        goal = g;
+        try { localStorage.setItem(GOAL_KEY, JSON.stringify(g)); } catch (err) { /* ok */ }
+        goals.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        C().sfx.tone(500 + g * 40, 0.06);
+      });
+      goals.appendChild(b);
+    });
+    box.append(h, pickers, goals, go, back);
     r.appendChild(box);
   }
 
@@ -354,7 +374,7 @@
     n.classList.remove("pop"); void n.offsetWidth; n.classList.add("pop");
     [523, 659, 784].forEach((f, k) => C().sfx.tone(f, 0.1, "triangle", 0.09, k * 0.08));
     C().say(TEXT.say.point(i + 1));
-    if (match.score[i] >= GOAL) { later(() => champion(i), 1800); return; }
+    if (match.score[i] >= goal) { later(() => champion(i), 1800); return; }
     later(nextRound, 1900);
   }
 

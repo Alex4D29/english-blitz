@@ -73,9 +73,9 @@ window.WORD_LISTS = [
         "tug", "but", "sum"),
     ],
   },
-  // High-frequency / sight words (Dolch and Fry): 100 common words, none of them CVC.
-  // No two sound the same (to/two/too, there/their, no/know were left out), so a game
-  // that says a word never has two right answers.
+  // High-frequency / sight words (Dolch and Fry), none of them CVC. Words that sound the same (to/two,
+  // for/four) are kept apart by Core.soundsLike (SOUND_ALIKE in js/core.js): one is never a wrong answer
+  // to the other, so a game that says a word never has two right answers. Add new pairs there.
   {
     id: "hfw",
     type: "hfw",
@@ -89,7 +89,18 @@ window.WORD_LISTS = [
       "her", "them", "then", "little", "want", "were", "will", "make", "about", "could",
       "would", "because", "very", "good", "new", "now", "how", "old", "over", "after",
       "again", "off", "away", "came", "any", "many", "help", "jump", "please", "eat",
-      "give", "day", "going", "has", "his", "just", "first", "only", "every", "school"),
+      "give", "day", "going", "has", "his", "just", "first", "only", "every", "school",
+      // More (the teacher asked for a few more): colours, then common Dolch / Fry words. Still no sound-alikes
+      // (two/too, know, read, eight) and nothing that's in the CVC list.
+      "blue", "yellow", "green", "brown", "black", "white", "funny", "find", "pretty", "ride",
+      "say", "soon", "under", "ask", "fly", "live", "once", "open", "put", "stop",
+      "take", "thank", "think", "walk", "always", "around", "before", "both", "call", "cold",
+      "does", "fast", "found", "made", "sing", "sleep", "tell", "these", "wash", "which",
+      "work", "clean", "draw", "drink", "laugh", "light", "long", "small", "today", "friend",
+      "house", "water",
+      // Numbers (for the Numbers group). "two" and "four" sound like "to" and "for": Core.soundsLike keeps them
+      // from ever being the wrong answers to each other (and vice versa).
+      "two", "four", "five", "seven", "eight", "nine"),
   },
 ];
 
@@ -98,6 +109,7 @@ window.WORD_LISTS = [
 [["was", "saw"], ["on", "no"], ["how", "who"], ["of", "off"], ["of", "for"], ["there", "three"],
   ["there", "where"], ["then", "them"], ["went", "want"], ["come", "came"], ["were", "where"], ["from", "for"],
   ["was", "has"], ["his", "has"], ["now", "new"], ["any", "many"], ["what", "that"], ["when", "then"],
+  ["think", "thank"], ["find", "found"], ["once", "one"], ["walk", "work"], ["live", "like"], ["black", "blue"], ["which", "white"],
 ].forEach(([a, b]) => {
   const items = window.WORD_LISTS.find((l) => l.id === "hfw").items;
   const A = items.find((it) => it.text === a);

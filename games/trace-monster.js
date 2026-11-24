@@ -22,7 +22,7 @@
       steps: [
         ["👾", "A monster shaped like a letter appears, and the voice says the letter."],
         ["☝️", "Put your finger on the monster and trace over the letter."],
-        ["✨", "The dots light up as you go. Light up every line to pop the monster!"],
+        ["✨", "The dots light up as you go. Light up every line to pop the monster! Pop 3 monsters to win."],
       ],
       tips: [
         "Watch the 👆 hand. It shows you where to trace.",
@@ -140,6 +140,9 @@
   .tl-svg { display:block; width:100%; height:100%; overflow:visible; touch-action:none; cursor:crosshair;
     -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   .tl-fx { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:3; }
+  .tl-pips { position:absolute; left:8px; top:8px; z-index:4; display:flex; gap:5px; pointer-events:none; }
+  .tl-pips span { width:26px; height:26px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; }
+  .tl-pips span.on { background:#ffd400; } .tl-pips span.on::after { content:"👾"; }
   .tl-svg g, .tl-svg circle { transform-box:fill-box; transform-origin:center; }
 
   .tl-dot { fill:#fff; stroke:#111; stroke-width:1; transition:transform .12s, fill .12s; }
@@ -217,7 +220,7 @@
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter"],
-    duration: 7000, // tracing takes longer than a tap
+    duration: 18000, // three monsters to trace (one was over too quickly: the teacher); the pops between don't count
     input: "drag",
     tutorial: true, // has a ctx.tutorial script
 
@@ -227,11 +230,30 @@
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const later = ctx.later;
       const { tone, sweep, noise } = ctx.sfx;
-      let done = false;
+      // THREE monsters to trace, one after another (the teacher asked: one was over too quickly).
+      const GOAL = 3;
+      const picks = [];
+      for (const it of ctx.items) {
+        if (LETTERS[String(it.text).toUpperCase()] && !picks.some((p) => p.text.toUpperCase() === it.text.toUpperCase())) picks.push(it);
+        if (picks.length >= GOAL) break;
+      }
+      if (!picks.length) throw new Error("no traceable letter in list");
+      const wrap = document.createElement("div");
+      wrap.className = "tl" + (speed >= 1.75 ? " noguide" : "");
+      const fx = document.createElement("div");
+      fx.className = "tl-fx";
+      const pips = document.createElement("div");
+      pips.className = "tl-pips";
+      pips.innerHTML = "<span></span>".repeat(picks.length);
+      wrap.append(fx, pips);
+      ctx.root.appendChild(wrap);
+      let cur = null;
 
-      // ---------- Content ----------
-      const item = ctx.items.find((it) => LETTERS[String(it.text).toUpperCase()]);
-      if (!item) throw new Error("no traceable letter in list");
+      // One monster: built, traced, popped; then the next one comes (a beat between: the clock stops).
+      function makeMonster(n) {
+      const item = picks[n];
+      let done = false;
+      wrap.classList.remove("hungry", "scared", "over");
       const lower = item.text === item.text.toLowerCase() || Math.random() < 0.5;
       const letter = lower ? item.text.toLowerCase() : item.text.toUpperCase();
       const spoken = item.say || item.text.toUpperCase();
@@ -276,13 +298,10 @@
       if (best > 22) mouth = aim; // O, C, U: grin from inside the hole
 
       // ---------- DOM ----------
-      const wrap = document.createElement("div");
-      wrap.className = "tl" + (speed >= 1.75 ? " noguide" : "");
       const mon = document.createElement("div");
       mon.className = "tl-mon";
-      const fx = document.createElement("div");
-      fx.className = "tl-fx";
-      wrap.append(mon, fx);
+      wrap.insertBefore(mon, fx);
+      if (n) mon.animate([{ transform: "translateX(110%) rotate(20deg)" }, { transform: "none" }], { duration: reduceMotion ? 1 : 380, easing: "cubic-bezier(.2,1.3,.4,1)" }); // it hops in
 
       const svg = svgEl("svg", { class: "tl-svg", viewBox, role: "img",
         "aria-label": TEXT.monsterLabel(spoken) }, mon);
@@ -313,7 +332,6 @@
         svgEl("circle", { cx: f1(-e.r * 0.15), cy: f1(-e.r * 0.18), r: f1(e.r * 0.14) }, p);
         return { eye: e, el: p };
       });
-      ctx.root.appendChild(wrap);
       ctx.say(spoken);
 
       // ---------- Eyes ----------
@@ -334,7 +352,7 @@
       })();
 
       // ---------- Ghost finger: shows the first stroke once ----------
-      if (speed < 1.5 && !reduceMotion && !ctx.demo) { // (a tutorial has its own finger)
+      if (n === 0 && speed < 1.5 && !reduceMotion && !ctx.demo) { // (a tutorial has its own finger; only the first monster)
         const path = dots[0];
         const ghost = svgEl("text", { class: "tl-ghost", x: 0, y: 0 }, svg);
         ghost.textContent = "👆";
@@ -350,10 +368,9 @@
       }
 
       // ---------- Hunger: fatter, wider mouth, then trembling ----------
-      const tStart = performance.now();
       (function grow() {
         if (done) return;
-        const t = Math.min(1, (performance.now() - tStart) / ctx.timeLimit);
+        const t = ctx.timeFrac(); // (over the whole round: the later monsters start hungrier)
         const w = bodyW * (1 + 0.46 * t * t);
         body.setAttribute("stroke-width", f1(w));
         outline.setAttribute("stroke-width", f1(w + 8));
@@ -442,7 +459,13 @@
         if (done) return;
         done = true;
         ink = null;
-        ctx.win();
+        pips.children[n].classList.add("on");
+        if (n >= picks.length - 1) ctx.win();
+        else {
+          // The beat: the clock stops while it pops, then the next monster hops in.
+          ctx.pauseTimer(1400);
+          later(() => { if (ctx.ended) return; mon.remove(); cleanup(); cur = makeMonster(n + 1); }, 1300);
+        }
         wrap.classList.remove("hungry", "scared");
         wrap.classList.add("over");
         lookAt(50, -200); // eyes roll up in panic
@@ -526,7 +549,8 @@
       }
 
       // ---------- Lose: lunge and CHOMP ----------
-      ctx.onTimeout(() => {
+      function timeout() {
+        if (done) return;
         done = true;
         ink = null;
         wrap.classList.remove("scared");
@@ -565,7 +589,7 @@
           [{ transform: "scale(1)" }, { transform: "scale(.85) rotate(-3deg)", offset: 0.35 }, { transform: "scale(9)" }],
           { duration: 650, easing: "cubic-bezier(.6,0,.9,.6)", fill: "forwards" });
         later(chomp, 560);
-      });
+      }
 
       // ---------- Sound effects ----------
       function swellSound() { sweep(200, 700, 0.26, "sine", 0.18); tone(300, 0.25, "triangle", 0.06); }
@@ -582,28 +606,39 @@
       }
 
 
-      // Tutorial: point at the monster, then trace each stroke through its dots.
-      ctx.tutorial(item, async (f) => {
-        const at = (dt) => () => { // a letter-box point → px in ctx.root
-          const m = svg.getScreenCTM(), g = ctx.root.getBoundingClientRect();
-          const p = svg.createSVGPoint(); p.x = dt.x; p.y = dt.y;
-          const q = p.matrixTransform(m);
-          return { x: q.x - g.left, y: q.y - g.top };
-        };
-        await f.point(svg, 900);
-        for (const stroke of dots) {
-          if (done) break;
-          await f.path(stroke.map(at), Math.max(30, 900 / stroke.length));
-        }
-      });
-
-      return function cleanup() {
-        done = true;
+      const at = (dt) => () => { // a letter-box point → px in ctx.root (tutorial)
+        const m = svg.getScreenCTM(), g = ctx.root.getBoundingClientRect();
+        const p = svg.createSVGPoint(); p.x = dt.x; p.y = dt.y;
+        const q = p.matrixTransform(m);
+        return { x: q.x - g.left, y: q.y - g.top };
+      };
+      function cleanup() {
         svg.removeEventListener("pointerdown", onDown);
         svg.removeEventListener("pointermove", onMove);
         svg.removeEventListener("pointerup", onUp);
         svg.removeEventListener("pointercancel", onUp);
-      };
+      }
+      return { n, svg, dots, at, timeout, isDone: () => done, end: () => { done = true; cleanup(); } };
+      } // makeMonster
+
+      cur = makeMonster(0);
+      ctx.onTimeout(() => { if (cur) cur.timeout(); });
+
+      // Tutorial: point at the monster, then trace each stroke through its dots; three times.
+      ctx.tutorial(picks, async (f) => {
+        for (let k = 0; k < picks.length; k++) {
+          if (!(await f.until(() => cur && cur.n === k && !cur.isDone(), 3000))) break;
+          const m = cur;
+          await f.point(m.svg, k ? 500 : 900);
+          for (const stroke of m.dots) {
+            if (m.isDone()) break;
+            await f.path(stroke.map(m.at), Math.max(30, 900 / stroke.length));
+          }
+          await f.until(() => m.isDone(), 1500);
+        }
+      });
+
+      return function cleanupAll() { if (cur) cur.end(); };
     },
   });
 })();

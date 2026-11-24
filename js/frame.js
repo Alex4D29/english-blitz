@@ -79,7 +79,7 @@
     bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     words: $("#words"), wordsGrid: $("#wordsGrid"), wordsCount: $("#wordsCount"), wordsDoneBtn: $("#wordsDoneBtn"), wordsClearBtn: $("#wordsClearBtn"),
-    myWordsBox: $("#myWordsBox"),
+    myWordsNote: $("#myWordsNote"), myWordsBtn: $("#myWordsBtn"), wordsEditBtn: $("#wordsEditBtn"), myWordsSetNote: $("#myWordsSetNote"),
     charBtn: $("#charBtn"), resChar: $("#resChar"), resetCharsBtn: $("#resetCharsBtn"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
@@ -1339,43 +1339,70 @@
   }
 
   // ---------- ⭐ MY WORDS (Word of the Week) ----------
-  // On the content picker: a MY WORDS switch and CHOOSE WORDS. While it's on, every target comes from the
-  // chosen words (the type toggles grey out: the chosen words decide which types play).
+  // In Settings (the teacher moved it there, so kids don't switch it by accident): a MY WORDS switch and CHOOSE
+  // WORDS. While it's on, every target comes from the chosen words; the content picker only shows a note and
+  // greys the type toggles (the chosen words decide which types play).
   function renderMyWordsBox() {
-    const box = els.myWordsBox;
-    box.innerHTML = "";
-    const info = T.myWords, n = chosenCount();
-    const b = document.createElement("button");
-    b.className = "content-btn mywords long";
-    b.setAttribute("aria-pressed", String(myWordsOn()));
-    b.innerHTML = `<span class="tick" aria-hidden="true">✔</span><span class="what"><span class="nm"></span><span class="lbl"></span></span><span class="sample" aria-hidden="true"></span>`;
-    b.querySelector(".nm").textContent = info.name;
-    b.querySelector(".lbl").textContent = n ? `${info.label} · ${T.wordsCount(n)}` : info.label;
-    b.querySelector(".sample").textContent = info.sample;
-    b.addEventListener("click", () => {
-      C.unlock();
-      if (!chosenCount()) { showWords(); return; } // nothing chosen yet: choose some first
-      state.myWords.on = !state.myWords.on;
-      saveMyWords();
-      C.sfx.tone(state.myWords.on ? 660 : 440, 0.08);
-      renderContent();
-    });
-    const edit = document.createElement("button");
-    edit.className = "chunky words-edit";
-    edit.textContent = `✏️ ${T.editWords}`;
-    edit.addEventListener("click", () => { C.unlock(); showWords(); });
-    box.append(b, edit);
-    if (myWordsOn()) {
-      const note = document.createElement("p");
-      note.className = "words-note";
-      note.textContent = T.myWordsOn;
-      box.appendChild(note);
-    }
+    els.myWordsNote.hidden = !myWordsOn();
+    els.myWordsNote.textContent = `⭐ ${T.myWordsOn} (${T.wordsCount(chosenCount())})`;
   }
+  function renderMyWordsSetting() {
+    const on = myWordsOn(), n = chosenCount();
+    els.myWordsBtn.setAttribute("aria-pressed", String(on));
+    els.myWordsBtn.textContent = on ? T.on : T.off;
+    els.myWordsSetNote.textContent = n ? `${T.myWords.label} · ${T.wordsCount(n)}` : T.wordsNone;
+  }
+  els.myWordsBtn.addEventListener("click", () => {
+    C.unlock();
+    if (!chosenCount()) { showWords(); return; } // nothing chosen yet: choose some first
+    state.myWords.on = !state.myWords.on;
+    saveMyWords();
+    C.sfx.tone(state.myWords.on ? 660 : 440, 0.08);
+    renderMyWordsSetting();
+  });
+  els.wordsEditBtn.addEventListener("click", () => { C.unlock(); showWords(); });
   // The word chooser: every letter, CVC word and sight word as a chip to tick.
   function showWords() {
     const lists = window.WORD_LISTS || [];
     els.wordsGrid.innerHTML = "";
+    // QUICK SETS (T.wordsSetGroups): tricky sounds (L vs R…: every letter, CVC word and sight word starting with
+    // those letters), word groups (numbers, colours, action words…: named words from any list) and CVC words by
+    // vowel. One tap adds the whole set; a tap when it's all in takes it out again.
+    const setWords = (s) => ["letter", "cvc", "hfw"].map((type) => {
+      const list = lists.find((l) => l.type === type);
+      const fits = (it) => (s.letters ? s.letters.includes(it.text.charAt(0).toUpperCase())
+        : s.vowel ? type === "cvc" && it.text.charAt(1) === s.vowel
+        : type !== "letter" && s.words.includes(it.text));
+      return [type, list ? list.items.filter(fits).map((it) => it.text) : []];
+    });
+    const setOn = (s) => { const all = setWords(s); return all.some(([, ws]) => ws.length) && all.every(([type, ws]) => ws.every((w) => state.myWords[type].includes(w))); };
+    T.wordsSetGroups.forEach((g) => {
+      const sh = document.createElement("h2");
+      sh.className = "grid-head";
+      sh.textContent = g.head;
+      const sets = document.createElement("div");
+      sets.className = "words-grid sets";
+      g.sets.forEach((s) => {
+        const b = document.createElement("button");
+        b.className = "word-chip set";
+        b.textContent = s.name;
+        b.setAttribute("aria-pressed", String(setOn(s)));
+        b.addEventListener("click", () => {
+          const on = setOn(s);
+          setWords(s).forEach(([type, ws]) => {
+            state.myWords[type] = on ? state.myWords[type].filter((w) => !ws.includes(w)) : [...new Set([...state.myWords[type], ...ws])];
+          });
+          if (!on) state.myWords.on = true;
+          C.sfx.tone(on ? 420 : 700, 0.08);
+          saveMyWords();
+          const y = els.words.scrollTop;
+          showWords();
+          els.words.scrollTop = y;
+        });
+        sets.appendChild(b);
+      });
+      els.wordsGrid.append(sh, sets);
+    });
     ["letter", "cvc", "hfw"].forEach((type) => {
       const list = lists.find((l) => l.type === type);
       if (!list) return;
@@ -1410,7 +1437,7 @@
     showScreen("words");
   }
   function updateWordsCount() { els.wordsCount.textContent = T.wordsCount(chosenCount()); }
-  els.wordsDoneBtn.addEventListener("click", () => { renderContent(); showScreen("content"); });
+  els.wordsDoneBtn.addEventListener("click", () => { renderSettings(); showScreen("settings"); }); // (back to Settings)
   els.wordsClearBtn.addEventListener("click", () => {
     state.myWords.letter = []; state.myWords.cvc = []; state.myWords.hfw = []; state.myWords.on = false;
     saveMyWords();
@@ -1624,6 +1651,7 @@
     musicVol.disabled = !musicOn;
     listeningBtn.setAttribute("aria-pressed", String(state.listening));
     listeningBtn.textContent = state.listening ? T.on : T.off;
+    renderMyWordsSetting();
   }
   musicBtn.addEventListener("click", () => {
     C.unlock();

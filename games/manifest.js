@@ -46,4 +46,5 @@ window.GAME_FILES = [
   "maze-run",
   "yarn-chase",
   "tickle-tummy",
+  "fossil-dig",
 ];
