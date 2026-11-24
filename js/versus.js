@@ -16,6 +16,8 @@
     out: "OOPS!",
     slow: "TOO SLOW!",
     nobody: "NOBODY!",
+    heave: "HEAVE!",
+    splash: "SPLASH!",
     wins: (n) => `PLAYER ${n}\nWINS!`,
     again: "🔁 PLAY AGAIN",
     menu: "🏠 MENU",
@@ -79,6 +81,63 @@
   .vs-end-buttons { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .vs-champ { display:flex; align-items:flex-end; gap:20px; }
   .vs-crown { font-size:3rem; text-align:center; line-height:1; animation:vs-pop .6s cubic-bezier(.2,1.8,.4,1); }
+  /* Shared-screen Tug of War: the field across the top, each player's buttons in their half below */
+  .vs-sides { position:relative; }
+  .vs-sides.shared > .vs-side { visibility:hidden; }
+  .vs-shared { position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; }
+  .vt-field { position:relative; flex:1.3; min-height:0; overflow:hidden; border:5px solid #111; border-radius:18px; --tz:min(18vw, 22vh, 120px);
+    background:linear-gradient(180deg, #8fd3ff 0 58%, #6cc04a 58%); }
+  .vt-mud { position:absolute; left:50%; top:78%; width:28%; height:22%; transform:translate(-50%, -50%); border-radius:50%; border:5px solid #111;
+    background:radial-gradient(ellipse at 40% 40%, #8a5a2b 0 30%, #6b4320 60%, #553417 100%); }
+  .vt-group { position:absolute; inset:0; transition:transform .35s cubic-bezier(.3,1.4,.5,1); }
+  .vt-rope { position:absolute; left:14%; right:14%; top:66%; height:12px; margin-top:-6px; border:3px solid #111; border-radius:99px;
+    background:repeating-linear-gradient(60deg, #d8a865 0 8px, #b98a4a 8px 14px); }
+  .vt-flag { position:absolute; left:50%; top:66%; width:18px; height:30px; margin:-2px 0 0 -9px; background:#e8173c; border:3px solid #111; clip-path:polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%); }
+  .vt-me { position:absolute; top:calc(66% - var(--tz) * .78); width:var(--tz); height:var(--tz); }
+  .vt-me.l { left:6%; } .vt-me.r { right:6%; transform:scaleX(-1); }
+  .vt-me .ms.heave .ms-in { transform:rotate(-26deg) translateX(-10%); }
+  .vt-card { position:absolute; left:50%; top:8%; transform:translateX(-50%); min-width:74px; height:62px; padding:0 14px; border-radius:16px; background:#fff; border:5px solid #111;
+    box-shadow:0 5px 0 #111; font:inherit; font-size:2.2rem; line-height:1; color:#111; z-index:3; cursor:pointer; }
+  .vt-card.next { animation:vs-pop .4s cubic-bezier(.2,1.8,.4,1); }
+  .vt-bar { position:absolute; left:0; right:0; bottom:0; height:8px; background:rgba(0,0,0,.2); } .vt-bar i { display:block; height:100%; background:#4dd36b; transform-origin:0 50%; }
+  .vt-fx { position:absolute; inset:0; pointer-events:none; z-index:6; overflow:visible; }
+  .vt-word { position:absolute; top:34%; transform:translate(-50%, -50%) rotate(-8deg); font-size:2rem; color:#ffd400; -webkit-text-stroke:2px #111; paint-order:stroke fill;
+    text-shadow:0 4px 0 #111; white-space:nowrap; animation:vs-pop .4s ease-out; }
+  .vt-word.big { left:50%; font-size:2.8rem; }
+  .vt-pads { flex:1; min-height:0; display:flex; gap:8px; }
+  .vt-pad { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border:5px solid var(--pc); border-radius:18px;
+    background:rgba(255,255,255,.25); transition:filter .2s; }
+  .vt-pad .who { font-size:1rem; color:#fff; background:var(--pc); padding:2px 10px; border-radius:99px; -webkit-text-stroke:1px #111; paint-order:stroke fill; }
+  .vt-pad .btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:0 6px; }
+  .vt-btn { min-width:64px; height:60px; padding:0 8px; border:5px solid #111; border-radius:16px; box-shadow:0 5px 0 #111; background:#fff; font:inherit; font-size:1.8rem; line-height:1;
+    color:#111; cursor:pointer; touch-action:manipulation; }
+  .vt-btn.bad { background:#ff5a6e; color:#fff; }
+  .vt-pad.dizzy { filter:grayscale(1) brightness(.8); animation:vs-dizzy .3s linear infinite; }
+  .vt-pad.wait { pointer-events:none; opacity:.6; }
+  @keyframes vs-dizzy { 25% { transform:rotate(-1.5deg); } 75% { transform:rotate(1.5deg); } }
+  /* Shared-screen Wire Cut: the bomb in the middle, wires down to each half */
+  .vw-field { position:relative; flex:1.3; min-height:0; overflow:hidden; border:5px solid #111; border-radius:18px; --bz:min(30vw, 26vh, 170px);
+    background:linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 24px 24px, linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 24px 24px, #1d2a3a; }
+  .vw-wires { position:absolute; inset:0; width:100%; height:100%; }
+  .vw-bomb { position:absolute; left:50%; top:46%; width:var(--bz); height:var(--bz); transform:translate(-50%, -50%); border-radius:50%; background:radial-gradient(circle at 35% 30%, #555, #111 70%);
+    border:5px solid #000; animation:vw-throb 1s ease-in-out infinite alternate; z-index:2; }
+  .vw-bomb.hurry { animation-duration:.25s; }
+  .vw-bomb .fuse { position:absolute; left:58%; top:-14%; width:8%; height:20%; background:#c9a86b; border:3px solid #111; transform:rotate(20deg); }
+  .vw-bomb .spark { position:absolute; left:64%; top:-26%; font-size:calc(var(--bz) * .2); animation:vw-fizz .15s steps(2) infinite; }
+  .vw-bomb .eye { position:absolute; top:22%; width:20%; aspect-ratio:1; background:#fff; border:3px solid #000; border-radius:50%; overflow:hidden; } .vw-bomb .eye.l { left:24%; } .vw-bomb .eye.r { right:24%; width:16%; }
+  .vw-bomb .eye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; }
+  .vw-screen { position:absolute; left:20%; right:20%; top:48%; height:30%; border:4px solid #000; border-radius:10px; background:#7cf0ff; font:inherit; font-size:calc(var(--bz) * .2); line-height:1;
+    color:#111; display:flex; align-items:center; justify-content:center; cursor:pointer; white-space:nowrap; overflow:hidden; }
+  .vw-screen.next { animation:vs-pop .35s cubic-bezier(.2,1.8,.4,1); }
+  .vw-bomb.phew { animation:none; } .vw-bomb.phew .spark { display:none; } .vw-bomb.phew .vw-screen { background:#4dd36b; }
+  .vw-bomb.gone { animation:vw-boom .4s ease-out forwards; }
+  .vw-plug { border-color:#111; background:linear-gradient(var(--wc) 0 22%, #fff 22%); }
+  .vw-plug.snipped:not(.bad) { opacity:.5; }
+  .vt-pad.sooty { background:#333; filter:saturate(.3); }
+  .vt-pad.sooty .vt-btn { background:#555; color:#999; }
+  @keyframes vw-throb { to { transform:translate(-50%, -50%) scale(1.06); } }
+  @keyframes vw-fizz { 50% { opacity:.4; transform:scale(1.3); } }
+  @keyframes vw-boom { 40% { transform:translate(-50%, -50%) scale(1.5); filter:brightness(3); } 100% { transform:translate(-50%, -50%) scale(0); opacity:0; } }
   @keyframes vs-pop { from { transform:scale(.3); opacity:0; } }
   `;
   let cssDone = false;
@@ -245,6 +304,7 @@
     const token = ++match.token;
     const alive = () => match && token === match.token;
     if (window.Music) Music.play(game.id);
+    if (SHARED[game.id]) { SHARED[game.id](game, list, alive); return; } // (a shared-screen versus game)
     const items = F().prepItems(list);
     const paceMs = game.duration || 5000;
     const seed = Math.floor(Math.random() * 1e9);
@@ -379,9 +439,237 @@
     later(nextRound, 1900);
   }
 
+  // ---------- Shared-screen versus games (the teacher's idea) ----------
+  // TUG OF WAR: one rope across the top of the screen, player 1's character on the left and player 2's on the
+  // right, the card in the middle; each player has their own answer buttons in their half below. Both get the
+  // same target: the first to tap the right one HEAVES the rope their way, then a new target for both. A wrong
+  // tap makes that player dizzy for a moment (their buttons lock). Three heaves ahead and the other character
+  // is dragged face-first into the mud: the point. Out of time: whoever's ahead takes it.
+  const SHARED = {
+    "tug-of-war": (game, list, alive) => {
+      const items = F().prepItems(list);
+      const N = 3, GOALP = 3, DIZZY = 1200;
+      const steps = C().choiceSteps(items, list.type, 12, N, { lowercase: true, canSpeak: F().canSpeak() });
+      let si = 0, step = steps[0], p = 0, over = false;             // p: -GOALP (player 1 wins) … +GOALP (player 2 wins)
+      const sides = root.querySelector(".vs-sides");
+      sides.classList.add("shared");
+      const box = el("div", "vs-shared", `<div class="vt-field"><div class="vt-mud"></div><div class="vt-group"><div class="vt-rope"></div><div class="vt-flag"></div>` +
+        `<div class="vt-me l"></div><div class="vt-me r"></div></div><button class="vt-card"></button><div class="vt-bar"><i></i></div><div class="vt-fx"></div></div>` +
+        `<div class="vt-pads"><div class="vt-pad l" style="--pc:${COLORS[0]}"></div><div class="vt-pad r" style="--pc:${COLORS[1]}"></div></div>`);
+      sides.appendChild(box);
+      match.shared = box;
+      const card = box.querySelector(".vt-card"), group = box.querySelector(".vt-group"), bar = box.querySelector(".vt-bar i"), fx = box.querySelector(".vt-fx");
+      const pads = [box.querySelector(".vt-pad.l"), box.querySelector(".vt-pad.r")];
+      const mes = [box.querySelector(".vt-me.l"), box.querySelector(".vt-me.r")].map((m, i) => {
+        const f = window.Mascot.el("var(--tz)", players[i].char);
+        window.Mascot.mood(f, "pull");
+        m.appendChild(f);
+        return f;
+      });
+      card.addEventListener("pointerdown", (e) => { e.preventDefault(); if (!over) C().say(step.prompt); });
+      const dizzy = [0, 0];
+      function deal() {
+        card.textContent = step.listen ? step.target.text : step.cardText;
+        card.classList.remove("next"); void card.offsetWidth; card.classList.add("next");
+        pads.forEach((pad, i) => {
+          pad.innerHTML = `<div class="who">${TEXT.p(i + 1)}</div><div class="btns"></div>`;
+          C().shuffle(step.row.slice()).forEach((o) => {
+            const b = el("button", "vt-btn");
+            b.textContent = o.text;
+            if (o.kind === "word") b.style.fontSize = `${Math.min(30, 120 / (o.text.length * 0.6))}px`;
+            b.addEventListener("pointerdown", (e) => { e.preventDefault(); tap(i, b, o); });
+            pad.lastChild.appendChild(b);
+          });
+        });
+        C().say(step.prompt);
+      }
+      function setP() { group.style.transform = `translateX(${(p / GOALP) * 22}%)`; } // (−: towards player 1)
+      function tap(i, b, o) {
+        if (over || !alive() || performance.now() < dizzy[i]) return;
+        if (!o.right) {
+          b.classList.add("bad");
+          dizzy[i] = performance.now() + DIZZY;
+          pads[i].classList.add("dizzy");
+          C().sfx.sweep(500, 160, 0.3, "sawtooth", 0.08);
+          later(() => pads[i] && pads[i].classList.remove("dizzy"), DIZZY);
+          return;
+        }
+        // HEAVE! towards player i.
+        p += i === 0 ? -1 : 1;
+        setP();
+        mes[i].classList.add("heave"); later(() => mes[i].classList.remove("heave"), 300);
+        [0, 0.08].forEach((d) => C().sfx.noise(0.1, "lowpass", 900, 300, 0.4, d)); C().sfx.sweep(200, 420, 0.2, "square", 0.07);
+        word(TEXT.heave, i);
+        if (o.kind === "pic") C().say(o.spoken);
+        if (Math.abs(p) >= GOALP) { finish(i); return; }
+        si++; step = steps[si % steps.length];
+        pads.forEach((pad) => pad.classList.add("wait"));
+        later(() => { if (!over) { pads.forEach((pad) => pad.classList.remove("wait")); deal(); } }, 500);
+      }
+      function word(text, i) {
+        const w = el("div", "vt-word");
+        w.textContent = text;
+        w.style.left = i === 0 ? "28%" : "72%";
+        fx.appendChild(w);
+        later(() => w.remove(), 900);
+      }
+      // The winner pulls the other face-first into the mud.
+      function finish(winner) {
+        if (over) return;
+        over = true;
+        cancelAnimationFrame(match.sharedRaf);
+        const loser = 1 - winner;
+        // (the character itself, not its holder: player 2's holder is mirrored)
+        mes[loser].animate([{ transform: "none" }, { transform: "translateX(60%) rotate(75deg)" }], { duration: 420, easing: "cubic-bezier(.5,0,.9,.5)", fill: "forwards" });
+        later(() => {
+          C().sfx.noise(0.5, "lowpass", 1200, 150, 0.7); C().sfx.sweep(500, 120, 0.4, "sine", 0.12); // SPLOSH
+          mes[loser].classList.add("muddy"); window.Mascot.mood(mes[loser], "sad");
+          window.Mascot.mood(mes[winner], "cheer");
+          const w = el("div", "vt-word big"); w.textContent = TEXT.splash; fx.appendChild(w);
+          C().confetti(fx, winner ? fx.clientWidth * 0.75 : fx.clientWidth * 0.25, fx.clientHeight * 0.3, { count: 80 });
+          match.result = winner;
+          later(() => scorePoint(winner), 900);
+        }, 420);
+      }
+      // The clock (one for both). Out of time: whoever's ahead wins; level: nobody.
+      const T0 = performance.now() + 500, LIMIT = (game.duration || 12000) * 1.25;
+      (function tick() {
+        if (!alive() || over) return;
+        const f = Math.max(0, 1 - (performance.now() - T0) / LIMIT);
+        bar.style.transform = `scaleX(${f.toFixed(3)})`;
+        if (f <= 0) {
+          if (p) finish(p < 0 ? 0 : 1);
+          else { over = true; match.result = -1; banner(TEXT.nobody); later(nextRound, 1500); }
+          return;
+        }
+        match.sharedRaf = requestAnimationFrame(tick);
+      })();
+      setP();
+      deal();
+    },
+    // WIRE CUT: one bomb in the middle of the top half, its screen showing the target, wires running down to each
+    // player's half; each has their own plugs. First to cut the right wire gets a ✂️ and the screen flips to a new
+    // target; a wrong cut zaps that player (dizzy). First to 3 defuses it (PHEW!) and it blows up on the other
+    // side (BOOM, sooty): the point. Out of time: more cuts wins; level, it blows up on both.
+    "wire-cut": (game, list, alive) => {
+      const items = F().prepItems(list);
+      const N = 3, GOALP = 3, DIZZY = 1200;
+      const WIRES = ["#ff3b3b", "#2f8fe0", "#ffd400", "#4dd36b"];
+      const steps = C().choiceSteps(items, list.type, 12, N, { lowercase: true, canSpeak: F().canSpeak() });
+      let si = 0, step = steps[0], over = false;
+      const cuts = [0, 0];
+      const sides = root.querySelector(".vs-sides");
+      sides.classList.add("shared");
+      const box = el("div", "vs-shared", `<div class="vw-field"><svg class="vw-wires" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>` +
+        `<div class="vw-bomb"><div class="fuse"></div><div class="spark">✨</div><div class="eye l"><i></i></div><div class="eye r"><i></i></div><button class="vw-screen"></button></div>` +
+        `<div class="vt-bar"><i></i></div><div class="vt-fx"></div></div>` +
+        `<div class="vt-pads"><div class="vt-pad l" style="--pc:${COLORS[0]}"></div><div class="vt-pad r" style="--pc:${COLORS[1]}"></div></div>`);
+      sides.appendChild(box);
+      match.shared = box;
+      const screen = box.querySelector(".vw-screen"), bomb = box.querySelector(".vw-bomb"), svg = box.querySelector(".vw-wires"), bar = box.querySelector(".vt-bar i"), fx = box.querySelector(".vt-fx");
+      const pads = [box.querySelector(".vt-pad.l"), box.querySelector(".vt-pad.r")];
+      screen.addEventListener("pointerdown", (e) => { e.preventDefault(); if (!over) C().say(step.prompt); });
+      // Decorative wires from the bomb down to each player's half.
+      svg.innerHTML = [0, 1].map((side) => WIRES.slice(0, N).map((c, k) => {
+        const x0 = 50 + (side ? 4 : -4), x1 = side ? 60 + k * 12 : 40 - k * 12;
+        return `<path d="M${x0} 55 C${x0} 80, ${x1} 70, ${x1} 100" fill="none" stroke="#111" stroke-width="2.6" vector-effect="non-scaling-stroke"/>` +
+          `<path d="M${x0} 55 C${x0} 80, ${x1} 70, ${x1} 100" fill="none" stroke="${c}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
+      }).join("")).join("");
+      const dizzy = [0, 0];
+      function deal() {
+        screen.textContent = step.listen ? step.target.text : step.cardText;
+        screen.classList.remove("next"); void screen.offsetWidth; screen.classList.add("next");
+        pads.forEach((pad, i) => {
+          pad.innerHTML = `<div class="who">${TEXT.p(i + 1)} ${"✂️".repeat(cuts[i])}${"⚪".repeat(GOALP - cuts[i])}</div><div class="btns"></div>`;
+          C().shuffle(step.row.slice()).forEach((o, k) => {
+            const b = el("button", "vt-btn vw-plug");
+            b.style.setProperty("--wc", WIRES[k % WIRES.length]);
+            b.textContent = o.text;
+            if (o.kind === "word") b.style.fontSize = `${Math.min(30, 120 / (o.text.length * 0.6))}px`;
+            b.addEventListener("pointerdown", (e) => { e.preventDefault(); cut(i, b, o); });
+            pad.lastChild.appendChild(b);
+          });
+        });
+        C().say(step.prompt);
+      }
+      function cut(i, b, o) {
+        if (over || !alive() || performance.now() < dizzy[i]) return;
+        b.classList.add("snipped");
+        C().sfx.noise(0.06, "highpass", 3000, 5000, 0.4); // snip
+        if (!o.right) {
+          b.classList.add("bad");
+          dizzy[i] = performance.now() + DIZZY;
+          pads[i].classList.add("dizzy");
+          C().sfx.sweep(900, 200, 0.3, "sawtooth", 0.08); // ZAP
+          word("⚡ ZAP!", i);
+          later(() => pads[i] && pads[i].classList.remove("dizzy"), DIZZY);
+          return;
+        }
+        cuts[i]++;
+        word("SNIP! ✂️", i);
+        [660, 880].forEach((f, k) => C().sfx.tone(f, 0.07, "square", 0.07, k * 0.06));
+        if (o.kind === "pic") C().say(o.spoken);
+        if (cuts[i] >= GOALP) { finish(i); return; }
+        si++; step = steps[si % steps.length];
+        pads.forEach((pad) => pad.classList.add("wait"));
+        later(() => { if (!over) { pads.forEach((pad) => pad.classList.remove("wait")); deal(); } }, 500);
+      }
+      function word(text, i) {
+        const w = el("div", "vt-word");
+        w.textContent = text;
+        w.style.left = i === 0 ? "24%" : "76%";
+        fx.appendChild(w);
+        later(() => w.remove(), 900);
+      }
+      // Defused by the winner… and it blows up on the other side.
+      function finish(winner) {
+        if (over) return;
+        over = true;
+        cancelAnimationFrame(match.sharedRaf);
+        bomb.classList.add("phew");
+        const w = el("div", "vt-word big"); w.textContent = "PHEW!"; w.style.left = winner ? "76%" : "24%"; fx.appendChild(w);
+        C().sfx.sweep(800, 300, 0.4, "sine", 0.08);
+        later(() => boom([1 - winner], winner), 700);
+      }
+      function boom(losers, winner) {
+        bomb.classList.add("gone");
+        C().sfx.noise(0.8, "lowpass", 1500, 100, 0.9); C().sfx.tone(60, 0.5, "square", 0.18); // BOOM
+        losers.forEach((i) => {
+          pads[i].classList.add("sooty");
+          const b = el("div", "vt-word big"); b.textContent = "💥 BOOM!"; b.style.left = i ? "76%" : "24%"; b.style.top = "70%"; fx.appendChild(b);
+        });
+        box.animate([{ transform: "none" }, { transform: "translate(-8px,4px)" }, { transform: "translate(8px,-4px)" }, { transform: "none" }], { duration: 200, iterations: 3 });
+        if (winner != null) {
+          C().confetti(fx, winner ? fx.clientWidth * 0.75 : fx.clientWidth * 0.25, fx.clientHeight * 0.4, { count: 70 });
+          match.result = winner;
+          later(() => scorePoint(winner), 1000);
+        } else { match.result = -1; later(() => { banner(TEXT.nobody); later(nextRound, 1500); }, 800); }
+      }
+      // The clock: out of time, more cuts wins; level, it blows up on both.
+      const T0 = performance.now() + 500, LIMIT = (game.duration || 12000) * 1.25;
+      (function tick() {
+        if (!alive() || over) return;
+        const f = Math.max(0, 1 - (performance.now() - T0) / LIMIT);
+        bar.style.transform = `scaleX(${f.toFixed(3)})`;
+        bomb.classList.toggle("hurry", f < 0.3);
+        if (f <= 0) {
+          if (cuts[0] !== cuts[1]) finish(cuts[0] > cuts[1] ? 0 : 1);
+          else { over = true; boom([0, 1], null); }
+          return;
+        }
+        match.sharedRaf = requestAnimationFrame(tick);
+      })();
+      deal();
+    },
+  };
+
   function endRound(all) {
     if (!match) return;
     cancelAnimationFrame(match.raf);
+    cancelAnimationFrame(match.sharedRaf);
+    if (match.shared) { match.shared.remove(); match.shared = null; }
+    const sidesEl = root && root.querySelector(".vs-sides");
+    if (sidesEl) sidesEl.classList.remove("shared");
     (match.sides || []).forEach((side) => {
       side.timers.forEach(clearTimeout); side.rafs.forEach(cancelAnimationFrame);
       try { if (side.cleanup) side.cleanup(); } catch (err) { console.error("versus cleanup:", err); }

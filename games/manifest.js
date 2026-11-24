@@ -52,4 +52,6 @@ window.GAME_FILES = [
   "rocket-fix",
   "bridge-builder",
   "cookie-cutter",
+  "chicken-banana",
+  "six-seven-seesaw",
 ];
