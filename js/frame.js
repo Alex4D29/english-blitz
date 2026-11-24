@@ -80,7 +80,8 @@
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     words: $("#words"), wordsGrid: $("#wordsGrid"), wordsCount: $("#wordsCount"), wordsDoneBtn: $("#wordsDoneBtn"), wordsClearBtn: $("#wordsClearBtn"),
     myWordsNote: $("#myWordsNote"), myWordsBtn: $("#myWordsBtn"), wordsEditBtn: $("#wordsEditBtn"), myWordsSetNote: $("#myWordsSetNote"),
-    playerBtn: $("#playerBtn"), playersBox: $("#playersBox"),
+    itemsBtn: $("#itemsBtn"),
+    playerBtn: $("#playerBtn"), playersBox: $("#playersBox"), itemBar: $("#itemBar"),
     charBtn: $("#charBtn"), resChar: $("#resChar"), resetCharsBtn: $("#resetCharsBtn"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
@@ -106,6 +107,8 @@
     tutorial: C.storage.get(TUTORIAL_KEY, true) !== false, // show each game once before it's played (Fun, Challenge)
     seen: new Set(),            // games whose tutorial this run has already shown
     played: new Set(),          // games played this run (no repeats: chooseRound)
+    itemNext: {},               // 🎁 items waiting for the next game: { slow, fifty }
+    pendingBox: false,          // ❓ an item box to open before the next round
     forceDemo: null,            // a game id whose tutorial the next round must show (Tutorials menu)
     picker: "practice",         // what the game grid is for: "practice" or "tutorial"
     practiceSpeed: Number(C.storage.get(PRACTICE_SPEED_KEY, 1)) || 1, // Practice difficulty (1, 1.75 or 2.5)
@@ -241,6 +244,8 @@
     const types = game.contentTypes || [];
     return listsInPlay().filter((l) => types.includes(l.type));
   }
+  // 🎁 Items are on in Endless (Challenge in the code) and Adventure (levels and island bosses: the item shop) when switched on in Settings.
+  const itemsHere = () => !!state.mode && (state.mode.id === "challenge" || !!state.adv) && !!window.Items && window.Items.on();
   const isPractice = () => !!state.mode && state.mode.id === "practice";
   const isBoss = () => !!state.mode && state.mode.id === "boss" && !!state.boss;
   const bossFight = () => isBoss() && state.boss.phase !== "levels"; // the showdown or the final battle
@@ -249,6 +254,8 @@
   // Pick the content type first, so each ticked type comes up about equally often,
   // then a game that can use it (never the same game twice in a row when there's a choice).
   function chooseRound() {
+    // 🐢 Slow-Mo / 💡 50/50 used mid-game: the same game again, straight away (`replayNow`).
+    if (state.replay) { const r = state.replay; state.replay = null; return r; }
     const only = isPractice() ? state.practiceGame : onlyGame;
     // 🗺️ Adventure: only that island's games (any game, if none of them can use the content in play).
     let island = state.mode && state.mode.id === "adventure" && state.adv ? state.adv.games : null;
@@ -428,7 +435,7 @@
       els.roundPill.hidden = true;
     } else if (m.lives) {
       let html = "";
-      for (let i = 0; i < m.lives; i++) {
+      for (let i = 0; i < Math.max(m.lives, state.lives); i++) { // (❤️ an Extra Heart item can take you past the start)
         const alive = i < state.lives;
         const cls = "heart" + (alive ? "" : " lost") + (heartBroke && i === state.lives ? " broke" : "");
         html += `<span class="${cls}">${alive ? "❤️" : "🖤"}</span>`;
@@ -453,6 +460,9 @@
       els.roundPill.textContent = T.watchPill;
     }
     els.roundPill.classList.toggle("watch", state.phase === "demo");
+    // 🎁 Items (js/items.js): the slots, in Endless (and when items are switched on).
+    els.itemBar.hidden = !itemsHere();
+    if (itemsHere() && window.Items) window.Items.render();
   }
 
   // ---------- Round loop ----------
@@ -501,7 +511,11 @@
       if (scenes.length) return playScenes(scenes);
     }
     if (isBoss()) state.boss.scened = false;
+    // 🔄 Continue (an item): out of hearts in Endless, keep going once.
+    if (itemsHere() && state.mode.lives && state.lives <= 0 && window.Items.useAuto("cont")) { state.lives = 1; renderHud(); }
     if (isOver()) return finishRun();
+    // ❓ The item box, between rounds.
+    if (state.pendingBox) { state.pendingBox = false; window.Items.box(() => { if (state.screen === "play") nextRound(); }); return; }
 
     const choice = chooseRound();
     if (!choice) {
@@ -509,6 +523,7 @@
       return goTitle();
     }
     const { game, list } = choice;
+    const quick = !!choice.quick; // (a mid-game Slow-Mo / 50/50 restart: no ROUND banner, no tutorial)
     state.round++;
     const speed = speedFor(state.round);
     const speedUp = speed > state.speed && !bossFight(); // boss rounds have their own SHOWDOWN / STAGE banners
@@ -519,7 +534,7 @@
     renderHud();
 
     // Tutorial: the first time a run meets a game, it plays itself once before the child's turn.
-    const demo = !!game.tutorial && (state.forceDemo === game.id || (state.tutorial && !isPractice() && !state.seen.has(game.id)));
+    const demo = !quick && !!game.tutorial && (state.forceDemo === game.id || (state.tutorial && !isPractice() && !state.seen.has(game.id)));
     state.forceDemo = null;
 
     let t = 0;
@@ -527,7 +542,7 @@
       later(() => { shout(els.banner, T.speedUp, "speed"); C.sfx.speedUp(); }, t);
       t += SPEEDUP_MS;
     }
-    if (!isPractice()) { // round numbers mean nothing when replaying one game
+    if (!isPractice() && !quick) { // round numbers mean nothing when replaying one game
       // Between rounds the game's loop stops and a quick "get ready" jingle plays with the ROUND banner
       // (the next game's loop starts with the round, in startGame).
       if (window.Music) Music.play(null);
@@ -594,6 +609,7 @@
     } else if (last && last.phase === "battle") {
       if (last.won && b.hp <= 0) { b.done = "won"; const finished = (b.id === "gorilla" && state.lastGame === "tug-of-war") || (b.id === "banana" && state.lastGame === "shield-breaker") || (b.id === "robot" && state.lastGame === "wire-cut") || (b.id === "baby" && state.lastGame === "bongo-bash"); out.push((r) => Bs.defeat(r, B, env, { finished })); } // (the finale game already sliced Banana Boss in two / blew Robot Boss up)
       else if (last.won) out.push((r) => Bs.hit(r, B, b.hp, b.stage + 1, env));
+      else if (last.shielded) { /* 🛡️ no heart lost: straight back into the stage */ }
       else {
         out.push((r) => Bs.miss(r, B, b.hp, b.hearts, env));
         if (b.hearts <= 0) { b.done = "lost"; out.push((r) => Bs.gloat(r, B, env)); }
@@ -875,6 +891,124 @@
     };
   }
 
+  // ✨ MAGIC GLOW (an item): the game's own tutorial script runs with this stand-in for the ghost finger.
+  // It never touches anything: each move sparkles what the finger would have pressed (the right answer,
+  // or the button at the right moment in timing games) and waits until the child presses it themselves,
+  // then the script carries on to the next step. Pointing and gliding are skipped; `until` waits for real.
+  function glowFinger(ctx, alive) {
+    const gameBox = () => els.game.getBoundingClientRect();
+    const val = (t) => (typeof t === "function" ? t() : t);
+    const rings = new Set();
+    const rectOf = (t) => {
+      const v = val(t);
+      if (!v) return null;
+      const g = gameBox();
+      if (v.getBoundingClientRect) {
+        const r = v.getBoundingClientRect();
+        if (!r.width && !r.height) return null;
+        return { x: r.left - g.left, y: r.top - g.top, w: r.width, h: r.height };
+      }
+      return typeof v.x === "number" ? { x: v.x - 45, y: v.y - 45, w: 90, h: 90 } : null;
+    };
+    const glow = (t) => {
+      const ring = document.createElement("div");
+      ring.className = "glow-ring";
+      ring.setAttribute("aria-hidden", "true");
+      ring.innerHTML = "<i>✨</i><i>✨</i>";
+      els.game.appendChild(ring);
+      rings.add(ring);
+      const track = () => {
+        if (!ring.isConnected) return;
+        const r = rectOf(t);
+        ring.hidden = !r;
+        if (r) Object.assign(ring.style, { left: `${r.x - 8}px`, top: `${r.y - 8}px`, width: `${r.w + 16}px`, height: `${r.h + 16}px` });
+        ctx.raf(track);
+      };
+      track();
+      return () => { ring.remove(); rings.delete(ring); };
+    };
+    // Wait for the child to press (and let go of) the thing, or for the round to end.
+    const pressed = (t) => new Promise((done) => {
+      let downOn = false, finished = false;
+      const inside = (e) => {
+        const r = rectOf(t), g = gameBox();
+        if (!r) return false;
+        const x = e.clientX - g.left, y = e.clientY - g.top, pad = 24;
+        const v = val(t);
+        return (v && v.contains && v.contains(e.target)) || (x > r.x - pad && x < r.x + r.w + pad && y > r.y - pad && y < r.y + r.h + pad);
+      };
+      const onDown = (e) => { if (e.pointerId !== DEMO_POINTER && inside(e)) downOn = true; };
+      const onUp = () => { if (downOn) finish(); };
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        document.removeEventListener("pointerdown", onDown, true);
+        document.removeEventListener("pointerup", onUp, true);
+        document.removeEventListener("pointercancel", onUp, true);
+        ctx.later(done, 60);
+      };
+      document.addEventListener("pointerdown", onDown, true);
+      document.addEventListener("pointerup", onUp, true);
+      document.addEventListener("pointercancel", onUp, true);
+      const watch = () => { if (finished) return; if (!alive() || ctx.ended) return finish(); ctx.later(watch, 150); };
+      watch();
+    });
+    const act = async (t, also) => {
+      if (!alive() || ctx.ended) return;
+      const offs = [glow(t)].concat(also ? [glow(also)] : []);
+      await pressed(t);
+      offs.forEach((off) => off());
+    };
+    const wait = (ms) => new Promise((done) => ctx.later(done, ms));
+    return {
+      wait,
+      async point() {},
+      async move() {},
+      tap: (t) => act(t),
+      tapNow: (t) => act(t),
+      drag: (from, to) => act(from, to),
+      path: (points) => act(points[0]),
+      slice: (from, to) => {
+        const a = rectOf(from), b = rectOf(to);
+        const mid = a && b ? { x: (a.x + a.w / 2 + b.x + b.w / 2) / 2, y: (a.y + a.h / 2 + b.y + b.h / 2) / 2 } : from;
+        const v = val(from);
+        return act(v && v.getBoundingClientRect ? from : mid);
+      },
+      async follow(t, test, max = 10000) {
+        const off = glow(t);
+        await this.until(test, max);
+        off();
+      },
+      until(test, max = 8000) {
+        return new Promise((done) => {
+          const t0 = performance.now();
+          const check = () => {
+            let ok = false;
+            try { ok = !!test(); } catch (err) { ok = false; }
+            if (ok) done(true);
+            else if (!alive() || performance.now() - t0 > max) done(false);
+            else ctx.raf(check);
+          };
+          check();
+        });
+      },
+      hide() { rings.forEach((r) => r.remove()); rings.clear(); },
+    };
+  }
+  // Start the glow on the game being played (the item, tapped now or saved for this game).
+  function startGlow() {
+    const c = state.current;
+    if (!c || !c.script || c.glowing || state.reported) return false;
+    c.glowing = true;
+    const token = state.token, alive = () => token === state.token && !state.reported;
+    const f = glowFinger(c.ctx, alive);
+    c.ctx.later(async () => {
+      try { await c.script.run(f); } catch (err) { console.error(`${c.game.id} magic glow:`, err); }
+      f.hide();
+    }, Math.max(60, c.t0 - performance.now()));
+    return true;
+  }
+
   // ctx.reveal: zoom the target card up to the middle of #game, hold it, then fly it back.
   // It animates the card itself (so the game's own styles stay), on top of its own transform,
   // and a huge spread shadow dims everything else.
@@ -938,7 +1072,10 @@
     const token = ++state.token;
     const alive = () => token === state.token;
     const demo = !!opts.demo;
-    const speed = demo ? 1 : state.speed; // demos always play at 1×, so they're easy to follow
+    // 🐢 Slow-Mo (an item): this game at 1×; 💡 50/50: fewer answers in it (Core.fewer, read by the shared answer pickers).
+    const itemNext = !demo && state.itemNext ? state.itemNext : {};
+    if (!demo) state.itemNext = {};
+    const speed = demo || itemNext.slow ? 1 : state.speed; // demos always play at 1×, so they're easy to follow
     // A boss version of a game can have its own time limit (`bossDuration`: Wire Cut's robot finale needs 3 cuts).
     // (and a showdown game can have its own too: `showdownDuration`, e.g. Archery: kids wait for the power bar)
     const bossDur = !demo && bossFight() && ((state.boss.phase === "battle" && game.bossDuration) || (state.boss.phase === "showdown" && game.showdownDuration));
@@ -949,7 +1086,7 @@
     state.phase = demo ? "demo" : "playing";
     if (window.Music) Music.play(game.id); // its own chiptune loop (js/music.js)
     // The clock starts after the start lock, so the lock doesn't eat into the time limit.
-    state.current = { game, timeLimit, t0: performance.now() + START_LOCK_MS, onTimeout: [], onEnd: [], demo };
+    state.current = { game, list, timeLimit, t0: performance.now() + START_LOCK_MS, onTimeout: [], onEnd: [], demo };
 
     // Items with several pictures (`pics`) get one picked at random for this round,
     // so "A" can be apple, ant or arrow. pickOptions uses these same objects.
@@ -978,7 +1115,7 @@
       // outside a demo). `answer`: the item (or items) this round is about, so the child's round
       // gets a different one. `run(f)`: async, drives the ghost finger: f.point(t), f.tap(t),
       // f.drag(from, to), f.slice(from, to), f.wait(ms). See demoFinger.
-      tutorial: (answer, run) => { if (demo && alive()) demoScript = { answer, run }; },
+      tutorial: (answer, run) => { if (alive()) demoScript = { answer, run }; }, // (kept outside demos too: ✨ Magic Glow runs it)
       // For games with one target shown in a card: call once at the end of start with that card.
       // The card zooms up big in the middle (everything else dimmed), holds, then flies back into
       // place. Touches stay locked and the clock waits until it's done. Returns its length in ms,
@@ -1061,9 +1198,12 @@
     els.game.classList.add("locked");
 
     let demoScript = null, revealMs = 0;
+    C.fewer = !!itemNext.fifty;
     try {
       state.cleanup = game.start(ctx) || null;
+      C.fewer = false;
     } catch (err) {
+      C.fewer = false;
       // Skip a broken game without costing a life, and don't pick it again.
       console.error(`${game.id} start:`, err);
       state.broken.add(game.id);
@@ -1097,6 +1237,8 @@
       return; // no clock in a demo
     }
     if (state.reported) return; // the game reported straight away
+    state.current.script = demoScript; state.current.ctx = ctx;
+    if (itemNext.glow) startGlow(); // ✨ Magic Glow saved for this game
 
     // Boss Battle: in the showdown the game puts the boss into its own scene (`bossRival`: Boss.rival);
     // a game without that gets the boss in the corner with a race bar (a third of the time at a time;
@@ -1112,12 +1254,13 @@
     const tick = () => {
       if (!alive() || state.reported || state.current.frozenAt) return;
       const elapsed = elapsedOf(state.current, performance.now());
-      setBar(Math.min(1, 1 - elapsed / timeLimit));
-      if (seat) seat.progress(elapsed / timeLimit);
-      const secs = Math.ceil((timeLimit - elapsed) / 1000);
+      const TL = state.current.timeLimit; // (live: ⏰ Time Bonus can add to it)
+      setBar(Math.min(1, 1 - elapsed / TL));
+      if (seat) seat.progress(elapsed / TL);
+      const secs = Math.ceil((TL - elapsed) / 1000);
       if (secs < lastSec && secs <= 2 && secs > 0) C.sfx.tick();
       lastSec = secs;
-      if (elapsed >= timeLimit) { report(token, false, true); return; }
+      if (elapsed >= TL) { report(token, false, true); return; }
       state.timerRaf = requestAnimationFrame(tick);
     };
     state.timerRaf = requestAnimationFrame(tick);
@@ -1147,7 +1290,7 @@
       b.last = { phase: b.phase, won };
       if (b.phase === "showdown") { if (won) b.you++; else b.them++; }
       else if (won) { b.hp--; b.stage++; }
-      else b.hearts--;
+      else if (itemsHere() && window.Items.useAuto("shield")) b.last.shielded = true; // 🛡️ the shield takes the hit (no heart-lost scene) else b.hearts--;
       if (state.seat) { if (timedOut) state.seat.progress(1); state.seat.result(won); }
     }
     if (timedOut) {
@@ -1156,8 +1299,11 @@
     }
     onEnd.forEach((fn) => guard(`${game.id} onEnd`, () => fn(won, timedOut)));
 
-    const loseLife = !won && state.mode.lives > 0;
+    let loseLife = !won && state.mode.lives > 0;
+    if (loseLife && itemsHere() && window.Items.useAuto("shield")) loseLife = false; // 🛡️ the shield takes the hit
     if (loseLife) state.lives--;
+    // ❓ An item box every 5 points in Endless (it opens before the next round).
+    if (won && itemsHere() && state.mode.id === "challenge" && state.results.filter((r) => r.won).length % 5 === 0 && !window.Items.full()) state.pendingBox = true;
     if (won) C.sfx.happy(); else C.sfx.buzz();
     vibrate(won ? 30 : [60, 40, 60]);
     renderHud(loseLife);
@@ -1300,7 +1446,7 @@
     clearRound();
     const mode = window.MODES[id];
     Object.assign(state, {
-      mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(), played: new Set(),
+      mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(), played: new Set(), itemNext: {}, pendingBox: false,
     });
     if (id === "adventure" && state.adv) state.speed = state.adv.speed || 1; // (later levels on an island are a bit faster)
     // Boss Battle: a random boss waits at the end (?boss=banana|baby|robot picks one, for testing).
@@ -1385,6 +1531,8 @@
     C.sfx.tone(state.myWords.on ? 660 : 440, 0.08);
     renderMyWordsSetting();
   });
+  // 🎁 Items ON/OFF (Settings; iPad-wide)
+  els.itemsBtn.addEventListener("click", () => { C.storage.set(window.Items.ON_KEY, !window.Items.on()); C.sfx.tone(window.Items.on() ? 660 : 440, 0.08); renderSettings(); });
   els.wordsEditBtn.addEventListener("click", () => { C.unlock(); showWords(); });
   // The word chooser: every letter, CVC word and sight word as a chip to tick.
   function showWords() {
@@ -1682,6 +1830,8 @@
     listeningBtn.setAttribute("aria-pressed", String(state.listening));
     listeningBtn.textContent = state.listening ? T.on : T.off;
     if (window.Players) window.Players.renderManager(els.playersBox, renderCharBtn);
+    const io = !window.Items || window.Items.on();
+    els.itemsBtn.setAttribute("aria-pressed", String(io)); els.itemsBtn.textContent = io ? T.on : T.off;
     renderMyWordsSetting();
   }
   musicBtn.addEventListener("click", () => {
@@ -1717,6 +1867,31 @@
     mini.innerHTML = "";
     mini.appendChild(window.Mascot.el(38));
   }
+  // 🐢 💡 These are built into a game when it starts, so using one mid-game restarts the same game with it (no
+  // penalty; quick: no ROUND banner). Between games they're saved for the next one.
+  function replayNow(fx) {
+    const c = state.current;
+    const playing = state.phase === "playing" && c && !state.reported && !c.demo;
+    state.itemNext = { ...state.itemNext, ...fx, glow: state.itemNext.glow || (playing && c.glowing) };
+    if (!playing) return true;
+    state.replay = { game: c.game, list: c.list, quick: true };
+    endGame(); state.round--;
+    later(nextRound, 300);
+    return true;
+  }
+  // 🎁 What each item does when tapped (true: it was used). The automatic ones (🛡️ 🔄) are in report / nextRound.
+  if (window.Items) window.Items.bind(els.itemBar, {
+    use(id) {
+      const playing = state.phase === "playing" && state.current && !state.reported && !state.current.demo;
+      if (id === "time") { if (!playing) return false; state.current.timeLimit *= 1.5; return true; }   // ⏰ more time on this game
+      if (id === "slow") return replayNow({ slow: true });   // 🐢 this game again, at 1×
+      if (id === "fifty") return replayNow({ fifty: true }); // 💡 this game again, with fewer answers
+      if (id === "glow") { if (playing) return startGlow(); state.itemNext = { ...state.itemNext, glow: true }; return true; } // ✨ the right answer sparkles (now, or next game)
+      if (id === "reroll") { if (!playing) return false; endGame(); state.round--; later(nextRound, 300); return true; } // 🎲 a different game
+      return false;
+    },
+    instant(id) { if (id === "heart" && state.mode && state.mode.lives) { state.lives = Math.min(state.lives + 1, state.mode.lives + 2); renderHud(); } }, // ❤️
+  });
   els.playerBtn.addEventListener("click", () => { C.unlock(); window.Players.openPicker({ onDone: playerReady }); });
   // After WHO'S PLAYING?: their character on the menu; a brand-new player picks one first.
   function playerReady() {

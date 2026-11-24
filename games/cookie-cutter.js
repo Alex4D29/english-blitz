@@ -113,7 +113,7 @@
           cookie.appendChild(el);
           return el;
         });
-        pic.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        pic.textContent = st.pic || (st.kind === "letter" ? "🔤" : "🔊") /* (🔤: alphabet order) */;
         layout();
         tray.innerHTML = "";
         chocs = st.options.map((l, k) => {

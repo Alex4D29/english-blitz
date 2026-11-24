@@ -12,6 +12,7 @@ window.TEXT = {
   funDesc: "10 games, no pressure",
   challengeDesc: "4 lives. How far can you go?",
   versusDesc: "2 players, side by side!",
+  itemsLabel: "Items",                  // 🎁 item boxes in Endless and Versus (Settings)
   coop: "TEAM UP",                       // 🤝 two players working together (js/versus.js)
   coopDesc: "2 players, work together!",
   bossDesc: "10 games, then beat a boss!",

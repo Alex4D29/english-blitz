@@ -213,6 +213,64 @@
     box-shadow:0 5px 0 #111; font-size:min(9vw, 8vh, 3rem); font-weight:900; line-height:1; color:#111; }
   .vx-cell.gap { background:#ffe066; border-style:dashed; animation:vx-turn .5s ease-in-out infinite alternate; }
   @keyframes vx-turn { to { filter:brightness(1.15); } }
+  /* 😈 Versus items */
+  .vt-pad { position:relative; }
+  .vs-item { position:fixed; top:calc(max(6px, env(safe-area-inset-top)) + 56px); z-index:80; width:62px; height:62px; border-radius:50%; border:5px solid #111; background:#ffd400;
+    box-shadow:0 5px 0 #111; font:inherit; font-size:2rem; line-height:1; cursor:pointer; touch-action:manipulation; animation:vs-itemp .6s ease-in-out infinite alternate; }
+  .vs-item.l { left:14px; } .vs-item.r { right:14px; }
+  .vfx-slip { animation:vfx-slip .25s ease-in-out infinite alternate; pointer-events:none; }
+  .vfx-flip .vs-game { transform:scaleX(-1); }
+  .vfx-spin { animation:vfx-spin .6s ease-in-out; }
+  .vfx-ink { position:absolute; inset:0; z-index:60; pointer-events:none; }
+  .vfx-ink .b { position:absolute; border-radius:50%; background:#1a1030; animation:vs-pop .3s ease-out; }
+  .vfx-ink .b1 { left:10%; top:15%; width:55%; height:55%; } .vfx-ink .b2 { left:40%; top:35%; width:50%; height:50%; } .vfx-ink .b3 { left:20%; top:50%; width:30%; height:30%; }
+  .vfx-ice { position:absolute; inset:0; z-index:61; background:rgba(180,230,255,.75); border:5px solid #9fdcff; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:4rem; }
+  @keyframes vs-itemp { to { transform:scale(1.1); } }
+  @keyframes vfx-slip { from { transform:rotate(-3deg) translateX(-8px); } to { transform:rotate(3deg) translateX(8px); } }
+  @keyframes vfx-spin { 50% { transform:rotate(8deg) scale(.95); } }
+  /* The co-op split scenes look like their games (the teacher found a plain one confusing) */
+  .vx-deco { position:absolute; pointer-events:none; }
+  .th-rocket-fix { background:radial-gradient(circle at 20% 20%, #fff 0 1px, transparent 2px) 0 0 / 60px 50px, linear-gradient(#1b1f4d, #3b3f8f 70%, #6b5fb0); flex-direction:row; gap:30px; }
+  .th-rocket-fix .vx-word { flex-direction:column; gap:0; position:relative; }
+  .th-rocket-fix .vx-cell { width:min(16vw, 12vh, 80px); height:min(10vw, 9vh, 56px); border-radius:6px; margin-top:-4px; background:#e8f0ff; box-shadow:none; }
+  .th-rocket-fix .vx-cell:first-child { border-radius:50% 50% 8% 8% / 80% 80% 20% 20%; height:min(13vw, 11vh, 70px); background:#e8173c; color:#fff; }
+  .th-rocket-fix .vx-cell:last-child { position:relative; background:#2f8fe0; color:#fff; }
+  .th-rocket-fix .vx-cell:last-child::before, .th-rocket-fix .vx-cell:last-child::after { content:""; position:absolute; bottom:-4px; width:40%; height:100%; background:#e8173c; border:4px solid #111; z-index:-1; }
+  .th-rocket-fix .vx-cell:last-child::before { left:-34%; clip-path:polygon(100% 0, 100% 100%, 0 100%); } .th-rocket-fix .vx-cell:last-child::after { right:-34%; clip-path:polygon(0 0, 100% 100%, 0 100%); }
+  .th-rocket-fix .vx-cell.gap { background:rgba(255,255,255,.25); border-color:#fff; }
+  .th-rocket-fix .vx-deco { left:0; right:0; bottom:0; height:7%; background:#666; border-top:4px solid #111; }
+  .th-rocket-fix .vx-word.go::after { content:"🔥"; position:absolute; left:50%; top:100%; transform:translateX(-50%) rotate(180deg); font-size:3rem; }
+  .th-rocket-fix .vx-pic { order:2; background:#fff; border:4px solid #111; border-radius:16px; padding:6px 10px; }
+  .th-burger-stack { background:linear-gradient(#ffe9c9 0 70%, #d24b3f 70% 72%, #b9e3ff 72%); flex-direction:row; gap:30px; }
+  .th-burger-stack .vx-word { flex-direction:column; gap:0; }
+  .th-burger-stack .vx-cell { width:min(30vw, 22vh, 150px); height:min(8vw, 7vh, 44px); margin-top:-4px; border-radius:24px; box-shadow:none; color:#fff; -webkit-text-stroke:1.5px #111; paint-order:stroke fill; }
+  .th-burger-stack .vx-cell:nth-child(odd) { background:#3b2a1a; } .th-burger-stack .vx-cell:nth-child(even) { background:#ffd400; }
+  .th-burger-stack .vx-cell:nth-child(3n) { background:#4dd36b; }
+  .th-burger-stack .vx-cell:first-child { background:#f0a64a; height:min(10vw, 9vh, 56px); border-radius:50% 50% 12% 12% / 70% 70% 30% 30%; }
+  .th-burger-stack .vx-cell:last-child { background:#e89a3c; border-radius:12% 12% 40% 40%; }
+  .th-burger-stack .vx-cell.gap { background:rgba(255,255,255,.6); }
+  .th-burger-stack .vx-pic { order:2; background:#fff; border:4px solid #111; border-radius:20px; padding:4px 10px; }
+  .th-robot-repair { background:linear-gradient(180deg, #c9d3e0 0 70%, #8d99a8 70%); }
+  .th-robot-repair .vx-deco { left:50%; top:50%; width:min(46vw, 40vh, 260px); height:min(40vw, 34vh, 220px); transform:translate(-50%, -46%); background:#9fb3c8; border:5px solid #111; border-radius:24px; }
+  .th-robot-repair .vx-deco::before { content:""; position:absolute; left:50%; top:-12%; width:6%; height:14%; background:#555; }
+  .th-robot-repair .vx-deco.dance { animation:vx-dance .3s ease-in-out infinite alternate; }
+  .th-robot-repair .vx-word, .th-robot-repair .vx-pic { position:relative; z-index:1; }
+  .th-robot-repair .vx-word { background:#1d2a3a; padding:8px; border:4px solid #111; border-radius:12px; }
+  .th-robot-repair .vx-pic { background:#1d2a3a; border:4px solid #111; border-radius:12px; padding:4px 12px; }
+  .th-bridge-builder { background:linear-gradient(#8fd8ff 0 42%, #6cc04a 42%); }
+  .th-bridge-builder .vx-deco { left:14%; right:14%; top:52%; bottom:0; background:repeating-linear-gradient(180deg, #2f8fe0 0 20px, #3a9cf0 20px 40px); border-left:6px solid #3d8a2a; border-right:6px solid #3d8a2a; }
+  .th-bridge-builder .vx-word { position:relative; z-index:1; gap:0; }
+  .th-bridge-builder .vx-cell { background:linear-gradient(#c98a4b, #a86d34); color:#fff; -webkit-text-stroke:1.5px #111; paint-order:stroke fill; border-radius:6px; margin:0 -2px; box-shadow:none; }
+  .th-bridge-builder .vx-cell.gap { background:transparent; border-color:#fff; }
+  .th-bridge-builder .vx-pic { position:relative; z-index:1; }
+  .th-cookie-cutter { background:repeating-linear-gradient(45deg, #ffe0ef 0 22px, #fff 22px 44px); }
+  .th-cookie-cutter .vx-deco { left:50%; top:52%; width:min(56vw, 46vh, 300px); aspect-ratio:1; transform:translate(-50%, -50%); border-radius:50%; border:6px solid #111;
+    background:radial-gradient(circle at 25% 30%, #5a3510 0 4%, transparent 5%), radial-gradient(circle at 70% 25%, #5a3510 0 3.5%, transparent 4.5%), radial-gradient(circle at 65% 78%, #5a3510 0 4%, transparent 5%), radial-gradient(circle, #e8b26a 0 60%, #c98a4b 100%); }
+  .th-cookie-cutter .vx-word, .th-cookie-cutter .vx-pic { position:relative; z-index:1; }
+  .th-cookie-cutter .vx-cell { background:transparent; border:0; box-shadow:none; color:#ff6fb0; -webkit-text-stroke:2px #111; paint-order:stroke fill; }
+  .th-cookie-cutter .vx-cell.gap { background:#5a3510; border-radius:50%; box-shadow:inset 0 6px 10px rgba(0,0,0,.6); }
+  .th-train-builder .vx-word .vx-cell { border-radius:10px 10px 4px 4px; background:#ffd400; }
+  @keyframes vx-dance { from { transform:translate(-50%, -46%) rotate(-4deg); } to { transform:translate(-50%, -50%) rotate(4deg); } }
   @keyframes vw-boom { 40% { transform:translate(-50%, -50%) scale(1.5); filter:brightness(3); } 100% { transform:translate(-50%, -50%) scale(0); opacity:0; } }
   @keyframes vs-pop { from { transform:scale(.3); opacity:0; } }
   `;
@@ -384,6 +442,7 @@
     const token = ++match.token;
     const alive = () => match && token === match.token;
     if (window.Music) Music.play(game.id);
+    match.result = null; // (a fresh round: also for the shared games, which return early)
     if (match.coop) { // 🤝 Team Up: take turns on the shared games; split the answers on Train Builder and the gap games; else both finish
       if (COOP_TURNS[game.id]) { race(game, list, alive, COOP_TURNS[game.id]()); return; }
       if (game.id === "train-builder" || SPLIT_GAP.includes(game.id)) { split(game, list, alive); return; }
@@ -532,7 +591,66 @@
     [523, 659, 784].forEach((f, k) => C().sfx.tone(f, 0.1, "triangle", 0.09, k * 0.08));
     C().say(TEXT.say.point(i + 1));
     if (match.score[i] >= goal) { later(() => champion(i), 1800); return; }
+    giveCatchUp(1 - i);
     later(nextRound, 1900);
+  }
+
+  // ---------- 😈 Silly Versus items (the teacher's idea; Settings → Items) ----------
+  // Whoever's BEHIND gets an item box after a point (a catch-up: it keeps it close): it appears as a big pulsing
+  // button at the top of their side; tap it during a round to mess with the other player:
+  //   🍌 BANANA PEEL  their buttons slip and wobble (no tapping) for 2 s
+  //   🐙 INK SPLAT    a blob of ink covers their screen for 3 s
+  //   🌪️ SHUFFLE STORM their answers swap places (a shared game) or their screen flips round (3 s)
+  //   🧊 FREEZE RAY   they turn to ice for 1.6 s (no tapping)
+  const VITEMS = [
+    { id: "banana", icon: "🍌", name: "BANANA PEEL" }, { id: "ink", icon: "🐙", name: "INK SPLAT" },
+    { id: "storm", icon: "🌪️", name: "SHUFFLE STORM" }, { id: "freeze", icon: "🧊", name: "FREEZE RAY" },
+  ];
+  function giveCatchUp(t) {
+    if (!window.Items || !window.Items.on() || match.coop) return;
+    if (match.score[t] >= match.score[1 - t]) return;           // only whoever's behind
+    match.vitems = match.vitems || [null, null];
+    if (match.vitems[t]) return;                                  // one at a time
+    const it = C().pick(VITEMS);
+    match.vitems[t] = it;
+    later(() => { window.Items.toast(`🎁 ${TEXT.p(t + 1)}: ${it.icon} ${it.name}!`); drawVItems(); }, 700);
+  }
+  function drawVItems() {
+    root.querySelectorAll(".vs-item").forEach((x) => x.remove());
+    (match.vitems || []).forEach((it, i) => {
+      if (!it) return;
+      const b = el("button", `vs-item ${i ? "r" : "l"}`);
+      b.textContent = it.icon;
+      b.setAttribute("aria-label", it.name);
+      b.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); useVItem(i); });
+      root.appendChild(b);
+    });
+  }
+  function useVItem(i) {
+    const it = match.vitems && match.vitems[i];
+    const inRound = (match.sides || match.shared) && match.result == null;
+    if (!it || !inRound) { C().sfx.tone(200, 0.08, "square", 0.06); return; }
+    match.vitems[i] = null;
+    drawVItems();
+    const o = 1 - i;
+    const target = match.shared ? match.shared.querySelector(o ? ".vt-pad.r" : ".vt-pad.l") : match.sideEls[o].box;
+    if (!target) return;
+    window.Items.toast(`${it.icon} ${it.name}!`);
+    C().say(it.name.toLowerCase() + "!");
+    const fx = (cls, ms, html) => {
+      const ov = html ? el("div", cls, html) : null;
+      if (ov) target.appendChild(ov); else target.classList.add(cls);
+      setTimeout(() => { if (ov) ov.remove(); else target.classList.remove(cls); }, ms);
+    };
+    if (it.id === "banana") { fx("vfx-slip", 2000); C().sfx.sweep(900, 200, 0.4, "sine", 0.1); }
+    if (it.id === "ink") { fx("vfx-ink", 3000, '<div class="b b1"></div><div class="b b2"></div><div class="b b3"></div>'); C().sfx.noise(0.3, "lowpass", 600, 200, 0.5); }
+    if (it.id === "storm") {
+      const btns = target.querySelector(".btns");
+      if (btns) { [...btns.children].sort(() => Math.random() - 0.5).forEach((c) => btns.appendChild(c)); fx("vfx-spin", 600); }
+      else fx("vfx-flip", 3000);
+      C().sfx.sweep(300, 1200, 0.5, "sawtooth", 0.06);
+    }
+    if (it.id === "freeze") { fx("vfx-ice", 1600, "<span>🧊</span>"); C().sfx.sweep(2000, 600, 0.4, "triangle", 0.08); }
   }
 
   // ---------- A RACE on one shared screen (Boxing, Dance Off, Puzzle Reveal, Hoop Shot) ----------
@@ -994,7 +1112,7 @@
     const isTrain = game.id === "train-builder";
     const sides = root.querySelector(".vs-sides");
     sides.classList.add("shared");
-    const box = el("div", "vs-shared", `<div class="vx-field vx-split"><div class="vx-ico">${game.icon || "🎮"}</div><div class="vx-pic"></div><div class="vx-word"></div>` +
+    const box = el("div", "vs-shared", `<div class="vx-field vx-split th-${game.id}"><div class="vx-deco"></div><div class="vx-pic"></div><div class="vx-word"></div>` +
       `<div class="vt-bar"><i></i></div><div class="vt-fx"></div></div><div class="vt-pads"><div class="vt-pad l" style="--pc:${COLORS[0]}"></div><div class="vt-pad r" style="--pc:${COLORS[1]}"></div></div>`);
     sides.appendChild(box);
     match.shared = box;
@@ -1055,7 +1173,7 @@
       const next = () => {
         const st = steps[si];
         prompt = st.prompt;
-        pic.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        pic.textContent = st.pic || (st.kind === "letter" ? "🔤" : "🔊") /* (🔤: alphabet order) */;
         drawWord(st.cells, [st.gap]);
         drawPads(cardsFor(st.options), (i, b, c) => {
           if (over || !alive()) return;
@@ -1074,7 +1192,7 @@
     function word(text, i) {
       const w = el("div", "vt-word");
       w.textContent = text;
-      w.style.left = i === 0 ? "26%" : "74%";
+      w.style.left = i === 0 ? "26%" : i === 1 ? "74%" : "50%"; // (2: the middle)
       fx.appendChild(w);
       later(() => w.remove(), 900);
     }
@@ -1083,7 +1201,16 @@
       over = true;
       cancelAnimationFrame(match.sharedRaf);
       if (ok) {
-        if (isTrain) { wordEl.animate([{ transform: "none" }, { transform: "translateX(120%)" }], { duration: 900, easing: "ease-in", fill: "forwards" }); C().sfx.tone(392, 0.2, "square", 0.08); C().sfx.tone(392, 0.25, "square", 0.08, 0.3); } // toot toot
+        // Each game's own finish (the teacher: the co-op scenes should look like the games).
+        const fin = {
+          "train-builder": () => { wordEl.animate([{ transform: "none" }, { transform: "translateX(120%)" }], { duration: 900, easing: "ease-in", fill: "forwards" }); C().sfx.tone(392, 0.2, "square", 0.08); C().sfx.tone(392, 0.25, "square", 0.08, 0.3); },
+          "rocket-fix": () => { wordEl.classList.add("go"); wordEl.animate([{ transform: "none" }, { transform: "translateY(20px)", offset: 0.15 }, { transform: "translateY(-160%)" }], { duration: 1000, easing: "cubic-bezier(.6,0,.9,.4)", fill: "forwards" }); C().sfx.noise(1.2, "lowpass", 800, 150, 0.6); C().sfx.sweep(200, 1200, 1.1, "sawtooth", 0.07); word("BLAST OFF!", 2); },
+          "burger-stack": () => { wordEl.animate([{ transform: "none" }, { transform: "scale(.1)", opacity: 0 }], { duration: 700, delay: 300, easing: "ease-in", fill: "forwards" }); [0, 0.15, 0.3].forEach((t) => C().sfx.noise(0.06, "bandpass", 900, 600, 0.45, t)); word("CHOMP! BURP!", 2); },
+          "cookie-cutter": () => { wordEl.parentElement.querySelector(".vx-deco").animate([{ transform: "translate(-50%, -50%)" }, { transform: "translate(-50%, -50%) scale(.1)", opacity: 0 }], { duration: 900, delay: 300, fill: "forwards" }); wordEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, delay: 400, fill: "forwards" }); word("YUM!", 2); },
+          "robot-repair": () => { wordEl.parentElement.querySelector(".vx-deco").classList.add("dance"); [523, 659, 784, 1047].forEach((f, n) => C().sfx.tone(f, 0.09, "square", 0.07, n * 0.07)); word("BEEP BOOP!", 2); },
+          "bridge-builder": () => { word("MADE IT!", 2); },
+        }[game.id];
+        if (fin) fin();
         C().confetti(fx, fx.clientWidth / 2, fx.clientHeight * 0.4, { count: 80 });
       }
       later(() => teamRound(ok), 1200);

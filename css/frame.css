@@ -460,3 +460,16 @@ body.demo #stage::before {
 .mode-grid .mode-txt { align-items: center; }
 .mode-grid .mode-desc { font-size: clamp(.75rem, 3.2vw, 1.05rem); }
 /* (VERSUS and TEAM UP share a row now) */
+
+/* ✨ Magic Glow (an item): sparkles round the right answer (glowFinger in js/frame.js) */
+.glow-ring {
+  position: absolute; z-index: 78; pointer-events: none; border-radius: 22px;
+  border: 5px solid #ffd400; box-shadow: 0 0 18px 6px rgba(255, 220, 0, .85), inset 0 0 14px rgba(255, 220, 0, .6);
+  animation: glow-ring .6s ease-in-out infinite alternate;
+}
+.glow-ring i { position: absolute; font-style: normal; font-size: 26px; line-height: 1; animation: glow-spark 1.2s linear infinite; }
+.glow-ring i:first-child { top: -16px; right: -14px; }
+.glow-ring i:last-child { bottom: -14px; left: -14px; animation-delay: -.6s; }
+@keyframes glow-ring { to { box-shadow: 0 0 30px 12px rgba(255, 240, 120, 1), inset 0 0 20px rgba(255, 220, 0, .8); } }
+@keyframes glow-spark { 50% { transform: scale(1.4) rotate(20deg); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .glow-ring, .glow-ring i { animation: none; } }

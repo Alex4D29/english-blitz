@@ -94,6 +94,11 @@
     </div>
     <p class="set-note" data-text="listeningNote"></p>
     <div class="set-row">
+      <span class="set-ico" aria-hidden="true">🎁</span>
+      <span class="set-name" data-text="itemsLabel"></span>
+      <button class="set-toggle" id="itemsBtn" aria-pressed="true"></button>
+    </div>
+    <div class="set-row">
       <span class="set-ico" aria-hidden="true">⭐</span>
       <span class="set-name" data-text="myWordsLabel"></span>
       <button class="set-toggle" id="myWordsBtn" aria-pressed="false"></button>
@@ -133,6 +138,7 @@
     <button class="pill" id="quitBtn" data-label="quit">✕</button>
     <div class="pill" id="status" role="status"></div>
     <div class="pill" id="roundPill"></div>
+    <div id="itemBar" hidden></div>
     <button class="pill" id="helpBtn" data-label="helpLabel" hidden>❓</button>
   </header>
   <div id="timer" role="progressbar" aria-hidden="true"><div id="bar"></div></div>
@@ -178,6 +184,7 @@
 <script src="js/modes.js"></script>
 <script src="js/mascot.js"></script>
 <script src="js/players.js"></script>
+<script src="js/items.js"></script>
 <script src="js/boss.js"></script>
 <script src="js/versus.js"></script>
 <script src="js/adventure.js"></script>

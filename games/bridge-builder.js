@@ -114,7 +114,7 @@
           bridge.appendChild(p);
           return p;
         });
-        sign.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        sign.textContent = st.pic || (st.kind === "letter" ? "🔤" : "🔊") /* (🔤: alphabet order) */;
         window.Mascot.mood(me, null);
         walking = false;
         layout();

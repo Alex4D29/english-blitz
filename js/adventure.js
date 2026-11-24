@@ -119,13 +119,51 @@
   @keyframes ad-say { from { transform:translateX(-50%) scale(.3); opacity:0; } }
   @media (prefers-reduced-motion: reduce) { .ad-sail * { animation:none !important; } }
   @keyframes ad-pulse { from { transform:scale(1); box-shadow:0 6px 0 #111, 0 0 0 0 rgba(255,212,0,.9); } to { transform:scale(1.1); box-shadow:0 6px 0 #111, 0 0 0 12px rgba(255,212,0,.25); } }
+  /* 🏪 the item shop */
+  .ad-shop { position:absolute; z-index:3; width:calc(var(--nz) * 1.15); height:calc(var(--nz) * 1.15); transform:translate(-50%, -50%); border:4px solid #111; border-radius:18px;
+    background:repeating-linear-gradient(90deg, #ff5a5a 0 12px, #fff 12px 24px) top / 100% 34% no-repeat, #ffe9a8; box-shadow:0 5px 0 #111; cursor:pointer; padding:0; display:flex; align-items:flex-end; justify-content:center; }
+  .ad-shop .aw { font-size:calc(var(--nz) * .62); line-height:1; margin-bottom:4px; }
+  .ad-shop:not(.locked) { animation:ad-shopb 1s ease-in-out infinite alternate; }
+  .ad-shop.locked { filter:grayscale(1) brightness(.75); }
+  @keyframes ad-shopb { to { transform:translate(-50%, -50%) scale(1.08) rotate(3deg); } }
+  .ad-shopwin { position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); padding:10px; }
+  .ad-shopwin .box { position:relative; width:min(560px, 100%); max-height:100%; overflow:auto; background:#fff3cf; border:6px solid #111; border-radius:24px; box-shadow:0 8px 0 #111;
+    display:flex; flex-direction:column; align-items:center; gap:8px; padding:0 12px 14px; animation:ad-shopin .4s cubic-bezier(.2,1.6,.4,1); }
+  .ad-shopwin .awn { align-self:stretch; height:26px; margin:0 -12px; background:repeating-linear-gradient(90deg, #ff5a5a 0 26px, #fff 26px 52px); border-bottom:4px solid #111;
+    border-radius:18px 18px 0 0; -webkit-mask:radial-gradient(circle at 13px 26px, transparent 0, #000 0); }
+  .ad-shopwin .keeper { position:relative; width:96px; height:92px; margin-top:4px; }
+  .ad-shopwin .keeper .hd { position:absolute; left:8px; top:0; width:80px; height:76px; border-radius:50% 50% 46% 46%; background:#5fd07a; border:4px solid #111; }
+  .ad-shopwin .keeper .hd i { position:absolute; top:14px; width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid #111; }
+  .ad-shopwin .keeper .hd i::after { content:""; position:absolute; width:10px; height:10px; border-radius:50%; background:#111; left:7px; top:8px; animation:ad-look 2.4s ease-in-out infinite; }
+  .ad-shopwin .keeper .hd i:first-child { left:8px; } .ad-shopwin .keeper .hd i:nth-child(2) { right:6px; width:28px; height:28px; top:10px; }
+  .ad-shopwin .keeper .hd b { position:absolute; left:50%; top:42px; width:50px; height:16px; transform:translateX(-50%); border-radius:50% 50% 40% 40%; background:#6b3a12;
+    -webkit-mask:radial-gradient(circle at 25% 100%, transparent 7px, #000 8px), radial-gradient(circle at 75% 100%, transparent 7px, #000 8px); -webkit-mask-composite:source-in; mask-composite:intersect; }
+  .ad-shopwin .keeper .hd u { position:absolute; left:50%; top:58px; width:26px; height:10px; transform:translateX(-50%); border:3px solid #111; border-top:none; border-radius:0 0 14px 14px; background:#c0392b; }
+  .ad-shopwin .keeper .apr { position:absolute; left:20px; top:68px; width:56px; height:24px; border:3px solid #111; border-radius:6px 6px 14px 14px;
+    background:repeating-linear-gradient(90deg, #3d8bfd 0 8px, #fff 8px 16px); }
+  .ad-shopwin .keeper.yay { animation:ad-yay .5s ease-out; } .ad-shopwin .keeper.no { animation:ad-no .4s ease-in-out; }
+  .ad-shopwin .say { font-size:clamp(1.1rem, 5vw, 1.6rem); text-align:center; line-height:1.1; }
+  .ad-shopwin .purse { font-size:clamp(1.4rem, 6vw, 2rem); background:#fff; border:4px solid #111; border-radius:16px; padding:2px 14px; }
+  .ad-shopwin .mine { display:flex; gap:8px; }
+  .ad-shopwin .mine .sl { width:44px; height:44px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:1.5rem; }
+  .ad-shopwin .mine .sl.empty { border-style:dashed; background:rgba(255,255,255,.5); }
+  .ad-shopwin .stock { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%; }
+  .ad-shopwin .it { font:inherit; border:4px solid #111; border-radius:16px; background:#fff; box-shadow:0 4px 0 #111; padding:6px 4px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; touch-action:manipulation; }
+  .ad-shopwin .it .ic { font-size:2rem; line-height:1; } .ad-shopwin .it .nm { font-size:.7rem; } .ad-shopwin .it .pr { font-size:1rem; background:#ffd400; border:2px solid #111; border-radius:10px; padding:0 6px; }
+  .ad-shopwin .it.no { opacity:.5; }
+  .ad-shopwin .it:active { transform:translateY(3px); box-shadow:0 1px 0 #111; }
+  .ad-shopwin .bye { font:inherit; font-size:1.3rem; border:4px solid #111; border-radius:16px; background:#4dd36b; color:#fff; -webkit-text-stroke:1px #111; box-shadow:0 5px 0 #111; padding:8px 22px; cursor:pointer; }
+  @keyframes ad-shopin { from { transform:scale(.4); } }
+  @keyframes ad-look { 50% { transform:translateX(-4px); } }
+  @keyframes ad-yay { 40% { transform:translateY(-16px) rotate(-6deg); } }
+  @keyframes ad-no { 25% { transform:rotate(-8deg); } 75% { transform:rotate(8deg); } }
   `;
   let cssDone = false;
   function injectCss() { if (cssDone) return; cssDone = true; const s = document.createElement("style"); s.textContent = CSS; document.head.appendChild(s); }
 
   const C = () => window.Core;
   const F = () => window.FrameAPI;
-  const load = () => { const p = C().storage.get(KEY, null) || {}; return { stars: p.stars || {}, at: p.at }; }; // at: the island your ship is at
+  const load = () => { const p = C().storage.get(KEY, null) || {}; return { ...p, stars: p.stars || {}, at: p.at, spent: p.spent || 0, shops: p.shops || {} }; }; // spent: ⭐ spent in the item shops; shops: { jungle: true } once a shop has popped up // at: the island your ship is at
   const starsOf = (p, i, j) => p.stars[`${ISLANDS[i].id}-${j}`] || 0;
   const islandOpen = (p, i) => i === 0 || starsOf(p, i - 1, LEVELS - 1) > 0;
   const levelOpen = (p, i, j) => islandOpen(p, i) && (j === 0 || starsOf(p, i, j - 1) > 0);
@@ -245,7 +283,7 @@
       busy = true;
       const q = load();
       q.at = k;
-      C().storage.set(KEY, { stars: q.stars, at: k });
+      C().storage.set(KEY, { ...q, at: k });
       if (k === at) { sail(k, () => { shown = k; render(); }); return; }
       // Sail along the route to the island, then the close-up.
       const a = dock(at), b = dock(k);
@@ -400,7 +438,81 @@
       lock.firstChild.textContent = TEXT.locked(window.Boss.BOSSES[ISLANDS[i - 1].boss].name);
       map.appendChild(lock);
     }
+    // 🏪 THE ITEM SHOP (the teacher's idea), halfway along the path (between levels 4 and 5): it opens once
+    // level 4 is passed, pops up by itself the first time, and can be tapped any time after that.
+    const shopOpen = starsOf(p, i, SHOP_AFTER) > 0 && islandOpen(p, i);
+    const sh = document.createElement("button");
+    sh.className = "ad-shop" + (shopOpen ? "" : " locked");
+    sh.style.left = `${(SHOP_AT[0] / 100) * W}px`; sh.style.top = `${(SHOP_AT[1] / 100) * H}px`;
+    sh.innerHTML = '<span class="aw">🏪</span>';
+    sh.setAttribute("aria-label", shopOpen ? "Item shop" : "Item shop, locked");
+    sh.addEventListener("click", () => { C().unlock(); if (!shopOpen) { C().sfx.tone(200, 0.1, "square", 0.08); return; } shop(isl); });
+    map.appendChild(sh);
+    if (shopOpen && !p.shops[isl.id] && window.Items && window.Items.on()) {
+      const q = load(); q.shops[isl.id] = true; C().storage.set(KEY, q);
+      setTimeout(() => { if (root && !root.hidden && shown === i) shop(isl, true); }, hop ? 1500 : 500);
+    }
     if (!quiet) C().say(TEXT.say(isl.name));
+  }
+
+  // 🏪 The shop: a silly shopkeeper (an original: a round green monster in a striped apron with a curly moustache
+  // and googly eyes) behind a counter of items with ⭐ prices. Stars come from every star earned in Adventure,
+  // less what's been spent (`spent`); an item goes into your 3 item slots (js/items.js), used in Adventure levels
+  // and island boss battles. Shield and Continue work in island boss battles (they have hearts).
+  const SHOP_AFTER = 3;                  // the shop opens once level 4 (index 3) is passed
+  const SHOP_AT = [40, 63];              // where it stands on the map (%), beside the path between levels 4 and 5
+  const STOCK = [["time", 2], ["slow", 2], ["reroll", 2], ["fifty", 3], ["shield", 3], ["glow", 4]];
+  const wallet = (p) => {
+    let n = 0;
+    ISLANDS.forEach((_, a) => { for (let j = 0; j < LEVELS; j++) n += Math.min(3, starsOf(p, a, j)); });
+    return Math.max(0, n - (p.spent || 0));
+  };
+  function shop(isl, first) {
+    const I = window.Items;
+    if (!I) return;
+    const w = document.createElement("div");
+    w.className = "ad-shopwin";
+    w.innerHTML = `<div class="box"><div class="awn"></div><div class="keeper"><div class="hd"><i></i><i></i><b></b><u></u></div><div class="apr"></div></div>
+      <div class="say shout"></div><div class="purse shout"></div><div class="mine"></div><div class="stock"></div><button class="bye">BYE BYE! 👋</button></div>`;
+    root.appendChild(w);
+    const say = w.querySelector(".say"), purse = w.querySelector(".purse"), mine = w.querySelector(".mine"), stock = w.querySelector(".stock");
+    const keeper = w.querySelector(".keeper");
+    const line = (t, spoken) => { say.textContent = t; if (spoken) C().say(spoken); };
+    const draw = () => {
+      const p = load(), money = wallet(p), slots = I.slots();
+      purse.textContent = `⭐ ${money}`;
+      mine.innerHTML = "";
+      for (let k = 0; k < I.SLOTS; k++) {
+        const d = I.ITEMS[slots[k]], s = document.createElement("span");
+        s.className = "sl" + (d ? "" : " empty"); s.textContent = d ? d.icon : "";
+        mine.appendChild(s);
+      }
+      stock.innerHTML = "";
+      STOCK.forEach(([id, price]) => {
+        const d = I.ITEMS[id], b = document.createElement("button");
+        const can = money >= price && !I.full();
+        b.className = "it" + (can ? "" : " no");
+        b.innerHTML = `<span class="ic">${d.icon}</span><span class="nm">${d.name}</span><span class="pr">⭐ ${price}</span>`;
+        b.addEventListener("click", () => {
+          C().unlock();
+          if (I.full()) { line("Your bag is full!", "Your bag is full!"); C().sfx.tone(200, 0.1, "square", 0.08); keeper.classList.remove("no"); void keeper.offsetWidth; keeper.classList.add("no"); return; }
+          if (price > wallet(load())) { line("Not enough stars!", "Not enough stars!"); C().sfx.tone(200, 0.1, "square", 0.08); keeper.classList.remove("no"); void keeper.offsetWidth; keeper.classList.add("no"); return; }
+          const q = load(); q.spent = (q.spent || 0) + price; C().storage.set(KEY, q);
+          const s = I.slots(); s.push(id); C().storage.set("wwe.items", s);
+          line(`${d.icon} ${d.name}! THANK YOU!`, `${d.say} Thank you!`);
+          [523, 659, 784, 1047].forEach((f, k) => C().sfx.tone(f, 0.09, "triangle", 0.09, k * 0.06));
+          C().sfx.noise(0.15, "highpass", 3000, 2000, 0.25); // ka-ching
+          keeper.classList.remove("yay"); void keeper.offsetWidth; keeper.classList.add("yay");
+          draw();
+        });
+        stock.appendChild(b);
+      });
+    };
+    draw();
+    line(first ? "WELCOME TO MY SHOP!" : "HELLO AGAIN!", first ? "Welcome to my shop! Spend your stars!" : "Hello again!");
+    C().sfx.tone(988, 0.12, "triangle", 0.09); C().sfx.tone(1319, 0.2, "triangle", 0.09, 0.12); // ding-dong
+    w.querySelector(".bye").addEventListener("click", () => { C().unlock(); C().say("Bye bye!"); w.remove(); });
+    void isl;
   }
 
   // Turning the iPad redraws the map.

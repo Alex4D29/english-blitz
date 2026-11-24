@@ -119,6 +119,7 @@
   //   cvc:     the card is the word; the options are pictures
   //   hfw:     the card is 🔊 (`listen` true) when there's speech, else the word; the options are words
   function choiceRows(pool, type, R, N, opts = {}) {
+    if (window.Core && window.Core.fewer) N = Math.max(2, 1 + Math.ceil((N - 1) / 2)); // 💡 50/50 (an item): fewer wrong answers
     const letterName = (it) => it.say || it.text.toUpperCase();
     const forWord = (l, w) => `${l} for ${w}`;
     const rows = [];
@@ -212,6 +213,7 @@
   const GAP_FAIR = { who: 1, one: 1, eight: 4 }; // sight words whose first letter isn't the sound you hear
   const BDPQ = ["b", "d", "p", "q"];
   function gapSteps(pool, type, R, N, opts = {}) {
+    if (window.Core && window.Core.fewer) N = Math.max(2, 1 + Math.ceil((N - 1) / 2)); // 💡 50/50 (an item)
     const steps = [];
     const FS = window.Core && window.Core.focus, F = FS && pool.some((it) => FS.has(it.text)) ? FS : null;
     const words = new Set(pool.map((it) => String(it.text).toLowerCase()));
@@ -238,7 +240,7 @@
         // A run of three: the target letter and its neighbours (never at the very ends of the alphabet).
         const it = list.find((x) => /^[B-Y]$/i.test(x.text)) || list[0];
         const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", k = Math.max(1, Math.min(24, A.indexOf(it.text.toUpperCase())));
-        const lower = opts.lowercase && Math.random() < 0.5;
+        const lower = false; // capitals: alphabet order is about the sequence (a lowercase f looked like r on the rocket: the teacher saw "rgh")
         const run = [A[k - 1], A[k], A[k + 1]].map((l) => (lower ? l.toLowerCase() : l));
         const gap = Math.floor(Math.random() * 3);
         const answer = run[gap];
@@ -457,7 +459,7 @@
   // PLAYER SAVES (js/players.js; the teacher: up to 10 children share one iPad): these keys are kept per
   // player (`key@p3`), everything else (settings, MY WORDS…) belongs to the iPad. storage.player is the
   // active save's id; the frame and games don't need to know.
-  const PER_PLAYER = ["wwe.char", "wwe.chars", "wwe.played", "wwe.boss.beaten", "wwe.challenge.best", "wwe.adventure"];
+  const PER_PLAYER = ["wwe.char", "wwe.chars", "wwe.played", "wwe.boss.beaten", "wwe.challenge.best", "wwe.adventure", "wwe.items"];
   const keyOf = (key) => (storage.player && PER_PLAYER.includes(key) ? `${key}@${storage.player}` : key);
   const storage = {
     player: null,

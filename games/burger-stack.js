@@ -142,7 +142,7 @@
           return el;
         });
         stack.insertAdjacentHTML("beforeend", '<div class="bu-plate"></div>');
-        bubble.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        bubble.textContent = st.pic || (st.kind === "letter" ? "🔤" : "🔊") /* (🔤: alphabet order) */;
         cust.className = "bu-cust";
         layout();
         tilesEl.innerHTML = "";

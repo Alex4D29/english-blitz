@@ -125,7 +125,7 @@
           return el;
         });
         rocket.insertAdjacentHTML("beforeend", '<div class="rk-flame">🔥</div>');
-        pic.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        pic.textContent = st.pic || (st.kind === "letter" ? "🔤" : "🔊") /* (🔤: alphabet order) */;
         spares.forEach((s) => s.el.remove());
         spares = st.options.map((l, k) => {
           const el = document.createElement("div");

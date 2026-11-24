@@ -136,7 +136,7 @@
           panel.appendChild(c);
           return c;
         });
-        screen.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        screen.textContent = st.pic || (st.kind === "letter" ? "🔤" : "🔊") /* (🔤: alphabet order) */;
         sizeCells();
         bot.className = "rp-bot broken";
         busy = true;
