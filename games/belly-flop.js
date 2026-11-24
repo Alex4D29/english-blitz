@@ -52,19 +52,52 @@
   .bf-ring.right .bf-lbl { box-shadow:0 0 0 4px #fff, 0 0 0 8px #00b86b; } .bf-ring.dim { opacity:.35; }
   .bf-fx { position:absolute; inset:0; pointer-events:none; z-index:8; overflow:visible; }
   .bf-drop { position:absolute; width:12px; height:16px; background:#bfe9ff; border:2px solid #1e7fd6; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; }
-  .bf-judges { position:absolute; left:50%; top:6%; transform:translateX(-50%); display:flex; gap:10px; z-index:9; }
-  .bf-judge { width:54px; height:62px; background:#fff; border:4px solid #111; border-radius:8px; box-shadow:0 4px 0 #111; display:flex; align-items:center; justify-content:center;
-    font-size:2rem; color:#111; animation:bf-up .4s cubic-bezier(.2,1.6,.4,1) both; }
-  .bf-judge.low { color:#e8173c; }
+  /* The 3 judges (--jz): little silly monsters on a bench by the pool, watching; they hold up their own scores */
+  .bf-bench { position:absolute; right:3%; top:calc(var(--jz) * .78);   /* (room above for the raised cards) */ display:flex; gap:calc(var(--jz) * .14); align-items:flex-end; z-index:5; pointer-events:none; }
+  .bf-bench::after { content:""; position:absolute; left:-6%; right:-6%; bottom:calc(var(--jz) * .08); height:calc(var(--jz) * .14); background:#8a5a3c; border:3px solid #111; border-radius:4px; z-index:-1; }
+  .bf-jdg { position:relative; width:var(--jz); height:var(--jz); animation:bf-watch 1.4s ease-in-out infinite alternate; }
+  .bf-jdg > * { position:absolute; box-sizing:border-box; }
+  .bf-jbody { left:10%; right:10%; top:22%; bottom:6%; background:var(--jc); border:3px solid #111; border-radius:50% 50% 40% 40%; }
+  .bf-jeye { top:30%; width:28%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; overflow:hidden; z-index:2; }
+  .bf-jeye.l { left:20%; } .bf-jeye.r { right:20%; width:24%; top:33%; }
+  .bf-jeye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:bf-look 1.6s ease-in-out infinite alternate; }
+  .bf-jmouth { left:38%; right:38%; top:64%; height:8%; background:#5a0f1e; border-radius:0 0 99px 99px; z-index:2; transition:all .2s; }
+  .bf-jdg.yay .bf-jmouth { left:30%; right:30%; height:16%; border:2px solid #111; }
+  .bf-jdg.boo .bf-jmouth { left:40%; right:40%; height:14%; border-radius:50%; border:2px solid #111; }
+  .bf-jdg.boo .bf-jeye i { width:22%; left:39%; top:39%; }
+  .bf-jhat { left:24%; right:24%; top:6%; height:20%; background:#111; border-radius:6px 6px 2px 2px; z-index:3; }       /* a little top hat (the judge with --hat) */
+  .bf-jhat::after { content:""; position:absolute; left:-30%; right:-30%; bottom:-10%; height:24%; background:#111; border-radius:99px; }
+  .bf-jdg:not(.hat) .bf-jhat { display:none; }
+  .bf-jdg.bow .bf-jbody::before { content:""; position:absolute; left:50%; top:-16%; width:44%; height:26%; transform:translateX(-50%); background:radial-gradient(circle at 50% 50%, #ff4fa0 0 18%, transparent 19%),
+    conic-gradient(from 90deg, #ff4fa0 0 25%, transparent 0 50%, #ff4fa0 0 75%, transparent 0); border-radius:4px; }   /* a bow */
+  .bf-jdg.specs .bf-jeye { border-width:4px; box-shadow:0 0 0 2px #333; }
+  .bf-jarm { right:-8%; top:44%; width:16%; height:36%; background:var(--jc); border:3px solid #111; border-radius:99px; transform-origin:50% 10%; transform:rotate(20deg); transition:transform .25s; z-index:1; }
+  .bf-jcard { left:50%; bottom:100%; transform:translate(-50%, 40%) scale(0); width:calc(var(--jz) * .7); height:calc(var(--jz) * .62); background:#fff; border:3px solid #111; border-radius:6px;
+    box-shadow:0 3px 0 #111; display:flex; align-items:center; justify-content:center; font-size:calc(var(--jz) * .42); font-weight:900; color:#111; transition:transform .3s cubic-bezier(.2,1.6,.4,1); z-index:4; }
+  .bf-jdg.up .bf-jcard { transform:translate(-50%, -6%) scale(1); }
+  .bf-jdg.up .bf-jarm { transform:rotate(200deg); }
+  .bf-jdg.up { animation:bf-hop .3s ease-in-out 3 alternate; }
+  .bf-jcard.low { color:#e8173c; }
+  /* The splash: a tall column of water, a ripple ring, droplets */
+  .bf-col { position:absolute; bottom:0; width:var(--cw); margin-left:calc(var(--cw) / -2); height:var(--ch); transform-origin:50% 100%; z-index:6;
+    background:linear-gradient(0deg, rgba(191,233,255,.95), rgba(255,255,255,.95)); border:4px solid #1e7fd6; border-bottom:0; border-radius:45% 45% 12% 12% / 30% 30% 6% 6%; }
+  /* the crown of spray bursting out of the top: big droplets fanning out, and a white burst */
+  .bf-col::before { content:""; position:absolute; left:-90%; right:-90%; top:-26%; height:34%;
+    background:radial-gradient(circle, #fff 0 34%, #1e7fd6 36% 42%, transparent 44%) 0 60% / 16% 46% repeat-x, radial-gradient(circle, #fff 0 30%, #1e7fd6 32% 40%, transparent 42%) 8% 0 / 22% 40% repeat-x; }
+  .bf-col::after { content:""; position:absolute; left:-45%; right:-45%; top:-8%; height:22%; border-radius:50% 50% 30% 30%; border:4px solid #1e7fd6; border-bottom:0;
+    background:radial-gradient(ellipse at 50% 100%, #fff 0 55%, #dff4ff 70%); clip-path:polygon(0 100%, 6% 30%, 16% 70%, 26% 0, 38% 60%, 50% 10%, 62% 60%, 74% 0, 84% 70%, 94% 30%, 100% 100%); }
+  .bf-ripple { position:absolute; width:20px; height:10px; margin:-5px 0 0 -10px; border:4px solid rgba(255,255,255,.9); border-radius:50%; z-index:5; }
   .bf-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); font-size:2.2rem; color:#ffd400; -webkit-text-stroke:2px #111; paint-order:stroke fill;
     text-shadow:0 4px 0 #111; white-space:nowrap; animation:bf-word 1.2s ease-out forwards; }
   .bf-word.bad { color:#ff5a6e; }
   @keyframes bf-flex { from { transform:rotate(0); } to { transform:rotate(5deg); } }
   @keyframes bf-bounce { from { translate:0 0; } to { translate:0 calc(var(--bmz) * -.18); } }
   @keyframes bf-float { from { translate:0 -3px; } to { translate:0 3px; } }
-  @keyframes bf-up { from { transform:translateY(80px); opacity:0; } }
+  @keyframes bf-watch { from { transform:rotate(-4deg); } to { transform:rotate(4deg); } }
+  @keyframes bf-look { from { transform:translate(-25%, -10%); } to { transform:translate(20%, 15%); } }
+  @keyframes bf-hop { to { translate:0 -14%; } }
   @keyframes bf-word { from { opacity:1; scale:.5; } 20% { scale:1.15; } 80% { opacity:1; } to { opacity:0; translate:0 -40px; } }
-  @media (prefers-reduced-motion: reduce) { .bf-ring, .bf-me.bounce, .bf-board.flex, .bf-word, .bf-judge { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .bf-ring, .bf-me.bounce, .bf-board.flex, .bf-word, .bf-jdg, .bf-jeye i { animation:none !important; } }
   `;
   function injectCss() { if (document.getElementById("bf-css")) return; const s = document.createElement("style"); s.id = "bf-css"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -105,7 +138,19 @@
       const fig = me.firstChild;
       const fx = document.createElement("div");
       fx.className = "bf-fx";
-      pool.append(me, fx);
+      // The 3 judges on their bench, watching (each a little different: a top hat, a bow, big specs).
+      const bench = document.createElement("div");
+      bench.className = "bf-bench";
+      const judgesEls = [["#ff8fb8", "hat"], ["#8fe36b", "bow"], ["#8fd3ff", "specs"]].map(([c, look], k) => {
+        const j = document.createElement("div");
+        j.className = `bf-jdg ${look}`;
+        j.style.setProperty("--jc", c);
+        j.style.animationDelay = `${-k * 0.5}s`;
+        j.innerHTML = '<div class="bf-jarm"></div><div class="bf-jbody"></div><div class="bf-jhat"></div><div class="bf-jeye l"><i></i></div><div class="bf-jeye r"><i></i></div><div class="bf-jmouth"></div><div class="bf-jcard"></div>';
+        bench.appendChild(j);
+        return j;
+      });
+      pool.append(bench, me, fx);
       wrap.append(card, pool);
       ctx.root.appendChild(wrap);
       const board = pool.querySelector(".bf-board");
@@ -128,6 +173,7 @@
         wy = H * 0.66; tx = 64; by = H * 0.34;
         pool.style.setProperty("--bmz", `${mz}px`); pool.style.setProperty("--wy", `${wy}px`);
         pool.style.setProperty("--tx", `${tx}px`); pool.style.setProperty("--by", `${by}px`);
+        pool.style.setProperty("--jz", `${Math.max(40, Math.min(H * 0.17, W * 0.11, 80))}px`);
         const x0 = tx + mz * 1.6;
         rings.forEach((r, i) => {
           const k = NZ > 1 ? i / (NZ - 1) : 0;
@@ -175,9 +221,9 @@
         ctx.win();
         me.animate([{ opacity: 1 }, { opacity: 0, translate: `0 ${mz * 0.6}px` }], { duration: 300, fill: "forwards" });
         noise(0.15, "highpass", 2500, 3000, 0.25);   // a neat little plip
-        splash(r.x, r.y, 8, 0.6);
+        bigSplash(r, false);
         word(TEXT.perfect, false, W / 2, Math.min(H - 30, r.y + r.s * 0.45));
-        judges(["10", "10", "10"], false);
+        raise(["10", "10", "10"], false);
         [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, "triangle", 0.11, 0.2 + i * 0.08));
         ctx.confetti(fx, W / 2, H * 0.3, { count: 90 });
         ctx.later(() => { // you pop back up, cheering, in the ring
@@ -190,7 +236,7 @@
       function flop(r) {
         ctx.lose();
         noise(0.12, "lowpass", 900, 200, 0.6); tone(90, 0.2, "square", 0.15);   // SMACK
-        splash(r.x, r.y, 26, 1.4);
+        bigSplash(r, true);
         // A big red tummy (a blotch, so it shows on any colour of character).
         const belly = document.createElement("div");
         belly.className = "bf-belly";
@@ -198,7 +244,7 @@
         if (window.Mascot) window.Mascot.mood(fig, "sad");
         pool.animate([{ translate: "0 0" }, { translate: "-8px 4px" }, { translate: "8px -4px" }, { translate: "0 0" }], { duration: 300 });
         word(TEXT.smack, true, Math.min(r.x, W - 110), Math.min(H - 30, r.y + r.s * 0.45));
-        judges(["0", "1", "0"], true);
+        raise(["0", "1", "0"], true);
         ctx.later(() => { rings.forEach((x) => x.el.classList.add(x.opt.right ? "right" : "dim")); ctx.say(C.answer); }, 700);
       }
       function splash(x, y, n, big) {
@@ -215,17 +261,42 @@
           ctx.later(() => d.remove(), 820);
         }
       }
-      function judges(scores, low) {
-        const j = document.createElement("div");
-        j.className = "bf-judges";
-        scores.forEach((s, k) => {
-          const c = document.createElement("div");
-          c.className = "bf-judge" + (low ? " low" : "");
-          c.style.animationDelay = `${0.4 + k * 0.15}s`;
-          c.textContent = s;
-          j.appendChild(c);
-        });
-        fx.appendChild(j);
+      // A BIG splash (the teacher asked): a tall column of water shoots up and falls, a ripple spreads, droplets
+      // fly everywhere. The belly flop's is even bigger.
+      function bigSplash(r, flop) {
+        const k = flop ? 1.5 : 1;
+        if (!reduceMotion) {
+          const col = document.createElement("div");
+          col.className = "bf-col";
+          col.style.left = `${r.x}px`; col.style.bottom = `${H - r.y}px`;
+          col.style.setProperty("--cw", `${r.s * (flop ? 1.1 : 0.6)}px`);
+          col.style.setProperty("--ch", `${Math.min(r.y - 10, H * 0.5 * k)}px`);
+          fx.appendChild(col);
+          col.animate([{ transform: "scaleY(0)" }, { transform: "scaleY(1.05)", offset: 0.35 }, { transform: "scaleY(.9)", offset: 0.6 }, { transform: "scaleY(0)", opacity: 0.4 }],
+            { duration: 1100, easing: "ease-out", fill: "forwards" });
+          ctx.later(() => col.remove(), 1150);
+          for (let n = 0; n < 2; n++) {
+            const rp = document.createElement("div");
+            rp.className = "bf-ripple";
+            rp.style.left = `${r.x}px`; rp.style.top = `${r.y}px`;
+            fx.appendChild(rp);
+            rp.animate([{ transform: "scale(1)", opacity: 1 }, { transform: `scale(${(r.s / 20) * 1.6 * k})`, opacity: 0 }], { duration: 900, delay: n * 250, fill: "both" });
+            ctx.later(() => rp.remove(), 1200);
+          }
+        }
+        splash(r.x, r.y, flop ? 40 : 26, flop ? 2 : 1.4);
+        noise(flop ? 0.9 : 0.6, "lowpass", 1400, 400, flop ? 0.5 : 0.35);   // SPLOOSH
+        if (flop) pool.animate([{ translate: "0 0" }, { translate: "-10px 6px" }, { translate: "10px -6px" }, { translate: "-6px 3px" }, { translate: "0 0" }], { duration: 420 });
+      }
+      // The judges hold up their cards one after another (happy for a dive, shocked for a flop).
+      function raise(scores, low) {
+        judgesEls.forEach((j, k) => ctx.later(() => {
+          const c = j.querySelector(".bf-jcard");
+          c.textContent = scores[k];
+          c.classList.toggle("low", low);
+          j.classList.add("up", low ? "boo" : "yay");
+          tone(low ? 220 - k * 30 : 660 + k * 120, 0.08, "square", 0.07);
+        }, 500 + k * 220));
       }
       function word(text, bad, x, y) {
         const w = document.createElement("div");

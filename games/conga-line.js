@@ -1,6 +1,7 @@
 // CONGA LINE — a rhythm game (Claude's idea, named by the teacher; like Dance Off: every step a NEW target,
 // `ctx.choiceSteps`, with a beat between). Your character leads a conga line along a beach dance floor. Below,
-// letter monsters wait holding signs. Tap the one with the card's answer and it dances over and joins the line
+// party dancers wait holding signs (a rock'n'roll singer, a ballerina, a glam lady, a disco dancer, a hula dancer, a
+// breakdancer; not letter monsters, so nobody seems to "be" the wrong letter). Tap the one with the card's answer and it dances over and joins the line
 // (CONGA!). A wrong one trips the whole line over (OOPS!): one trip is allowed, the second loses. Four joiners
 // and it's a CONGA PARTY.
 (function () {
@@ -23,7 +24,7 @@
     party: "CONGA PARTY!",
   };
   const GOAL = 4, MISSES = 2, BEAT_MS = 900;
-  const STARTERS = ["apple", "ball", "cat", "dinosaur", "elephant", "flower"];
+  const DANCERS = ["rock", "ballet", "glam", "disco", "hula", "break"];
 
   const CSS = `
   .cg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:6px; }
@@ -49,11 +50,11 @@
   .cg-mem .bob { position:absolute; inset:0; animation:cg-conga .5s ease-in-out infinite alternate; transform-origin:50% 100%; }
   .cg-mem.kick .bob { animation:cg-kick .25s ease-in-out 2 alternate; }
   .cg-floor.trip .cg-mem .bob { animation:cg-trip .5s ease-out forwards; }
-  /* The dancers waiting to join: a letter monster holding a sign up (--wz) */
+  /* The dancers waiting to join: a party dancer holding a sign up (--wz) */
   .cg-wait { position:absolute; bottom:4%; width:var(--wz); height:calc(var(--wz) * 1.6); margin-left:calc(var(--wz) / -2); padding:0; border:0; background:none; font:inherit;
     cursor:pointer; touch-action:manipulation; z-index:3; animation:cg-in .35s cubic-bezier(.2,1.6,.4,1) both; }
   .cg-wait .who { position:absolute; left:0; bottom:0; }
-  .cg-wait .who .ms { animation:cg-sway .6s ease-in-out infinite alternate; }
+  .cg-wait .who .cgd { animation:cg-sway .6s ease-in-out infinite alternate; }
   .cg-stick { position:absolute; left:47%; top:30%; width:6%; height:34%; background:#8a5a3c; border:3px solid #111; z-index:0; }
   .cg-sign { position:absolute; left:50%; top:0; transform:translateX(-50%); min-width:78%; padding:2px 6px; background:#fff; border:4px solid #111; border-radius:10px;
     box-shadow:0 4px 0 #111; font-size:calc(var(--wz) * .36); line-height:1.1; color:#111; white-space:nowrap; z-index:2; }
@@ -65,6 +66,56 @@
     text-shadow:0 4px 0 #111; white-space:nowrap; animation:cg-word 1s ease-out forwards; }
   .cg-word.bad { color:#ff5a6e; }
   .cg-note { position:absolute; font-size:1.4rem; line-height:1; animation:cg-float 1.2s ease-out forwards; }
+  /* The party dancers (--s): generic silly characters (not letters, so a sign never looks like it's "their" letter;
+     the teacher found A holding C confusing). A round body, googly eyes, a grin, arms, legs, and a costume. */
+  .cgd { position:relative; width:var(--s); height:var(--s); }
+  .cgd > * { position:absolute; box-sizing:border-box; }
+  .cgd-leg { bottom:0; width:13%; height:22%; background:var(--lc, var(--bc)); border:3px solid #111; border-radius:99px 99px 40% 40%; }
+  .cgd-leg.l { left:33%; } .cgd-leg.r { right:33%; }
+  .cgd-arm { top:46%; width:26%; height:11%; background:var(--ac, var(--bc)); border:3px solid #111; border-radius:99px; z-index:1; }
+  .cgd-arm.l { left:3%; transform-origin:100% 50%; transform:rotate(-35deg); } .cgd-arm.r { right:3%; transform-origin:0 50%; transform:rotate(35deg); }
+  .cgd-body { left:20%; right:20%; top:22%; bottom:16%; background:var(--bc); border:4px solid #111; border-radius:46% 46% 36% 36%; z-index:2; }
+  .cgd-eye { top:34%; width:20%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; overflow:hidden; z-index:4; }
+  .cgd-eye.l { left:29%; } .cgd-eye.r { right:29%; width:17%; top:36%; }
+  .cgd-eye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:cg-roll 1.1s ease-in-out infinite alternate; }
+  .cgd-eye.r i { animation-delay:-.5s; }
+  .cgd-mouth { left:39%; right:39%; top:55%; height:10%; background:#5a0f1e; border:3px solid #111; border-radius:10% 10% 50% 50% / 14% 14% 86% 86%; z-index:4; }
+  .cgd-x, .cgd-y, .cgd-z { z-index:3; }
+  /* rock'n'roll singer: a huge black quiff, sideburns, a white suit with a big collar and a gold belt */
+  .cgd-rock { --bc:#fff; --lc:#fff; }
+  .cgd-rock .cgd-x { left:14%; top:-8%; width:70%; height:38%; background:linear-gradient(160deg, transparent 0 30%, rgba(255,255,255,.35) 30% 36%, transparent 36%), #111;
+    border-radius:90% 100% 10% 50% / 100% 100% 10% 30%; transform:rotate(-16deg); transform-origin:80% 100%; z-index:3; }   /* (a big swooping quiff) */
+  .cgd-rock .cgd-y { left:24%; right:24%; top:64%; height:8%; background:#ffd400; border:2px solid #111; }
+  .cgd-rock .cgd-z { left:22%; right:22%; top:30%; height:16%; background:linear-gradient(90deg, #111 0 12%, transparent 12% 88%, #111 88%); z-index:3; }   /* sideburns */
+  /* ballerina: pink, a hair bun with a tiara, a frilly tutu */
+  .cgd-ballet { --bc:#ffb3d1; --lc:#fff; }
+  .cgd-ballet .cgd-x { left:40%; top:6%; width:20%; height:18%; background:#8a5a3c; border:3px solid #111; border-radius:50%; z-index:1; }
+  .cgd-ballet .cgd-y { left:4%; right:4%; top:64%; height:16%; border:3px solid #111; border-radius:50%; z-index:3;
+    background:repeating-conic-gradient(from 0deg at 50% 50%, #ff7fb0 0 15deg, #ffd1e4 15deg 30deg); }
+  .cgd-ballet .cgd-z { left:38%; top:20%; width:24%; height:8%; background:#ffd400; border:2px solid #111; clip-path:polygon(0 100%, 20% 0, 50% 60%, 80% 0, 100% 100%); }
+  /* glam: a sparkly red dress, big golden curly hair, a pearl necklace */
+  .cgd-glam { --bc:#e8173c; --ac:#ffc9a8; --lc:#ffc9a8; }
+  .cgd-glam .cgd-body { background:radial-gradient(circle, rgba(255,255,255,.8) 0 6%, transparent 7%) 0 0 / 22% 18%, #e8173c; }
+  .cgd-glam .cgd-x { left:8%; right:8%; top:8%; height:44%; z-index:1; border-radius:50%;
+    background:radial-gradient(circle at 20% 50%, #ffcf3f 0 22%, transparent 23%), radial-gradient(circle at 80% 50%, #ffcf3f 0 22%, transparent 23%), radial-gradient(circle at 50% 30%, #ffcf3f 0 40%, transparent 41%); }
+  .cgd-glam .cgd-y { left:30%; right:30%; top:65%; height:7%; background:radial-gradient(circle, #fff 0 40%, #111 42% 52%, transparent 54%) 0 0 / 20% 100%; }
+  /* disco: a giant rainbow afro and a gold medallion */
+  .cgd-disco { --bc:#ff8a1f; }
+  .cgd-disco .cgd-x { left:4%; right:4%; top:-4%; height:48%; z-index:1; border:3px solid #111; border-radius:50%;
+    background:repeating-radial-gradient(circle at 50% 90%, #e8173c 0 8%, #ff8a1f 8% 16%, #ffd400 16% 24%, #4dd36b 24% 32%, #3d8bfd 32% 40%, #c04dd9 40% 48%); }
+  .cgd-disco .cgd-y { left:42%; width:16%; top:66%; aspect-ratio:1; background:#ffd400; border:3px solid #111; border-radius:50%; }
+  /* hula: a grass skirt, a flower lei, a flower over one ear */
+  .cgd-hula { --bc:#2ec4b6; }
+  .cgd-hula .cgd-x { left:16%; right:16%; top:66%; height:22%; z-index:3; border-top:3px solid #111;
+    background:repeating-linear-gradient(90deg, #5cc94a 0 6%, #3fa13a 6% 12%); clip-path:polygon(0 0, 100% 0, 96% 100%, 88% 70%, 80% 100%, 72% 70%, 64% 100%, 56% 70%, 48% 100%, 40% 70%, 32% 100%, 24% 70%, 16% 100%, 8% 70%, 4% 100%); }
+  .cgd-hula .cgd-y { left:26%; right:26%; top:60%; height:9%; background:radial-gradient(circle, #ff6fb0 0 45%, transparent 47%) 0 0 / 20% 100%, radial-gradient(circle, #ffd400 0 45%, transparent 47%) 10% 0 / 20% 100%; }
+  .cgd-hula .cgd-z { right:16%; top:18%; width:20%; aspect-ratio:1; z-index:5; border-radius:50%; background:radial-gradient(circle, #ffd400 0 22%, #ff4fa0 24%); border:2px solid #111; }
+  /* breakdancer: a backwards red cap and a striped tracksuit */
+  .cgd-break { --bc:#7a4fe0; }
+  .cgd-break .cgd-body { background:linear-gradient(90deg, transparent 0 14%, #fff 14% 20%, transparent 20% 80%, #fff 80% 86%, transparent 86%), #7a4fe0; }
+  .cgd-break .cgd-x { left:24%; right:24%; top:14%; height:18%; background:#e8173c; border:3px solid #111; border-radius:50% 50% 10% 10% / 90% 90% 10% 10%; z-index:3; }
+  .cgd-break .cgd-y { left:10%; top:26%; width:22%; height:7%; background:#e8173c; border:3px solid #111; border-radius:99px 0 0 99px; z-index:3; }   /* the peak, round the back */
+  @keyframes cg-roll { from { transform:translate(-25%, -15%); } to { transform:translate(25%, 15%); } }
   @keyframes cg-conga { from { transform:translateY(0) rotate(-6deg); } to { transform:translateY(-6%) rotate(6deg); } }
   @keyframes cg-kick { to { transform:translateY(-14%) rotate(-14deg) scale(1.05); } }
   @keyframes cg-trip { to { transform:translateY(12%) rotate(-82deg); } }
@@ -75,7 +126,7 @@
   @keyframes cg-next { from { scale:.6; } }
   @keyframes cg-word { from { opacity:1; scale:.5; } 25% { scale:1.15; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
   @keyframes cg-float { to { translate:0 -60px; opacity:0; } }
-  @media (prefers-reduced-motion: reduce) { .cg-mem .bob, .cg-wait, .cg-wait .who .ms, .cg-lights, .cg-word, .cg-note { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .cg-mem .bob, .cg-wait, .cg-wait .who .cgd, .cgd-eye i, .cg-lights, .cg-word, .cg-note { animation:none !important; } }
   `;
   function injectCss() { if (document.getElementById("cg-css")) return; const s = document.createElement("style"); s.id = "cg-css"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -99,13 +150,16 @@
       const S = ctx.choiceSteps(GOAL, N, { lowercase: true });
       let si = 0, st = S[0];
       const M = window.Mascot;
-      // Who's waiting to dance: letter monsters (the ones this player has, else the starters), never you.
-      const pool = (() => {
-        if (!M) return [];
-        const me = M.current();
-        const ids = M.CHARS.filter((c) => c.letter && c.id !== me && M.isUnlocked(c.id)).map((c) => c.id);
-        return ids.length >= N ? ids : STARTERS.filter((id) => id !== me);
-      })();
+      // Who's waiting to dance: the party dancers (a different one for each sign).
+      const pool = DANCERS.slice();
+      function dancer(type, size) {
+        const d = document.createElement("div");
+        d.className = `cgd cgd-${type}`;
+        d.style.setProperty("--s", size);
+        d.innerHTML = '<div class="cgd-leg l"></div><div class="cgd-leg r"></div><div class="cgd-arm l"></div><div class="cgd-arm r"></div><div class="cgd-x"></div>' +
+          '<div class="cgd-body"></div><div class="cgd-y"></div><div class="cgd-z"></div><div class="cgd-eye l"><i></i></div><div class="cgd-eye r"><i></i></div><div class="cgd-mouth"></div>';
+        return d;
+      }
 
       const wrap = document.createElement("div");
       wrap.className = "cg";
@@ -138,7 +192,7 @@
         const b = document.createElement("div");
         b.className = "bob";
         b.style.animationDelay = `${-line.length * 0.12}s`;
-        b.appendChild(M ? M.el("var(--dz)", id) : document.createElement("div"));
+        b.appendChild(id ? dancer(id, "var(--dz)") : M ? M.el("var(--dz)") : document.createElement("div"));   // (you lead: your own character)
         m.appendChild(b);
         floor.insertBefore(m, fx);
         line.push(m);
@@ -180,7 +234,7 @@
           const id = ids[i % Math.max(1, ids.length)];
           b.innerHTML = '<div class="cg-stick"></div><div class="who"></div><span class="cg-sign"></span>';
           b.querySelector(".cg-sign").textContent = o.text;
-          if (M) b.querySelector(".who").appendChild(M.el("var(--wz)", id));
+          b.querySelector(".who").appendChild(dancer(id, "var(--wz)"));
           b.addEventListener("pointerdown", (e) => { e.preventDefault(); pick(w); });
           floor.insertBefore(b, fx);
           const w = { b, o, id };

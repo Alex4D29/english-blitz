@@ -11,9 +11,9 @@
       steps: [
         ["👀", "Look at the card: that's your shopping list."],
         ["👆", "Tap where you want to go. Your trolley rolls there!"],
-        ["🛒", "Grab every item that matches the card before the robot catches you!"],
+        ["🛒", "Grab all 3 items that match the card before the robot catches you!"],
       ],
-      tips: ["A wrong item makes your trolley spin out.", "The robot is slow at first. Keep moving!", "Tap the card to hear it again."],
+      tips: ["The 3 boxes by the card fill up as you grab them.","A wrong item makes your trolley spin out.", "The robot is slow at first. Keep moving!", "Tap the card to hear it again."],
     } },
     instruction: { en: "GO\nSHOPPING!" },
     cardLabel: "Your shopping list. Tap to hear it again.",
@@ -36,9 +36,13 @@
   .shs-card { padding:4px 14px; background:#fff; border:5px solid #111; border-radius:16px; box-shadow:0 5px 0 #111; font:inherit; color:#111; font-size:clamp(1.6rem, 7vw, 2.6rem);
     line-height:1.05; cursor:pointer; touch-action:manipulation; display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .shs-card .spk { font-size:.45em; }
-  .shs-pips { display:flex; gap:4px; }
-  .shs-pip { width:24px; height:24px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; }
-  .shs-pip.on { background:#ffd400; } .shs-pip.on::after { content:"🛒"; }
+  /* The shopping list: 3 slots (one per item to get), dashed and empty, then the item with a tick */
+  .shs-pips { display:flex; gap:6px; }
+  .shs-pip { position:relative; width:50px; height:50px; border:4px dashed #111; border-radius:12px; background:rgba(255,255,255,.6); display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; font-weight:900; color:#111; line-height:1; overflow:hidden; white-space:nowrap; }
+  .shs-pip.on { border-style:solid; background:#ffe066; animation:shs-pop .3s cubic-bezier(.2,1.8,.4,1); }
+  .shs-pip.on::after { content:"✔"; position:absolute; right:1px; bottom:-1px; font-size:.9rem; color:#00a05a; }
+  @keyframes shs-pop { from { scale:.5; } }
   .shs-wrap { position:relative; flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:center; }
   .shs-board { position:relative; width:var(--bw); height:var(--bw); border:5px solid #111; border-radius:14px; box-shadow:0 7px 0 #111; overflow:hidden; touch-action:none;
     background:#f3efe4; background-image:linear-gradient(45deg, rgba(0,0,0,.05) 25%, transparent 25% 75%, rgba(0,0,0,.05) 75%), linear-gradient(45deg, rgba(0,0,0,.05) 25%, transparent 25% 75%, rgba(0,0,0,.05) 75%);
@@ -91,7 +95,7 @@
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
-    duration: 13000,
+    duration: 15000,   // (3 items)
     input: "tap",
     tutorial: true,
 
@@ -100,7 +104,7 @@
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const { tone, sweep, noise } = ctx.sfx;
-      const K = speed >= 1.5 ? 3 : 2;   // items to grab
+      const K = 3;                      // items to grab (always 3, shown as 3 slots: the teacher asked)
       const D = speed >= 1.5 ? 3 : 2;   // wrong items
       // K rows with one right each: the right ones are the shopping list (phonics: different pictures of the letter).
       const C = ctx.choiceRows(K, D + 1, { lowercase: true });
@@ -275,7 +279,10 @@
         if (it.o.right) {
           it.el.animate([{ transform: "none" }, { transform: "translateY(-40%) scale(.3)", opacity: 0 }], { duration: 300, fill: "forwards" });
           [784, 1047].forEach((f, k) => tone(f, 0.1, "triangle", 0.1, k * 0.08));   // ding!
-          pips.children[got].classList.add("on");
+          const slot = pips.children[got];
+          slot.textContent = it.o.text;
+          if ([...it.o.text].length > 2) slot.style.fontSize = `${Math.max(0.7, 2.4 / [...it.o.text].length)}rem`;
+          slot.classList.add("on");
           got++;
           word(TEXT.got[(got - 1) % TEXT.got.length], false, (c + 0.5) * T, r * T);
           if (it.o.kind === "pic") ctx.say(it.o.spoken);

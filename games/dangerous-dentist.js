@@ -34,7 +34,7 @@
     background:linear-gradient(180deg, #d9f4ff 0 76%, #9fd8c8 76%); }
   .dd-room::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(255,255,255,.4) 0 2px, transparent 2px) 0 0 / 46px 46px, linear-gradient(rgba(255,255,255,.4) 0 2px, transparent 2px) 0 0 / 46px 46px; }
   /* The poster with the picture (tap: hear the word) */
-  .dd-poster { position:absolute; right:10px; top:10px; width:calc(var(--fz) * .34); aspect-ratio:.8; background:#fff; border:4px solid #111; border-radius:8px; box-shadow:0 4px 0 #111; z-index:3;
+  .dd-poster { position:absolute; right:10px; top:14px; width:calc(var(--fz) * .28); aspect-ratio:.8; background:#fff; border:4px solid #111; border-radius:8px; box-shadow:0 4px 0 #111; z-index:3;
     display:flex; align-items:center; justify-content:center; font-size:calc(var(--fz) * .2); line-height:1; cursor:pointer; touch-action:manipulation; transform:rotate(4deg); }
   .dd-poster::before { content:""; position:absolute; left:50%; top:-8px; width:12px; height:12px; margin-left:-6px; border-radius:50%; background:#e8173c; border:2px solid #111; }
   /* The monster (--fz): a big head, angry brows, googly eyes, a HUGE mouth with the word on its top teeth */
@@ -122,7 +122,8 @@
       function layout() {
         W = room.clientWidth; H = room.clientHeight;
         kz = Math.max(48, Math.min((W - 60) / N - 12, H * 0.16, 80));
-        fz = Math.max(180, Math.min(W * 0.78, (H - kz * 1.15 - 50) / 0.82, 440));
+        // (narrow enough that the poster always fits beside the head, never over the mouth: head + 2 posters + gaps)
+        fz = Math.max(150, Math.min((W - 30) / 1.6, (H - kz * 1.15 - 50) / 0.82, 440));
         room.style.setProperty("--fz", `${fz}px`); room.style.setProperty("--kz", `${kz}px`);
         sizeTeeth();
       }

@@ -6,7 +6,8 @@
 //
 // Letter list: tiles hold letters (look-alike decoys). Phonics: the card is a letter, the targets are
 // pictures that start with it. CVC: the card is a word, the targets are its picture. HFW: the card is
-// 🔊, the targets are the word. 2 targets, 3 from 1.5×. Targets are placed within reach of the time
+// 🔊, the targets are the word. Always 3 targets (the teacher asked), shown as 3 empty slots beside the card
+// that fill with each one eaten, so it's clear there are three to find. Targets are placed within reach of the time
 // limit (each within a few steps of the last), and away from the scissors. The scissors wait a moment,
 // then chase along the shortest path; at 1× they're slow and often wander, and from 1.5× they hunt and
 // speed up (faster than the sack from about 2.25×).
@@ -31,7 +32,8 @@
           "Tap the card to hear it again.",
           "Eat a wrong one and the sack stops for a moment, feeling sick.",
           "If the scissors catch the sack… SNIP! Run away!",
-          "When the game speeds up, there are 3 to eat and the scissors get faster.",
+          "There are always 3 to eat: the 3 boxes by the card fill up as you go.",
+          "When the game speeds up, the scissors get faster.",
         ],
       } };
     },
@@ -87,9 +89,12 @@
     background:#fff; color:#111; border:5px solid #111; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; gap:6px;
     cursor:pointer; touch-action:manipulation; animation:sk-in .3s cubic-bezier(.2,1.8,.4,1) both; }
   .sk-card .spk { font-size:1.2rem; opacity:.6; }
-  .sk-pips { display:flex; gap:4px; font-size:1.6rem; line-height:1; }
-  .sk-pip { filter:grayscale(1) opacity(.35); transition:filter .2s; }
-  .sk-pip.on { filter:none; animation:sk-in .3s cubic-bezier(.2,1.8,.4,1); }
+  /* The 3 slots to fill (one per target): dashed and empty, then the eaten item with a tick */
+  .sk-pips { display:flex; gap:6px; line-height:1; }
+  .sk-pip { position:relative; width:50px; height:50px; border:4px dashed #111; border-radius:12px; background:rgba(255,255,255,.6); display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; font-weight:900; color:#111; overflow:hidden; white-space:nowrap; }
+  .sk-pip.on { border-style:solid; background:#ffe066; animation:sk-in .3s cubic-bezier(.2,1.8,.4,1); }
+  .sk-pip.on::after { content:"✔"; position:absolute; right:1px; bottom:-1px; font-size:.9rem; color:#00a05a; }
   .sk-stage { position:relative; flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:center; }
   .sk-board { position:relative; background:#fff3d6; border:5px solid #111; border-radius:12px; box-shadow:0 7px 0 #111; overflow:hidden;
     background-image:radial-gradient(circle, rgba(201,145,90,.25) 1.5px, transparent 2px); background-size:var(--ts) var(--ts); }
@@ -170,7 +175,7 @@
     howTo: TEXT.howTo,
     instruction: TEXT.instruction,
     contentTypes: ["letter", "phonics", "cvc", "hfw"],
-    duration: 12000,
+    duration: 15000,   // (3 targets)
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
 
@@ -179,7 +184,7 @@
       const type = ctx.list.type;
       const speed = ctx.speed || 1;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const K = speed >= 1.5 ? 3 : 2;           // targets to eat
+      const K = 3;                              // targets to eat (always 3: the teacher asked)
       const ND = speed >= 1.5 ? 3 : 2;          // decoys
       const letterName = (it) => it.say || it.text.toUpperCase();
       const { tone, sweep, noise } = ctx.sfx;
@@ -300,7 +305,7 @@
       card.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); replay(); });
       const pips = document.createElement("div");
       pips.className = "sk-pips";
-      pips.innerHTML = '<span class="sk-pip">⭐</span>'.repeat(K);
+      pips.innerHTML = '<span class="sk-pip"></span>'.repeat(K);
       top.append(card, pips);
       const stage = document.createElement("div");
       stage.className = "sk-stage";
@@ -470,7 +475,10 @@
         t.el.classList.add("eaten");
         if (t.good) {
           eaten++;
-          pips.children[eaten - 1].classList.add("on");
+          const slot = pips.children[eaten - 1];
+          slot.textContent = t.text;
+          if ([...t.text].length > 2) slot.style.fontSize = `${Math.max(0.7, 2.4 / [...t.text].length)}rem`;
+          slot.classList.add("on");
           tone(660, 0.07, "square", 0.1);
           tone(990, 0.1, "square", 0.1, 0.07);
           sackEl.classList.remove("happy"); void sackEl.offsetWidth; sackEl.classList.add("happy");
