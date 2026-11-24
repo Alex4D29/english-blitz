@@ -292,6 +292,7 @@
         lowerLookalikes: (t) => C().lowerLookalikes(ctx.items, t),
         choiceRows: (R, N, o = {}) => C().choiceRows(ctx.items, list.type, R, N, { canSpeak: F().canSpeak(), ...o }),
         choiceSteps: (R, N, o = {}) => C().choiceSteps(ctx.items, list.type, R, N, { canSpeak: F().canSpeak(), ...o }),
+        gapSteps: (R, N, o = {}) => C().gapSteps(ctx.items, list.type, R, N, { slow: true, ...o }),
         phonics: { pics: C().startPics, set: (t, a, b) => C().phonicsSet(ctx.items, t, a, b) },
       };
       // Same seed for both halves: the same target and board.

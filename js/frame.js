@@ -1046,6 +1046,8 @@
       choiceRows: (R, N, opts = {}) => C.choiceRows(items, list.type, R, N, { canSpeak: C.canSpeak && state.listening, ...opts }),
       // R steps of N options, each step with a different target (rhythm games). See Core.choiceSteps.
       choiceSteps: (R, N, opts = {}) => C.choiceSteps(items, list.type, R, N, { canSpeak: C.canSpeak && state.listening, ...opts }),
+      // R words (or letter runs) with one letter missing and N letters to choose from (the gap games). See Core.gapSteps.
+      gapSteps: (R, N, opts = {}) => C.gapSteps(items, list.type, R, N, { slow: speed < 1.5, ...opts }),
       // Phonics: pictures that start with a letter, and wrong pictures from other letters.
       phonics: {
         pics: C.startPics,                                     // (item) => [{ word, emoji }] starting with item.text

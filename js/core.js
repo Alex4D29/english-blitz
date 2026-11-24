@@ -198,6 +198,81 @@
     return steps;
   }
 
+  // ---------- FILL THE GAP (the gap games: Robot Repair, Bridge Builder, Burger Stack, Rocket Fix, Cookie Cutter) ----------
+  // R steps, each a word (or run of letters) with ONE letter missing, and N letters to choose from:
+  //   CVC      the word with its first, middle or last letter missing (c_t), the picture, and the voice says it.
+  //   ABC      a run of three letters with one missing (M _ O); nothing is said (it would give it away).
+  //   PHONICS  a picture and its word with the first letter missing (🐶 _og); the voice says the word.
+  //   HFW      the teacher's sight-word rules: the whole word shows FIRST (`showFirst`: look, then cover), then a
+  //            FAIR letter flies out: the first one, except where it's odd (who, one, eight: GAP_FAIR); the wrong
+  //            letters never make another real word, and never b/d/p/q look-alikes at the slow speed.
+  // Each step: { target, cells: [letters], gap, answer, options: [letters], pic, prompt, answer: spoken word,
+  //              say (what to say when it's right), showFirst, kind }.
+  const VOWELS = ["a", "e", "i", "o", "u"], CONSONANTS = "bcdfghjklmnprstvwyz".split("");
+  const GAP_FAIR = { who: 1, one: 1, eight: 4 }; // sight words whose first letter isn't the sound you hear
+  const BDPQ = ["b", "d", "p", "q"];
+  function gapSteps(pool, type, R, N, opts = {}) {
+    const steps = [];
+    const FS = window.Core && window.Core.focus, F = FS && pool.some((it) => FS.has(it.text)) ? FS : null;
+    const words = new Set(pool.map((it) => String(it.text).toLowerCase()));
+    const used = new Set();
+    // Targets from the front of the pool (MY WORDS first), fresh ones before repeats.
+    const order = () => {
+      const fresh = pool.filter((it) => !used.has(it.text)), old = pool.filter((it) => used.has(it.text));
+      const mine = (a) => (F ? a.filter((it) => F.has(it.text)) : []), rest = (a) => (F ? a.filter((it) => !F.has(it.text)) : a);
+      return F ? [...shuffle(mine(fresh)), ...shuffle(mine(old)), ...rest(fresh), ...rest(old)] : [...fresh, ...old];
+    };
+    const kind = !!opts.slow; // (slow speed: no b/d/p/q look-alikes among the wrong letters)
+    function wrongLetters(answer, n, isVowelSlot, makesWord) {
+      const base = isVowelSlot ? VOWELS : type === "letter" ? "ABCDEFGHIJKLMNOPRSTUVWYZ".split("") : CONSONANTS;
+      let cands = shuffle(base.filter((l) => l.toLowerCase() !== answer.toLowerCase()));
+      if (kind) cands = cands.filter((l) => !(BDPQ.includes(l.toLowerCase()) && BDPQ.includes(answer.toLowerCase())));
+      if (makesWord) cands = cands.filter((l) => !makesWord(l)); // (sight words: never another real word)
+      if (cands.length < n) cands = shuffle(base.filter((l) => l.toLowerCase() !== answer.toLowerCase()));
+      return cands.slice(0, n);
+    }
+    for (let s = 0; s < R; s++) {
+      const list = order();
+      let st = null;
+      if (type === "letter") {
+        // A run of three: the target letter and its neighbours (never at the very ends of the alphabet).
+        const it = list.find((x) => /^[B-Y]$/i.test(x.text)) || list[0];
+        const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", k = Math.max(1, Math.min(24, A.indexOf(it.text.toUpperCase())));
+        const lower = opts.lowercase && Math.random() < 0.5;
+        const run = [A[k - 1], A[k], A[k + 1]].map((l) => (lower ? l.toLowerCase() : l));
+        const gap = Math.floor(Math.random() * 3);
+        const answer = run[gap];
+        const wrong = wrongLetters(answer, N - 1, false).map((l) => (lower ? l.toLowerCase() : l.toUpperCase())).filter((l) => !run.includes(l)).slice(0, N - 1);
+        st = { target: it, cells: run, gap, answer, pic: null, prompt: "", say: answer.toUpperCase(), spoken: answer.toUpperCase(), showFirst: false, kind: "letter", wrong };
+      } else if (type === "phonics") {
+        const it = list.find((x) => startPics(x).some((p) => p.word.length <= 6)) || list.find((x) => startPics(x).length) || list[0];
+        const pics = shuffle(startPics(it).filter((p) => p.word.length <= 6));
+        const p = pics[0] || startPics(it)[0] || { word: it.word || it.text, emoji: it.emoji };
+        const cells = p.word.toLowerCase().split("");
+        st = { target: it, cells, gap: 0, answer: cells[0], pic: p.emoji, prompt: p.word, say: p.word, spoken: p.word, showFirst: false, kind: "word",
+          wrong: wrongLetters(cells[0], N - 1, false) };
+      } else if (type === "cvc") {
+        const it = list[0];
+        const cells = it.text.toLowerCase().split("");
+        const gap = typeof opts.gap === "number" ? opts.gap : Math.floor(Math.random() * cells.length);
+        st = { target: it, cells, gap, answer: cells[gap], pic: it.emoji || null, prompt: it.say || it.text, say: it.say || it.text, spoken: it.text, showFirst: false, kind: "word",
+          wrong: wrongLetters(cells[gap], N - 1, VOWELS.includes(cells[gap])) };
+      } else {
+        const it = list.find((x) => x.text.length >= 2) || list[0];
+        const w = it.text.toLowerCase(), cells = w.split("");
+        const gap = GAP_FAIR[w] != null ? GAP_FAIR[w] : 0;
+        const makesWord = (l) => { const t = cells.slice(); t[gap] = l.toLowerCase(); const ww = t.join(""); return ww !== w && (words.has(ww) || soundMap.has(ww)); };
+        st = { target: it, cells, gap, answer: cells[gap], pic: null, prompt: it.say || it.text, say: it.say || it.text, spoken: it.text, showFirst: true, kind: "word",
+          wrong: wrongLetters(cells[gap], N - 1, VOWELS.includes(cells[gap]), makesWord) };
+      }
+      used.add(st.target.text);
+      st.options = shuffle([st.answer, ...st.wrong.slice(0, N - 1)]);
+      delete st.wrong;
+      steps.push(st);
+    }
+    return steps;
+  }
+
   // ---------- Audio ----------
   // The AudioContext can only be created/resumed inside a user tap (iOS), so
   // the frame calls unlock() from the mode buttons.
@@ -416,7 +491,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, soundsLike,
+    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, soundsLike, gapSteps,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,

@@ -47,4 +47,9 @@ window.GAME_FILES = [
   "yarn-chase",
   "tickle-tummy",
   "fossil-dig",
+  "robot-repair",
+  "burger-stack",
+  "rocket-fix",
+  "bridge-builder",
+  "cookie-cutter",
 ];
