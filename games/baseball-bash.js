@@ -1,8 +1,9 @@
 // BASEBALL BASH — a listening game (the teacher's design). First person at home plate, bat in hand. Out on
 // the mound, a silly pitcher monster winds up and SAYS the target as it throws (only heard: the target is
-// never shown, unless listening games are off). The outfield fence has three big signs: left, middle, right.
-// The ball takes a couple of seconds to reach you (less when it's faster); when it gets close (the plate
-// glows), tap the sign with what you heard and you hit it that way. The right one: CRACK, HOME RUN!, it flies
+// never shown, unless listening games are off). The answers are three big buttons BELOW the
+// field (they used to be signs on the outfield fence, but kids thought they had to tap where the ball was going:
+// the teacher). The ball takes a couple of seconds to reach you (less when it's faster); when it gets close (the
+// zone turns green), tap the button with what you heard and you hit it out. The right one: CRACK, HOME RUN!, it flies
 // out over the fence. The wrong one, or no swing in time: STRIKE! Each pitch has a new target. 2 home runs win;
 // 3 strikes and you're out.
 (function () {
@@ -13,11 +14,11 @@
       steps: [
         ["👂", "Listen! The pitcher shouts what to hit as it throws the ball."],
         ["⚾", "Wait for the ball to reach you (the plate lights up)…"],
-        ["🏏", "…then tap the sign with what you heard, left, middle or right. The right one is a HOME RUN! Hit 2 to win."],
+        ["🏏", "…then tap the button below with what you heard. The right one is a HOME RUN! Hit 2 to win."],
       ],
       tips: [
         "Too early? Wait for the ball!",
-        "The wrong sign, or no swing, is a STRIKE. Three strikes and you're out!",
+        "The wrong button, or no swing, is a STRIKE. Three strikes and you're out!",
         "Tap the pitcher to hear it again.",
         "When the game speeds up, the ball comes faster.",
       ],
@@ -46,7 +47,7 @@
   .bb-park { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111; touch-action:none;
     background:linear-gradient(180deg, #8fd3ff 0 26%, #2f7a2f 26% 27%, #c98a4b 27% 31%, transparent 31%), repeating-linear-gradient(90deg, #5cc34a 0 44px, #4fb23f 44px 88px); }   /* sky, the fence's foot, the warning track, mown grass */
   /* The infield: a brown square (a diamond, seen from home plate) with chalk base lines, the mound in the middle */
-  .bb-diamond { position:absolute; left:4%; right:4%; top:34%; height:70%; z-index:1; overflow:visible; pointer-events:none; }
+  .bb-diamond { position:absolute; left:4%; width:92%; top:34%; height:70%; /* (an explicit width: an svg doesn't stretch between left and right, so it sat off centre) */ z-index:1; overflow:visible; pointer-events:none; }
   /* The hit zone round home plate: red while the ball's on its way, GREEN when it's in range (the teacher asked for it) */
   .bb-zone { position:absolute; left:50%; bottom:0; width:56%; height:24%; transform:translateX(-50%); z-index:2; pointer-events:none; border:5px solid #e8173c; border-bottom:0;
     border-radius:50% 50% 0 0 / 70% 70% 0 0; background:rgba(255,77,109,.45); display:flex; justify-content:center; align-items:flex-start; padding-top:4px; transition:background .1s, border-color .1s; }
@@ -54,11 +55,12 @@
   .bb-park.ready .bb-zone { background:rgba(60,220,100,.6); border-color:#00b86b; box-shadow:0 0 24px 8px rgba(80,255,130,.6); }
   .bb-park.ready .bb-zone::after { content:attr(data-hit); font-size:1.5rem; color:#fff; }
   .bb-park.idle .bb-zone { opacity:.35; }
-  .bb-sign { position:absolute; top:4%; width:28%; height:22%; transform:translateX(-50%); z-index:2; padding:0; font:inherit; cursor:pointer; touch-action:manipulation;
-    background:#fff; color:#111; border:5px solid #111; border-radius:12px; box-shadow:0 5px 0 #111; display:flex; align-items:center; justify-content:center; line-height:1; white-space:nowrap; }
-  .bb-sign.l { left:17%; } .bb-sign.c { left:50%; top:1%; } .bb-sign.r { left:83%; }
+  /* The answers: big buttons below the field (not on the fence: kids tapped where the ball was going) */
+  .bb-opts { flex:none; display:flex; gap:10px; justify-content:center; width:100%; max-width:560px; padding:0 8px; }
+  .bb-sign { flex:1; max-width:150px; height:var(--sh); padding:0 6px; font:inherit; cursor:pointer; touch-action:manipulation;
+    background:#fff; color:#111; border:5px solid #111; border-radius:16px; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; line-height:1; white-space:nowrap; overflow:hidden; }
   .bb-sign .tx { font-size:var(--sf); }
-  .bb-park.ready .bb-sign { box-shadow:0 0 0 5px #ffd400, 0 5px 0 #111; animation:bb-ready .3s ease-in-out infinite alternate; }
+  .bb.ready .bb-sign { box-shadow:0 0 0 5px #ffd400, 0 5px 0 #111; animation:bb-ready .3s ease-in-out infinite alternate; }
   .bb-sign.right { background:#b8ffcf; box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; }
   .bb-sign.bad { background:#ff5a6e; color:#fff; }
   .bb-plate { position:absolute; left:50%; bottom:5%; width:70px; height:24px; transform:translateX(-50%); background:#fff; border:4px solid #111; clip-path:polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); z-index:2; }
@@ -98,7 +100,7 @@
   @keyframes bb-pop { from { transform:scale(.3); } }
   @keyframes bb-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.5); } 25% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.15); }
     75% { opacity:1; } to { opacity:0; transform:translate(-50%, -100%) rotate(-8deg); } }
-  @media (prefers-reduced-motion: reduce) { .bb-peye i, .bb-park.ready .bb-sign, .bb-word, .bb-pitcher.laugh { animation:none !important; } }
+  @media@media (prefers-reduced-motion: reduce) { .bb-peye i, .bb.ready .bb-sign, .bb-word, .bb-pitcher.laugh { animation:none !important; } }
   `;
   function injectCss() {
     if (document.getElementById("bb-css")) return;
@@ -144,12 +146,14 @@
         '<div class="bb-zone"></div><div class="bb-plate"></div>';
       park.querySelector(".bb-zone").dataset.wait = TEXT.zoneWait;
       park.querySelector(".bb-zone").dataset.hit = TEXT.zoneHit;
+      const opts = document.createElement("div");
+      opts.className = "bb-opts";
       const signs = SIDES.map((side, i) => {
         const b = document.createElement("button");
         b.className = `bb-sign ${side}`;
         b.innerHTML = '<span class="tx"></span>';
         b.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); swing(i); });
-        park.appendChild(b);
+        opts.appendChild(b);
         return { el: b, tx: b.firstChild, opt: null, i };
       });
       const pitcher = document.createElement("div");
@@ -161,13 +165,8 @@
       const bat = document.createElement("div"); bat.className = "bb-bat";
       const fx = document.createElement("div"); fx.className = "bb-fx";
       park.append(pitcher, ball, bat, fx);
-      // A tap anywhere else in the park swings towards that third (left / middle / right).
-      park.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        const r = park.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
-        swing(x < 0.36 ? 0 : x > 0.64 ? 2 : 1);
-      });
-      wrap.append(pips, park);
+      park.addEventListener("pointerdown", (e) => e.preventDefault()); // (tapping the field does nothing: the answers are the buttons below)
+      wrap.append(pips, park, opts);
       ctx.root.appendChild(wrap);
 
       // ---------- Layout ----------
@@ -178,7 +177,9 @@
         park.style.setProperty("--pz", `${pz}px`);
         park.style.setProperty("--py", `${H * 0.68}px`); // on the mound, in the middle of the infield
         park.style.setProperty("--bw", `${Math.max(22, Math.min(W * 0.06, 34))}px`);
-        const sw = W * 0.28 - 18, sh = H * 0.22 - 14;
+        const bh = Math.max(56, Math.min(84, (opts.clientWidth - 20) / 3 * 0.62));
+        wrap.style.setProperty("--sh", `${bh}px`);
+        const sw = Math.min(150, (opts.clientWidth - 20) / 3) - 18, sh = bh - 14;
         signs.forEach((s) => {
           if (!s.opt) return;
           const len = s.opt.text.length;
@@ -230,7 +231,8 @@
         const k = (now - t0) / flyMs, a = hand(), b = plate();
         const kk = Math.min(1, k), e = kk * kk; // speeds up as it comes
         ball.style.transform = `translate(${(a.x + (b.x - a.x) * e).toFixed(1)}px, ${(a.y + (b.y - a.y) * e - Math.sin(kk * Math.PI) * H * 0.06).toFixed(1)}px) scale(${(0.5 + 2.6 * e).toFixed(2)})`;
-        park.classList.toggle("ready", k >= 0.62 && k <= 1.25); // the hit window: the plate (and signs) light up
+        park.classList.toggle("ready", k >= 0.62 && k <= 1.25);
+        wrap.classList.toggle("ready", park.classList.contains("ready")); // (the buttons light up too) // the hit window: the plate (and signs) light up
         if (k > 1.25) { if (!swung) strike(true); return; } // too late
         ctx.raf(fly);
       }
@@ -242,7 +244,7 @@
         }
         swung = true;
         state = "hit";
-        park.classList.remove("ready");
+        park.classList.remove("ready"); wrap.classList.remove("ready");
         bat.classList.add(SIDES[i]);
         const s = signs[i];
         if (s.opt.right) homeRun(s); else { s.el.classList.add("bad"); strike(false); }
@@ -272,7 +274,7 @@
       }
       function strike(late) {
         state = "hit";
-        park.classList.remove("ready");
+        park.classList.remove("ready"); wrap.classList.remove("ready");
         if (late) ball.style.visibility = "hidden"; // past you, into the catcher's glove
         else { sweep(500, 200, 0.25, "triangle", 0.08); ball.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" }); }
         noise(0.05, "lowpass", 600, 200, 0.4); // thwack (the glove)
@@ -310,7 +312,7 @@
       }
       function replay() { if (!done && state !== "hit") ctx.say(C.prompt); }
 
-      ctx.onTimeout(() => { done = true; state = "hit"; park.classList.remove("ready"); pitcher.classList.add("laugh"); signs.forEach((s) => { if (s.opt.right) s.el.classList.add("right"); }); ctx.say(C.answer); });
+      ctx.onTimeout(() => { done = true; state = "hit"; park.classList.remove("ready"); wrap.classList.remove("ready"); pitcher.classList.add("laugh"); signs.forEach((s) => { if (s.opt.right) s.el.classList.add("right"); }); ctx.say(C.answer); });
       function onKey(e) {
         const i = { 1: 0, 2: 1, 3: 2, ArrowLeft: 0, ArrowUp: 1, ArrowRight: 2 }[e.key];
         if (i !== undefined) { e.preventDefault(); swing(i); }

@@ -111,6 +111,7 @@
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
     bossRival: true, // Boss Battle showdown: the boss shoots at its own target
+    showdownDuration: 26000, // (Boss Battle showdown: ~21 s at 1.25×; kids wait for the power bar to come round a lot: the teacher)
 
     start(ctx) {
       injectCss();

@@ -75,6 +75,7 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 .mode-btn.boss { background: linear-gradient(135deg, #ff7a00, #c4161c); }
 .mode-btn.practice, .mode-btn.tutorials { background: #1fd65f; min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
 .mode-btn.adventure { background: linear-gradient(135deg, #2fb36b, #1e9bff); min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
+.mode-btn.coop { background:linear-gradient(135deg, #ffb020, #4dd36b); min-height:min(14dvh, 110px); font-size:clamp(1.4rem, 7.5vw, 2.2rem); }
 .mode-btn.versus { background: linear-gradient(90deg, #3d8bff 0 50%, #ff4d6d 50%); min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
 .mode-btn.tutorials { background: #9c6bff; }
 .mode-btn:disabled { opacity: .5; }
@@ -458,4 +459,4 @@ body.demo #stage::before {
   font-size: clamp(1.2rem, 5.4vw, 2.1rem); }
 .mode-grid .mode-txt { align-items: center; }
 .mode-grid .mode-desc { font-size: clamp(.75rem, 3.2vw, 1.05rem); }
-.menu > .mode-btn.versus { width: min(100%, 640px); }
+/* (VERSUS and TEAM UP share a row now) */

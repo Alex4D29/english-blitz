@@ -53,6 +53,8 @@
   .ck-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); font-size:2rem; color:#ffd400; -webkit-text-stroke:2px #111; paint-order:stroke fill; text-shadow:0 4px 0 #111;
     white-space:nowrap; animation:ck-word 1s ease-out forwards; }
   .ck-word.bad { color:#ff4d6d; }
+  .ck-me { position:absolute; z-index:7; pointer-events:none; }
+  .ck-crumb { position:absolute; width:10px; height:8px; border-radius:40%; background:#c98a4b; border:2px solid #5a3510; z-index:6; pointer-events:none; }
   .ck-mouth { position:absolute; width:calc(var(--kz) * .7); height:calc(var(--kz) * .5); z-index:7; pointer-events:none; border-radius:50% 50% 45% 45%; background:#5a0f1e; border:6px solid #111; }
   .ck-mouth::before { content:""; position:absolute; left:5%; right:5%; top:0; height:24%; background:repeating-linear-gradient(90deg, #fff 0 18%, #ddd 18% 22%); }
   @keyframes ck-word { from { opacity:1; scale:.5; } 25% { scale:1.15; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
@@ -101,6 +103,7 @@
       function showStep() {
         cookie.innerHTML = "";
         cookie.getAnimations().forEach((a) => a.cancel());
+        cookie.style.transition = "none"; cookie.style.transform = ""; // (a whole new cookie)
         const ic = ICING[si % ICING.length];
         ls = st.cells.map((l) => {
           const el = document.createElement("div");
@@ -202,22 +205,32 @@
         ctx.say(st.say);
         const cr = cookie.getBoundingClientRect(), tr = table.getBoundingClientRect();
         const cx = cr.left - tr.left + cr.width / 2, cy = cr.top - tr.top + cr.height / 2;
-        [[0.42, -0.28], [-0.4, 0.3], [0.1, 0.45]].forEach(([dx, dy], k) => ctx.later(() => {
-          const m = document.createElement("div");
-          m.className = "ck-mouth";
-          m.style.left = `${cx + dx * kz - kz * 0.35}px`; m.style.top = `${cy + dy * kz - kz * 0.25}px`;
-          fx.appendChild(m);
-          if (!reduceMotion) m.animate([{ transform: "scale(.3)", opacity: 0 }, { transform: "scale(1)", opacity: 1, offset: 0.5 }, { transform: "scaleY(.2)", opacity: 1 }], { duration: 300 });
-          ctx.later(() => {
-            m.remove();
-            const b = document.createElement("div");
-            b.className = "ck-bite";
-            b.style.left = `${50 + dx * 95 - 17}%`; b.style.top = `${50 + dy * 95 - 17}%`;
-            cookie.appendChild(b);
-            noise(0.08, "bandpass", 900, 500, 0.5); tone(120, 0.06, "square", 0.08);
-            word(TEXT.chomp[k], false, cx + dx * kz, cy - kz * 0.55);
-          }, 300);
-        }, 400 + k * 380));
+        // Your character pops up beside the cookie and munches it: it shrinks with each bite, crumbs fly (the
+        // teacher found the floating mouth weird).
+        const me = document.createElement("div");
+        me.className = "ck-me";
+        const fig = window.Mascot.el(kz * 0.55);
+        window.Mascot.mood(fig, "eat");
+        me.appendChild(fig);
+        me.style.left = `${cx + kz * 0.36}px`; me.style.top = `${cy - kz * 0.42}px`; // (beside the cookie, munching from the right)
+        fx.appendChild(me);
+        if (!reduceMotion) me.animate([{ transform: "translate(60%, 40%) scale(.3)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 300, easing: "cubic-bezier(.2,1.6,.4,1)" });
+        ctx.later(() => me.remove(), 1700);
+        [0.72, 0.44, 0.12].forEach((sc, k) => ctx.later(() => {
+          if (!reduceMotion) me.animate([{ translate: "0 0" }, { translate: `${-kz * 0.18}px 0` }, { translate: "0 0" }], { duration: 220 }); // lean in, CHOMP
+          cookie.style.transition = "transform .15s"; cookie.style.transform = `translate(-50%, -50%) scale(${sc})`;
+          noise(0.08, "bandpass", 900, 500, 0.5); tone(120, 0.06, "square", 0.08);
+          word(TEXT.chomp[k], false, cx, cy - kz * 0.6);
+          for (let n = 0; n < 6 && !reduceMotion; n++) {
+            const c = document.createElement("div");
+            c.className = "ck-crumb";
+            c.style.left = `${cx + kz * 0.25}px`; c.style.top = `${cy}px`;
+            fx.appendChild(c);
+            const a = Math.random() * Math.PI * 2, d = kz * (0.2 + Math.random() * 0.3);
+            c.animate([{ transform: "translate(0,0)" }, { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d + kz * 0.3}px)`, opacity: 0 }], { duration: 600, fill: "forwards" });
+            ctx.later(() => c.remove(), 620);
+          }
+        }, 450 + k * 380));
         ctx.later(() => ctx.confetti(fx, cx, cy, { count: 30 }), 1600);
         if (hits >= GOAL) { done = true; ctx.win(); return; }
         ctx.pauseTimer(1800 + BEAT_MS);

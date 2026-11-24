@@ -12,6 +12,8 @@ window.TEXT = {
   funDesc: "10 games, no pressure",
   challengeDesc: "4 lives. How far can you go?",
   versusDesc: "2 players, side by side!",
+  coop: "TEAM UP",                       // 🤝 two players working together (js/versus.js)
+  coopDesc: "2 players, work together!",
   bossDesc: "10 games, then beat a boss!",
   practiceDesc: "Play one game you like",
   tutorialsDesc: "Watch how each game works",

@@ -75,7 +75,7 @@
     practice: $("#practice"), howto: $("#howto"), content: $("#content"),
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
     askWatch: $("#askWatch"), watchYes: $("#watchYes"), watchNo: $("#watchNo"),
-    funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"), versusBtn: $("#versusBtn"), adventureBtn: $("#adventureBtn"),
+    funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"), versusBtn: $("#versusBtn"), adventureBtn: $("#adventureBtn"), coopBtn: $("#coopBtn"),
     bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
     words: $("#words"), wordsGrid: $("#wordsGrid"), wordsCount: $("#wordsCount"), wordsDoneBtn: $("#wordsDoneBtn"), wordsClearBtn: $("#wordsClearBtn"),
@@ -940,7 +940,8 @@
     const demo = !!opts.demo;
     const speed = demo ? 1 : state.speed; // demos always play at 1×, so they're easy to follow
     // A boss version of a game can have its own time limit (`bossDuration`: Wire Cut's robot finale needs 3 cuts).
-    const bossDur = !demo && bossFight() && state.boss.phase === "battle" && game.bossDuration;
+    // (and a showdown game can have its own too: `showdownDuration`, e.g. Archery: kids wait for the power bar)
+    const bossDur = !demo && bossFight() && ((state.boss.phase === "battle" && game.bossDuration) || (state.boss.phase === "showdown" && game.showdownDuration));
     const paceMs = Math.round((bossDur || game.duration || BASE_MS) / speed);
     const timeLimit = demo ? Math.max(paceMs, 20000) : Math.max(paceMs, warmupMsFor(state.round));
     state.reported = false;
@@ -1507,6 +1508,7 @@
   function contentGo() {
     if (state.pendingMode === "practice") showPractice("practice");
     else if (state.pendingMode === "versus") { clearRound(); window.Versus.open(); }
+    else if (state.pendingMode === "coop") { clearRound(); window.Versus.open("coop"); }
     else if (state.pendingMode === "adventure") { clearRound(); window.Adventure.open(); } // (🌍 the world map)
     else askWatch(state.pendingMode || "fun");
   }
@@ -1654,6 +1656,7 @@
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
   els.versusBtn.addEventListener("click", () => chooseContent("versus")); // ⚔️ two players, side by side (js/versus.js)
+  els.coopBtn.addEventListener("click", () => chooseContent("coop")); // 🤝 Team Up (js/versus.js)
   els.adventureBtn.addEventListener("click", () => chooseContent("adventure")); // 🗺️ the map (js/adventure.js)
   els.contentGoBtn.addEventListener("click", contentGo);
   els.watchYes.addEventListener("click", () => answerWatch(true));
@@ -1754,7 +1757,7 @@
       els.loading.hidden = false;
       return;
     }
-    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = els.versusBtn.disabled = els.adventureBtn.disabled = false;
+    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = els.versusBtn.disabled = els.adventureBtn.disabled = els.coopBtn.disabled = false;
     // WHO'S PLAYING? when the iPad has more than one save; a new player (or the very first run) picks a character.
     if (window.Players && window.Players.list().length > 1) window.Players.openPicker({ onDone: playerReady });
     else playerReady();

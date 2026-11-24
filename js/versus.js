@@ -17,12 +17,23 @@
     slow: "TOO SLOW!",
     nobody: "NOBODY!",
     heave: "HEAVE!",
+    // Team Up
+    teamTitle: "TEAM\nUP!",
+    teamGo: "🤝 GO!",
+    yourTurn: "👉 YOUR TURN!",
+    teamWin: "TEAM WIN!",
+    ohNo: "OH NO! 💔",
+    teamDone: "TEAM\nWIN! 🎉",
+    teamLost: "SO\nCLOSE!",
+    team: "TEAM",
+    bothDone: "DONE! ✔",
+    waitFriend: "Help your friend!",
     splash: "SPLASH!",
     wins: (n) => `PLAYER ${n}\nWINS!`,
     again: "🔁 PLAY AGAIN",
     menu: "🏠 MENU",
     quit: "Quit",
-    say: { go: "Ready? Go!", point: (n) => `Point for player ${n}!`, win: (n) => `Player ${n} wins!` },
+    say: { go: "Ready? Go!", point: (n) => `Point for player ${n}!`, win: (n) => `Player ${n} wins!`, team: "Great teamwork!", teamDone: "You did it together!", teamLost: "So close! Try again!" },
   };
   const GOALS = [3, 5, 7];   // points to win the match: a choice on the setup screen (the teacher asked)
   const GOAL_KEY = "wwe.vs.goal";
@@ -137,6 +148,71 @@
   .vt-pad.sooty .vt-btn { background:#555; color:#999; }
   @keyframes vw-throb { to { transform:translate(-50%, -50%) scale(1.06); } }
   @keyframes vw-fizz { 50% { opacity:.4; transform:scale(1.3); } }
+  /* Shared races (Boxing, Dance Off, Hoop Shot, Puzzle Reveal) */
+  .vx-field { position:relative; flex:1.3; min-height:0; overflow:hidden; border:5px solid #111; border-radius:18px; }
+  .vx-card { position:absolute; left:50%; top:6%; transform:translateX(-50%); min-width:74px; height:62px; padding:0 14px; border-radius:16px; background:#fff; border:5px solid #111;
+    box-shadow:0 5px 0 #111; font:inherit; font-size:2.2rem; line-height:1; color:#111; z-index:4; cursor:pointer; white-space:nowrap; }
+  .vx-card.next { animation:vs-pop .4s cubic-bezier(.2,1.8,.4,1); }
+  .vx-p { position:absolute; bottom:8%; width:var(--pz); height:var(--pz); z-index:3; transition:transform .2s; }
+  .vx-p.l { left:16%; } .vx-p.r { right:16%; } .vx-p.r > .ms { transform:scaleX(-1); }
+  .vx-p .glove { position:absolute; top:34%; font-size:calc(var(--pz) * .34); } .vx-p.l .glove { right:-14%; } .vx-p.r .glove { left:-14%; transform:scaleX(-1); }
+  .vx-p.l.punch { transform:translateX(40%); } .vx-p.r.punch { transform:translateX(-40%); }
+  .vx-p.ouch { animation:vx-ouch .4s ease-out; filter:brightness(1.6); }
+  .vx-p.ko { transform:rotate(-90deg) translateX(-30%); transform-origin:50% 100%; transition:transform .4s cubic-bezier(.5,0,.8,.6); }
+  .vx-p.r.ko { transform:rotate(90deg) translateX(30%); }
+  .vx-p.ko::after { content:"💫"; position:absolute; left:30%; top:-20%; font-size:calc(var(--pz) * .3); animation:vx-spin 1s linear infinite; }
+  .vx-ring { background:linear-gradient(#5b3f8f 0 60%, #e9e2d0 60%); }
+  .vx-ropes { position:absolute; left:4%; right:4%; top:34%; height:26%; border-top:6px solid #e8173c; border-bottom:6px solid #e8173c; }
+  .vx-ropes::after { content:""; position:absolute; left:0; right:0; top:45%; border-top:6px solid #fff; }
+  .vx-hp { position:absolute; top:8%; font-size:1.3rem; z-index:4; } .vx-hp.l { left:3%; } .vx-hp.r { right:3%; }
+  .vx-disco { background:radial-gradient(ellipse at 50% 110%, #ff9ce0 0 30%, transparent 60%), linear-gradient(#2a1b5e, #6a2c8f); }
+  .vx-floor { position:absolute; left:0; right:0; bottom:0; height:22%; background:repeating-linear-gradient(90deg, #ff4fa0 0 50px, #ffd400 50px 100px, #4dd36b 100px 150px, #2f8fe0 150px 200px); border-top:5px solid #111; }
+  .vx-ball { position:absolute; left:50%; top:-2%; transform:translateX(-50%); font-size:3rem; animation:vx-spin 3s linear infinite; }
+  .vx-meter { position:absolute; left:30%; right:30%; top:30%; height:16px; border:4px solid #111; border-radius:99px; background:linear-gradient(90deg, #3d8bff, #fff, #ff4d6d); z-index:4; }
+  .vx-meter i { position:absolute; left:50%; top:-10px; width:8px; height:28px; margin-left:-4px; background:#ffd400; border:3px solid #111; border-radius:4px; transition:left .35s cubic-bezier(.3,1.5,.5,1); }
+  .vx-p.groove > .ms { animation:vx-groove .45s ease-in-out infinite alternate; }
+  .vx-p.r.groove > .ms { animation-name:vx-groove-r; }
+  .vx-p.move0 { transform:translateY(-18%) rotate(-8deg); } .vx-p.move1 { transform:rotate(14deg) scale(1.08); } .vx-p.move2 { transform:scale(1.15, .85); } .vx-p.move3 { transform:translateY(-12%) rotate(-14deg); }
+  .vx-court { background:linear-gradient(#3d6fd6 0 64%, #d9a46a 64%); }
+  .vx-hoop { position:absolute; left:50%; top:32%; width:min(26vw, 150px); height:min(20vw, 110px); transform:translateX(-50%); z-index:2; }
+  .vx-hoop .board { position:absolute; inset:0 0 30%; background:#fff; border:5px solid #111; border-radius:8px; }
+  .vx-hoop .board::after { content:""; position:absolute; left:30%; right:30%; top:30%; bottom:4%; border:4px solid #e8173c; }
+  .vx-hoop .rim { position:absolute; left:22%; right:22%; top:66%; height:8%; background:#ff7a00; border:3px solid #111; border-radius:99px; z-index:2; }
+  .vx-hoop .net { position:absolute; left:26%; right:26%; top:72%; height:30%; border:3px solid #fff; border-top:0; clip-path:polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+    background:repeating-linear-gradient(45deg, transparent 0 6px, #fff 6px 8px); }
+  .vx-hoop.swish .net { animation:vx-swish .4s ease-out; }
+  .vx-hball { position:absolute; left:0; top:0; font-size:2.6rem; line-height:1; margin:-20px 0 0 -20px; z-index:3; pointer-events:none; }
+  .vx-puzzle { background:#6a2c8f; display:flex; align-items:center; justify-content:center; }
+  .vx-pz { position:relative; height:86%; aspect-ratio:1.2; background:#fff; border:5px solid #111; border-radius:12px; overflow:hidden; }
+  .vx-pz .hid { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:min(14vw, 16vh, 7rem); font-weight:900; color:#111; line-height:1; white-space:nowrap; }
+  .vx-pz .tiles { position:absolute; inset:0; display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr); }
+  .vx-pz .tile { background:#ffd400; border:3px solid #111; display:flex; align-items:center; justify-content:center; font-size:1.6rem; color:rgba(0,0,0,.25); transition:transform .4s ease-in, opacity .4s; }
+  .vx-pz .tile:nth-child(even) { background:#ff9f43; }
+  .vx-pz .tile.off { transform:translateY(-120%) rotate(30deg); opacity:0; }
+  @keyframes vx-ouch { 25% { translate:-10px 0; } 75% { translate:10px 0; } }
+  @keyframes vx-spin { to { transform:translateX(-50%) rotate(360deg); } }
+  @keyframes vx-groove { from { transform:rotate(-6deg); } to { transform:rotate(6deg) translateY(-6%); } }
+  @keyframes vx-groove-r { from { transform:scaleX(-1) rotate(-6deg); } to { transform:scaleX(-1) rotate(6deg) translateY(-6%); } }
+  @keyframes vx-swish { 50% { transform:scaleY(1.4); } }
+  /* 🤝 Team Up */
+  .vs-score .hearts { font-size:1.2rem; } .vs-score .rnd { font-size:1.1rem; padding:0 6px; }
+  .vs-stars { font-size:3rem; letter-spacing:6px; }
+  .vt-pad.myturn { box-shadow:0 0 0 4px #fff, 0 0 24px 8px var(--pc); animation:vx-turn .6s ease-in-out infinite alternate; }
+  .vt-pad.notturn { opacity:.45; filter:grayscale(.6); }
+  .vt-pad.myturn .who { font-size:1.15rem; }
+  .vx-mate { position:absolute; top:calc(66% - var(--tz) * .78); width:var(--tz); height:var(--tz); z-index:2; }
+  .vx-mate.m0 { left:4%; } .vx-mate.m1 { left:19%; }
+  .vx-foe { position:absolute; right:6%; top:calc(66% - var(--tz) * .85); width:var(--tz); height:var(--tz); z-index:2; }
+  .vx-p.tag.t0 { left:4%; } .vx-p.tag.t1 { left:22%; }
+  .vx-meter.team { left:20%; right:20%; background:#fff; overflow:hidden; } .vx-meter.team i { left:0; top:0; height:100%; width:0; margin:0; border:0; border-radius:0; background:linear-gradient(90deg, #ffd400, #ff4fa0); transition:width .35s; }
+  .vx-split { background:linear-gradient(#ffe9c9, #ffd6a0); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+  .vx-ico { position:absolute; left:10px; top:8px; font-size:2.4rem; }
+  .vx-pic { font-size:min(14vw, 13vh, 5rem); line-height:1; min-height:1em; cursor:pointer; }
+  .vx-word { display:flex; gap:8px; justify-content:center; }
+  .vx-cell { width:min(14vw, 12vh, 76px); height:min(14vw, 12vh, 76px); display:flex; align-items:center; justify-content:center; background:#fff; border:5px solid #111; border-radius:14px;
+    box-shadow:0 5px 0 #111; font-size:min(9vw, 8vh, 3rem); font-weight:900; line-height:1; color:#111; }
+  .vx-cell.gap { background:#ffe066; border-style:dashed; animation:vx-turn .5s ease-in-out infinite alternate; }
+  @keyframes vx-turn { to { filter:brightness(1.15); } }
   @keyframes vw-boom { 40% { transform:translate(-50%, -50%) scale(1.5); filter:brightness(3); } 100% { transform:translate(-50%, -50%) scale(0); opacity:0; } }
   @keyframes vs-pop { from { transform:scale(.3); opacity:0; } }
   `;
@@ -180,7 +256,9 @@
   }
 
   // ---------- Setup: who's playing? ----------
-  function open() {
+  let mode = "versus"; // or "coop" (🤝 Team Up)
+  function open(m) {
+    mode = m === "coop" ? "coop" : "versus";
     const r = shell();
     F().setTheme(5);
     if (window.Music) Music.play("menu");
@@ -191,7 +269,7 @@
     if (!p2 || p2 === p1 || !chars.some((c) => c.id === p2)) p2 = (chars.find((c) => c.id !== p1) || chars[0]).id;
     players = [{ char: p1 }, { char: p2 }];
     const box = el("div", "vs-setup");
-    const h = el("h1", "shout"); h.textContent = TEXT.setup;
+    const h = el("h1", "shout"); h.textContent = mode === "coop" ? TEXT.teamTitle : TEXT.setup;
     const pickers = el("div", "vs-pickers");
     players.forEach((p, i) => {
       const pk = el("div", "vs-picker");
@@ -219,7 +297,7 @@
       show();
       pickers.appendChild(pk);
     });
-    const go = el("button", "chunky vs-go"); go.textContent = TEXT.fight;
+    const go = el("button", "chunky vs-go"); go.textContent = mode === "coop" ? TEXT.teamGo : TEXT.fight;
     go.addEventListener("click", () => {
       C().unlock();
       C().say(TEXT.say.go);
@@ -240,19 +318,20 @@
       });
       goals.appendChild(b);
     });
-    box.append(h, pickers, goals, go, back);
+    box.append(h, pickers, ...(mode === "coop" ? [] : [goals]), go, back); // (Team Up: no first-to choice)
     r.appendChild(box);
   }
 
   // ---------- The match ----------
   function startMatch() {
     const r = shell();
-    match = { score: [0, 0], round: 0, played: new Set(), token: 0, timers: [], rafs: [], sides: null, over: false };
+    match = { score: [0, 0], round: 0, played: new Set(), token: 0, timers: [], rafs: [], sides: null, over: false, coop: mode === "coop", hearts: COOP_HEARTS };
     const top = el("div", "vs-top");
     const quit = el("button", "vs-quit"); quit.textContent = "✕"; quit.setAttribute("aria-label", TEXT.quit);
     quit.addEventListener("click", close);
     const score = el("div", "vs-score");
-    score.innerHTML = '<span class="f0"></span><span class="n s0">0</span><span class="vs shout">VS</span><span class="n s1">0</span><span class="f1"></span>';
+    score.innerHTML = match.coop ? '<span class="f0"></span><span class="vs shout">🤝</span><span class="hearts"></span><span class="rnd"></span><span class="f1"></span>' // (Team Up: team hearts, round n/8)
+      : '<span class="f0"></span><span class="n s0">0</span><span class="vs shout">VS</span><span class="n s1">0</span><span class="f1"></span>';
     score.querySelector(".f0").appendChild(window.Mascot.el(36, players[0].char));
     score.querySelector(".f1").appendChild(window.Mascot.el(36, players[1].char));
     top.append(quit, score);
@@ -292,6 +371,7 @@
     const pick = pickGame();
     if (!pick) { close(); return; }
     match.round++;
+    if (match.coop) drawTeam();
     F().setTheme(match.round);
     const ins = typeof pick.game.instruction === "function" ? pick.game.instruction(pick.list) : pick.game.instruction;
     const ban = el("div", "vs-banner", `<div class="ico">${pick.game.icon || "🎮"}</div><div class="w"><span class="sub">${TEXT.round(match.round)}</span>\n${(ins && ins.en) || ""}</div>`);
@@ -304,7 +384,13 @@
     const token = ++match.token;
     const alive = () => match && token === match.token;
     if (window.Music) Music.play(game.id);
-    if (SHARED[game.id]) { SHARED[game.id](game, list, alive); return; } // (a shared-screen versus game)
+    if (match.coop) { // 🤝 Team Up: take turns on the shared games; split the answers on Train Builder and the gap games; else both finish
+      if (COOP_TURNS[game.id]) { race(game, list, alive, COOP_TURNS[game.id]()); return; }
+      if (game.id === "train-builder" || SPLIT_GAP.includes(game.id)) { split(game, list, alive); return; }
+    } else {
+      if (SHARED[game.id]) { SHARED[game.id](game, list, alive); return; } // (a shared-screen versus game)
+      if (RACES[game.id]) { RACES[game.id](game, list, alive); return; }
+    }
     const items = F().prepItems(list);
     const paceMs = game.duration || 5000;
     const seed = Math.floor(Math.random() * 1e9);
@@ -394,6 +480,12 @@
     if (!match || side.state !== "playing" || match.over) return;
     side.state = won ? "won" : "lost";
     side.onEnd.forEach((fn) => { try { fn(won, false); } catch (err) { /* ok */ } });
+    if (match.coop) { // Team Up: the round counts when BOTH have won
+      if (won) { C().sfx.happy && C().sfx.happy(); cover(side, TEXT.bothDone, true); }
+      else { C().sfx.buzz && C().sfx.buzz(); cover(side, TEXT.out, false); }
+      settle();
+      return;
+    }
     if (won && !match.result) {
       match.result = side.i;
       const other = match.sides[1 - side.i];
@@ -407,6 +499,10 @@
   }
   function settle() {
     if (match.result != null) return;
+    if (match.coop) {
+      if (match.sides.every((s) => s.state !== "playing")) { match.result = 0; const ok = match.sides.every((s) => s.state === "won"); later(() => teamRound(ok), 900); }
+      return;
+    }
     if (match.sides.every((s) => s.state !== "playing")) {
       match.result = -1;
       later(() => { banner(TEXT.nobody); later(nextRound, 1500); }, 900);
@@ -437,6 +533,569 @@
     C().say(TEXT.say.point(i + 1));
     if (match.score[i] >= goal) { later(() => champion(i), 1800); return; }
     later(nextRound, 1900);
+  }
+
+  // ---------- A RACE on one shared screen (Boxing, Dance Off, Puzzle Reveal, Hoop Shot) ----------
+  // The shared part: a field across the top (the game draws it: cfg.field(box) returns { card, fx, ... }), each
+  // player's own answer buttons in their half below (same target, shuffled separately), a wrong tap makes that
+  // player dizzy for a moment, one clock. The first to tap the right answer: cfg.hit(i, o) (returns true when
+  // that ends the round: cfg.win(i) plays the ending, then the point); then a new target for both
+  // (cfg.oneTarget: no new target, the round is that one question: Puzzle Reveal). Out of time: cfg.timeUp()
+  // returns the winner (or -1: nobody).
+  function race(game, list, alive, cfg) {
+    const items = F().prepItems(list);
+    const N = cfg.N || 3, DIZZY = 1200;
+    const steps = C().choiceSteps(items, list.type, 12, N, { lowercase: true, canSpeak: F().canSpeak() });
+    let si = 0, step = steps[0], over = false;
+    const sides = root.querySelector(".vs-sides");
+    sides.classList.add("shared");
+    const box = el("div", "vs-shared", `<div class="vx-field ${cfg.cls}"><div class="vt-bar"><i></i></div><div class="vt-fx"></div></div>` +
+      `<div class="vt-pads"><div class="vt-pad l" style="--pc:${COLORS[0]}"></div><div class="vt-pad r" style="--pc:${COLORS[1]}"></div></div>`);
+    sides.appendChild(box);
+    match.shared = box;
+    const field = box.querySelector(".vx-field"), bar = box.querySelector(".vt-bar i"), fx = box.querySelector(".vt-fx");
+    const pads = [box.querySelector(".vt-pad.l"), box.querySelector(".vt-pad.r")];
+    const api = { field, fx, step: () => step, later, word, chars: players.map((p) => p.char), say: (t) => C().say(t) };
+    const g = cfg.field(api);
+    if (g.card) g.card.addEventListener("pointerdown", (e) => { e.preventDefault(); if (!over) C().say(step.prompt); });
+    const dizzy = [0, 0];
+    let turn = 0; // (cfg.turns, Team Up: whose go it is)
+    function deal() {
+      if (g.card) { g.card.textContent = step.listen ? step.target.text : step.cardText; g.card.classList.remove("next"); void g.card.offsetWidth; g.card.classList.add("next"); }
+      if (cfg.show) cfg.show(step);
+      pads.forEach((pad, i) => {
+        pad.innerHTML = `<div class="who">${TEXT.p(i + 1)}${cfg.score ? " " + cfg.score(i) : ""}${cfg.turns && i === turn ? " " + TEXT.yourTurn : ""}</div><div class="btns"></div>`;
+        if (cfg.turns) { pad.classList.toggle("myturn", i === turn); pad.classList.toggle("notturn", i !== turn); }
+        C().shuffle(step.row.slice()).forEach((o) => {
+          const b = el("button", "vt-btn");
+          b.textContent = o.text;
+          if (o.kind === "word") b.style.fontSize = `${Math.min(30, 120 / (o.text.length * 0.6))}px`;
+          b.addEventListener("pointerdown", (e) => { e.preventDefault(); tap(i, b, o); });
+          pad.lastChild.appendChild(b);
+        });
+      });
+      if (!cfg.silent) C().say(step.prompt);
+    }
+    function tap(i, b, o) {
+      if (over || !alive() || performance.now() < dizzy[i]) return;
+      if (cfg.turns && i !== turn) { C().sfx.tone(200, 0.06, "square", 0.05); return; } // (not your go: wait for your friend)
+      if (!o.right && cfg.turns) { // Team Up: a wrong one passes the go to your friend (same question)
+        b.classList.add("bad");
+        C().sfx.sweep(500, 160, 0.3, "sawtooth", 0.08);
+        if (cfg.miss) cfg.miss(i);
+        pads.forEach((pad) => pad.classList.add("wait"));
+        later(() => { if (!over) { pads.forEach((pad) => pad.classList.remove("wait")); turn = 1 - turn; deal(); } }, 700);
+        return;
+      }
+      if (!o.right) {
+        b.classList.add("bad");
+        dizzy[i] = performance.now() + DIZZY;
+        pads[i].classList.add("dizzy");
+        C().sfx.sweep(500, 160, 0.3, "sawtooth", 0.08);
+        if (cfg.miss) cfg.miss(i);
+        later(() => pads[i] && pads[i].classList.remove("dizzy"), DIZZY);
+        return;
+      }
+      if (o.kind === "pic") C().say(o.spoken);
+      if (cfg.hit(i, o)) { finish(i); return; }
+      if (cfg.oneTarget) return;
+      if (cfg.turns) turn = 1 - turn;
+      si++; step = steps[si % steps.length];
+      pads.forEach((pad) => pad.classList.add("wait"));
+      later(() => { if (!over) { pads.forEach((pad) => pad.classList.remove("wait")); deal(); } }, 600);
+    }
+    function word(text, at, big) {
+      const w = el("div", "vt-word" + (big ? " big" : ""));
+      w.textContent = text;
+      w.style.left = typeof at === "number" ? (at === 0 ? "26%" : at === 1 ? "74%" : "50%") : at || "50%";
+      fx.appendChild(w);
+      later(() => w.remove(), big ? 1600 : 900);
+    }
+    function finish(winner) {
+      if (over) return;
+      over = true;
+      cancelAnimationFrame(match.sharedRaf);
+      if (match.coop) { // Team Up: the team did it (or ran out of time)
+        if (winner < 0) { if (cfg.nobody) cfg.nobody(); later(() => teamRound(false), 700); return; }
+        if (cfg.win) cfg.win(winner);
+        later(() => C().confetti(fx, fx.clientWidth / 2, fx.clientHeight * 0.35, { count: 80 }), 400);
+        later(() => teamRound(true), 1300);
+        return;
+      }
+      if (winner < 0) { match.result = -1; if (cfg.nobody) cfg.nobody(); later(() => { banner(TEXT.nobody); later(nextRound, 1500); }, 700); return; }
+      if (cfg.win) cfg.win(winner);
+      later(() => { C().confetti(fx, winner ? fx.clientWidth * 0.75 : fx.clientWidth * 0.25, fx.clientHeight * 0.35, { count: 70 }); }, 400);
+      match.result = winner;
+      later(() => scorePoint(winner), 1300);
+    }
+    const T0 = performance.now() + 500, LIMIT = (cfg.limit || game.duration || 12000) * 1.25;
+    (function tick() {
+      if (!alive() || over) return;
+      const f = Math.max(0, 1 - (performance.now() - T0) / LIMIT);
+      bar.style.transform = `scaleX(${f.toFixed(3)})`;
+      if (cfg.tick) cfg.tick(1 - f);
+      if (f <= 0) { finish(cfg.timeUp ? cfg.timeUp() : -1); return; }
+      match.sharedRaf = requestAnimationFrame(tick);
+    })();
+    deal();
+  }
+  // Two fighters / dancers / shooters: the players' characters, facing each other.
+  function duo(field, size) {
+    return [0, 1].map((i) => {
+      const h = el("div", `vx-p ${i ? "r" : "l"}`);
+      h.style.setProperty("--pz", size);
+      const f = window.Mascot.el("var(--pz)", players[i].char);
+      h.appendChild(f);
+      field.appendChild(h);
+      return { h, f };
+    });
+  }
+  const bump = (n, cls, ms) => { n.classList.remove(cls); void n.offsetWidth; n.classList.add(cls); setTimeout(() => n.classList.remove(cls), ms); };
+
+  const RACES = {
+    // MONSTER BOXING: your two characters box each other in a ring. The first right answer lands a punch (POW!);
+    // 3 punches: K.O.: the loser flops onto the canvas with stars circling, the winner cheers.
+    "monster-boxing": (game, list, alive) => {
+      const hp = [3, 3];
+      let P = null;
+      race(game, list, alive, {
+        cls: "vx-ring",
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-ropes"></div><button class="vx-card"></button><div class="vx-hp l"></div><div class="vx-hp r"></div>');
+          P = duo(api.field, "min(22vw, 24vh, 130px)");
+          P.forEach((p) => p.h.insertAdjacentHTML("beforeend", '<div class="glove">🥊</div>'));
+          this.api = api;
+          hpDraw();
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          const o = 1 - i;
+          hp[o]--;
+          hpDraw();
+          bump(P[i].h, "punch", 300);
+          bump(P[o].h, "ouch", 400);
+          this.api.word(["POW!", "BAM!", "WHAM!"][2 - hp[o]], o);
+          C().sfx.noise(0.12, "lowpass", 1200, 200, 0.6); C().sfx.tone(110, 0.15, "square", 0.12);
+          return hp[o] <= 0;
+        },
+        win(i) {
+          const o = 1 - i;
+          P[o].h.classList.add("ko");
+          window.Mascot.mood(P[o].f, "sad");
+          window.Mascot.mood(P[i].f, "cheer");
+          this.api.word("K.O.!", "50%", true);
+          [0, 0.25, 0.5].forEach((t) => C().sfx.tone(1200, 0.25, "triangle", 0.1, t)); // ding ding ding
+        },
+        timeUp: () => (hp[0] === hp[1] ? -1 : hp[0] > hp[1] ? 0 : 1),
+      });
+      function hpDraw() {
+        const f = root.querySelector(".vx-ring");
+        if (!f) return;
+        ["l", "r"].forEach((s, i) => { f.querySelector(`.vx-hp.${s}`).textContent = "❤️".repeat(Math.max(0, hp[i])) + "🖤".repeat(3 - Math.max(0, hp[i])); });
+      }
+    },
+    // DANCE OFF: a dance battle on one disco floor. The first right answer busts a move and the crowd cheers for
+    // that dancer; the crowd meter tips their way. First to 3 moves wins the crowd; the other sulks.
+    "dance-off": (game, list, alive) => {
+      const moves = [0, 0];
+      let P = null;
+      race(game, list, alive, {
+        cls: "vx-disco",
+        score: (i) => "🕺".repeat(moves[i]),
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-ball">🪩</div><div class="vx-floor"></div><button class="vx-card"></button><div class="vx-meter"><i></i></div>');
+          P = duo(api.field, "min(22vw, 26vh, 140px)");
+          P.forEach((p) => p.h.classList.add("groove"));
+          this.api = api;
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          moves[i]++;
+          const k = moves[0] + moves[1];
+          P[i].h.className = `vx-p ${i ? "r" : "l"} move${k % 4}`;
+          setTimeout(() => P[i].h.classList.add("groove"), 500);
+          window.Mascot.mood(P[i].f, "cheer"); setTimeout(() => window.Mascot.mood(P[i].f, null), 600);
+          this.api.word(["GROOVY!", "FUNKY!", "WOW!", "NICE!"][k % 4], i);
+          const m = root.querySelector(".vx-meter i");
+          if (m) m.style.left = `${50 + (moves[1] - moves[0]) * 14}%`;
+          [523, 659, 784].forEach((f, n) => C().sfx.tone(f, 0.08, "square", 0.07, n * 0.06));
+          C().sfx.noise(0.3, "bandpass", 2000, 1500, 0.15); // the crowd
+          return moves[i] >= 3;
+        },
+        win(i) {
+          window.Mascot.mood(P[i].f, "cheer");
+          window.Mascot.mood(P[1 - i].f, "sad");
+          P[1 - i].h.classList.remove("groove");
+          this.api.word("👏 WINNER! 👏", i, true);
+          C().sfx.noise(1.2, "bandpass", 2500, 1200, 0.25); // the crowd goes wild
+        },
+        timeUp: () => (moves[0] === moves[1] ? -1 : moves[0] > moves[1] ? 0 : 1),
+      });
+    },
+    // HOOP SHOT: one hoop on the wall between them. The first right answer shoots from that side: SWISH! First to
+    // 3 baskets wins.
+    "hoop-shot": (game, list, alive) => {
+      const pts = [0, 0];
+      let P = null;
+      race(game, list, alive, {
+        cls: "vx-court",
+        score: (i) => "🏀".repeat(pts[i]),
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-hoop"><div class="board"></div><div class="rim"></div><div class="net"></div></div><button class="vx-card"></button>');
+          P = duo(api.field, "min(18vw, 22vh, 110px)");
+          this.api = api;
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          pts[i]++;
+          const fld = this.api.field, hoop = fld.querySelector(".vx-hoop").getBoundingClientRect(), fr = fld.getBoundingClientRect(), pr = P[i].h.getBoundingClientRect();
+          const ball = el("div", "vx-hball"); ball.textContent = "🏀"; fld.appendChild(ball);
+          const a = { x: pr.left - fr.left + pr.width / 2, y: pr.top - fr.top }, b = { x: hoop.left - fr.left + hoop.width / 2, y: hoop.top - fr.top + hoop.height * 0.55 };
+          ball.animate([{ transform: `translate(${a.x}px, ${a.y}px)` }, { transform: `translate(${(a.x + b.x) / 2}px, ${Math.min(a.y, b.y) - 80}px) rotate(200deg)`, offset: 0.55 },
+            { transform: `translate(${b.x}px, ${b.y}px) rotate(400deg) scale(.8)` }, { transform: `translate(${b.x}px, ${b.y + 70}px) scale(.8)`, opacity: 0 }], { duration: 750, easing: "ease-in-out", fill: "forwards" });
+          setTimeout(() => ball.remove(), 800);
+          C().sfx.sweep(300, 900, 0.3, "triangle", 0.08);
+          setTimeout(() => { C().sfx.noise(0.2, "bandpass", 3000, 2000, 0.3); this.api.word("SWISH!", i); bump(fld.querySelector(".vx-hoop"), "swish", 400); }, 560);
+          window.Mascot.mood(P[i].f, "cheer"); setTimeout(() => window.Mascot.mood(P[i].f, null), 700);
+          return pts[i] >= 3;
+        },
+        miss(i) { this.api.word("CLANG!", i); C().sfx.tone(180, 0.15, "square", 0.1); },
+        win(i) { window.Mascot.mood(P[i].f, "cheer"); window.Mascot.mood(P[1 - i].f, "sad"); this.api.word("🏆 CHAMPION!", i, true); },
+        timeUp: () => (pts[0] === pts[1] ? -1 : pts[0] > pts[1] ? 0 : 1),
+      });
+    },
+    // PUZZLE REVEAL: one picture uncovering piece by piece in the middle; both watch and race to answer with their
+    // own buttons. One question per round: the first right answer wins it.
+    "puzzle-reveal": (game, list, alive) => {
+      let tiles = [], T = 0;
+      race(game, list, alive, {
+        cls: "vx-puzzle",
+        oneTarget: true, silent: true, // (nothing said: the voice would give it away)
+        limit: 12000,
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-pz"><div class="hid"></div><div class="tiles"></div></div>');
+          const t = api.field.querySelector(".tiles");
+          tiles = [...Array(9)].map(() => { const d = el("div", "tile"); d.textContent = "?"; t.appendChild(d); return d; });
+          tiles = C().shuffle(tiles);
+          this.api = api;
+          return { card: null };
+        },
+        show(step) { const h = root.querySelector(".vx-pz .hid"); h.textContent = step.listen ? step.target.text : step.cardText; },
+        tick(f) {
+          // A piece lifts off every so often; the last one never does.
+          const n = Math.min(8, Math.floor(f / 0.85 * 9));
+          for (; T < n; T++) { tiles[T].classList.add("off"); C().sfx.tone(500 + T * 60, 0.05, "triangle", 0.05); }
+        },
+        hit(i) { tiles.forEach((t) => t.classList.add("off")); this.api.word("GOT IT!", i, true); C().sfx.happy && C().sfx.happy(); return true; },
+        nobody() { tiles.forEach((t) => t.classList.add("off")); },
+      });
+    },
+  };
+
+  // =====================================================================================================
+  // 🤝 TEAM UP (co-op; the teacher's design): the two players work together. 3 team hearts, 8 rounds, no boss.
+  //   BOTH FINISH (most games): two copies like Versus, but the round only counts when BOTH win.
+  //   TAKE TURNS (the shared-screen games): one shared scene, the players take turns (the glowing side's go),
+  //     team vs a goal: pull the Gorilla into the mud, knock out Robot Boss, fill the crowd meter, sink 4
+  //     baskets, defuse the bomb, guess the puzzle. A wrong answer passes the go to your friend.
+  //   SPLIT THE ANSWERS (Train Builder and the gap games): one puzzle on top, the answer cards split between the
+  //     two players, so you have to work out whose card it is ("is it yours or mine?").
+  // A round lost costs a heart; no hearts left, game over. All 8 rounds: TEAM WIN! with stars for hearts left.
+  // =====================================================================================================
+  const COOP_ROUNDS = 8, COOP_HEARTS = 3;
+  const SPLIT_GAP = ["robot-repair", "burger-stack", "bridge-builder", "cookie-cutter", "rocket-fix"];
+  function teamRound(ok) {
+    if (!match || match.over) return;
+    if (ok) {
+      banner(TEXT.teamWin);
+      [523, 659, 784, 1047].forEach((f, k) => C().sfx.tone(f, 0.1, "triangle", 0.09, k * 0.08));
+      C().say(TEXT.say.team);
+    } else {
+      match.hearts--;
+      banner(TEXT.ohNo);
+      C().sfx.sweep(500, 200, 0.5, "sawtooth", 0.07);
+    }
+    drawTeam();
+    if (match.hearts <= 0) { later(() => coopEnd(false), 1600); return; }
+    if (match.round >= COOP_ROUNDS) { later(() => coopEnd(true), 1600); return; }
+    later(nextRound, 1700);
+  }
+  function drawTeam() {
+    if (!match.scoreEl) return;
+    match.scoreEl.querySelector(".hearts").textContent = "❤️".repeat(Math.max(0, match.hearts)) + "🖤".repeat(COOP_HEARTS - Math.max(0, match.hearts));
+    match.scoreEl.querySelector(".rnd").textContent = `${Math.min(match.round, COOP_ROUNDS)}/${COOP_ROUNDS}`;
+  }
+  // The end: both characters cheering (stars for hearts left), or sad: SO CLOSE!
+  function coopEnd(won) {
+    endRound(true);
+    match.over = true;
+    const r = shell();
+    if (window.Music) Music.play("menu");
+    const box = el("div", "vs-setup");
+    const h = el("h1", "shout"); h.textContent = won ? TEXT.teamDone : TEXT.teamLost;
+    const champ = el("div", "vs-champ");
+    players.forEach((p) => { const m = window.Mascot.el(130, p.char); window.Mascot.mood(m, won ? "cheer" : "sad"); champ.appendChild(m); });
+    const stars = el("div", "vs-stars"); stars.textContent = won ? "⭐".repeat(Math.max(1, match.hearts)) + "☆".repeat(COOP_HEARTS - Math.max(1, match.hearts)) : "";
+    const btns = el("div", "vs-end-buttons");
+    const again = el("button", "chunky hot"); again.textContent = TEXT.again;
+    again.addEventListener("click", () => { C().unlock(); startMatch(); });
+    const menu = el("button", "chunky"); menu.textContent = TEXT.menu;
+    menu.addEventListener("click", close);
+    btns.append(again, menu);
+    box.append(h, champ, stars, btns);
+    r.appendChild(box);
+    if (won) {
+      [392, 523, 659, 784, 1047].forEach((f, k) => C().sfx.tone(f, 0.14, "square", 0.07, k * 0.1));
+      setTimeout(() => C().confetti(r, r.clientWidth / 2, r.clientHeight * 0.35, { count: 140 }), 200);
+    }
+    C().say(won ? TEXT.say.teamDone : TEXT.say.teamLost);
+  }
+
+  // TAKE TURNS: the shared games, team against a goal (cfg for race() with turns: true).
+  const COOP_TURNS = {
+    // Both pull the rope together against Gorilla Boss; 4 heaves and he's in the mud.
+    "tug-of-war": () => {
+      let p = 0, G = null, P = null;
+      return {
+        cls: "vt-field vx-team", turns: true, score: () => "",
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vt-mud"></div><div class="vt-group"><div class="vt-rope"></div><div class="vt-flag"></div></div><button class="vx-card"></button>');
+          const grp = api.field.querySelector(".vt-group");
+          P = players.map((pl, i) => { const h = el("div", `vx-mate m${i}`); const f = window.Mascot.el("var(--tz)", pl.char); window.Mascot.mood(f, "pull"); h.appendChild(f); grp.appendChild(h); return f; });
+          G = el("div", "vx-foe"); G.appendChild(window.Boss.el("gorilla", "var(--tz)")); grp.appendChild(G);
+          this.api = api; this.grp = grp;
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          p++;
+          this.grp.style.transform = `translateX(${-p * 6}%)`;
+          bump(P[i], "heave", 300);
+          window.Boss.setMood(G.firstChild, "hurt");
+          this.api.word("HEAVE!", i);
+          C().sfx.sweep(200, 420, 0.2, "square", 0.07);
+          return p >= 4;
+        },
+        win() {
+          G.animate([{ transform: "none" }, { transform: "translateX(-60%) rotate(-75deg)" }], { duration: 420, fill: "forwards" });
+          setTimeout(() => { G.firstChild.classList.add("muddy"); window.Boss.setMood(G.firstChild, "cry"); P.forEach((f) => window.Mascot.mood(f, "cheer")); this.api.word("SPLASH!", "50%", true); C().sfx.noise(0.5, "lowpass", 1200, 150, 0.7); }, 420);
+        },
+      };
+    },
+    // Tag team boxing against Robot Boss: 4 punches and it's K.O.
+    "monster-boxing": () => {
+      let hp = 4, R = null, P = null;
+      return {
+        cls: "vx-ring vx-team", turns: true,
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-ropes"></div><button class="vx-card"></button><div class="vx-hp r"></div>');
+          P = players.map((pl, i) => { const h = el("div", `vx-p l tag t${i}`); h.style.setProperty("--pz", "min(18vw, 22vh, 110px)"); h.appendChild(window.Mascot.el("var(--pz)", pl.char)); h.insertAdjacentHTML("beforeend", '<div class="glove">🥊</div>'); api.field.appendChild(h); return h; });
+          R = el("div", "vx-p r"); R.style.setProperty("--pz", "min(24vw, 28vh, 150px)"); R.appendChild(window.Boss.el("robot", "var(--pz)")); api.field.appendChild(R);
+          this.api = api; this.hpDraw = () => { api.field.querySelector(".vx-hp.r").textContent = "❤️".repeat(hp) + "🖤".repeat(4 - hp); }; this.hpDraw();
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          hp--; this.hpDraw();
+          bump(P[i], "punch", 300); bump(R, "ouch", 400);
+          window.Boss.setMood(R.firstChild, "hurt");
+          this.api.word(["POW!", "BAM!", "WHAM!", "BOOM!"][3 - hp], 1);
+          C().sfx.noise(0.12, "lowpass", 1200, 200, 0.6); C().sfx.tone(110, 0.15, "square", 0.12);
+          return hp <= 0;
+        },
+        win() { R.classList.add("ko"); window.Boss.setMood(R.firstChild, "dead"); this.api.word("K.O.!", "50%", true); [0, 0.25, 0.5].forEach((t) => C().sfx.tone(1200, 0.25, "triangle", 0.1, t)); },
+      };
+    },
+    // Dance in sync: every right move fills the team's crowd meter; full = the crowd goes wild.
+    "dance-off": () => {
+      let n = 0, P = null;
+      return {
+        cls: "vx-disco vx-team", turns: true,
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-ball">🪩</div><div class="vx-floor"></div><button class="vx-card"></button><div class="vx-meter team"><i></i></div>');
+          P = duo(api.field, "min(22vw, 26vh, 140px)");
+          P.forEach((p) => p.h.classList.add("groove"));
+          this.api = api;
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          n++;
+          const m = this.api.field.querySelector(".vx-meter i"); if (m) m.style.width = `${n * 25}%`;
+          P.forEach((p) => { p.h.className = `vx-p ${p.h.classList.contains("r") ? "r" : "l"} move${n % 4}`; setTimeout(() => p.h.classList.add("groove"), 500); });
+          this.api.word(["GROOVY!", "FUNKY!", "WOW!", "YEAH!"][n % 4], i);
+          [523, 659, 784].forEach((f, k) => C().sfx.tone(f, 0.08, "square", 0.07, k * 0.06));
+          return n >= 4;
+        },
+        win() { P.forEach((p) => window.Mascot.mood(p.f, "cheer")); this.api.word("👏 THE CROWD GOES WILD! 👏", "50%", true); C().sfx.noise(1.2, "bandpass", 2500, 1200, 0.25); },
+      };
+    },
+    // Pass and shoot: 4 baskets together.
+    "hoop-shot": () => {
+      let n = 0, P = null;
+      return {
+        cls: "vx-court vx-team", turns: true, score: () => "",
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-hoop"><div class="board"></div><div class="rim"></div><div class="net"></div></div><button class="vx-card"></button><div class="vx-hp r"></div>');
+          P = duo(api.field, "min(18vw, 22vh, 110px)");
+          this.api = api; this.draw = () => { api.field.querySelector(".vx-hp.r").textContent = "🏀".repeat(n) + "⚪".repeat(4 - n); }; this.draw();
+          return { card: api.field.querySelector(".vx-card") };
+        },
+        hit(i) {
+          n++; this.draw();
+          bump(this.api.field.querySelector(".vx-hoop"), "swish", 400);
+          this.api.word("SWISH!", i);
+          C().sfx.noise(0.2, "bandpass", 3000, 2000, 0.3);
+          window.Mascot.mood(P[i].f, "cheer"); setTimeout(() => window.Mascot.mood(P[i].f, null), 600);
+          return n >= 4;
+        },
+        win() { P.forEach((p) => window.Mascot.mood(p.f, "cheer")); this.api.word("🏆 TEAM CHAMPS!", "50%", true); },
+      };
+    },
+    // Take turns cutting: 3 right wires and it's defused. Out of time: BOOM.
+    "wire-cut": () => {
+      let n = 0;
+      return {
+        cls: "vw-field vx-team", turns: true,
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vw-bomb"><div class="fuse"></div><div class="spark">✨</div><div class="eye l"><i></i></div><div class="eye r"><i></i></div><button class="vw-screen"></button></div>');
+          this.api = api;
+          return { card: api.field.querySelector(".vw-screen") };
+        },
+        hit(i) { n++; this.api.word("SNIP! ✂️", i); [660, 880].forEach((f, k) => C().sfx.tone(f, 0.07, "square", 0.07, k * 0.06)); return n >= 3; },
+        win() { this.api.field.querySelector(".vw-bomb").classList.add("phew"); this.api.word("PHEW!", "50%", true); C().sfx.sweep(800, 300, 0.4, "sine", 0.08); },
+        nobody() { this.api.field.querySelector(".vw-bomb").classList.add("gone"); C().sfx.noise(0.8, "lowpass", 1500, 100, 0.9); },
+        tick(f) { const b = this.api && this.api.field.querySelector(".vw-bomb"); if (b) b.classList.toggle("hurry", f > 0.7); },
+      };
+    },
+    // Take turns guessing what's under the puzzle.
+    "puzzle-reveal": () => {
+      let tiles = [], T = 0;
+      return {
+        cls: "vx-puzzle vx-team", turns: true, oneTarget: true, silent: true, limit: 14000,
+        field(api) {
+          api.field.insertAdjacentHTML("afterbegin", '<div class="vx-pz"><div class="hid"></div><div class="tiles"></div></div>');
+          const t = api.field.querySelector(".tiles");
+          tiles = C().shuffle([...Array(9)].map(() => { const d = el("div", "tile"); d.textContent = "?"; t.appendChild(d); return d; }));
+          this.api = api;
+          return { card: null };
+        },
+        show(step) { const h = root.querySelector(".vx-pz .hid"); if (h) h.textContent = step.listen ? step.target.text : step.cardText; },
+        tick(f) { const n = Math.min(8, Math.floor(f / 0.85 * 9)); for (; T < n; T++) tiles[T].classList.add("off"); },
+        hit(i) { tiles.forEach((t) => t.classList.add("off")); this.api.word("GOT IT!", i, true); return true; },
+        nobody() { tiles.forEach((t) => t.classList.add("off")); },
+      };
+    },
+  };
+
+  // SPLIT THE ANSWERS: one puzzle on top, the cards split between the players ("is it yours or mine?").
+  //   gap games: the word with a missing letter (Core.gapSteps), 3 words; the 4 letters are split 2 and 2,
+  //     only one of them is right (so one of you has it!).
+  //   train-builder: build the train in order; the cards are split between you; take the next one, whoever has it.
+  function split(game, list, alive) {
+    const items = F().prepItems(list);
+    const isTrain = game.id === "train-builder";
+    const sides = root.querySelector(".vs-sides");
+    sides.classList.add("shared");
+    const box = el("div", "vs-shared", `<div class="vx-field vx-split"><div class="vx-ico">${game.icon || "🎮"}</div><div class="vx-pic"></div><div class="vx-word"></div>` +
+      `<div class="vt-bar"><i></i></div><div class="vt-fx"></div></div><div class="vt-pads"><div class="vt-pad l" style="--pc:${COLORS[0]}"></div><div class="vt-pad r" style="--pc:${COLORS[1]}"></div></div>`);
+    sides.appendChild(box);
+    match.shared = box;
+    const pic = box.querySelector(".vx-pic"), wordEl = box.querySelector(".vx-word"), bar = box.querySelector(".vt-bar i"), fx = box.querySelector(".vt-fx");
+    const pads = [box.querySelector(".vt-pad.l"), box.querySelector(".vt-pad.r")];
+    let over = false, cells = [], need = [], si = 0, steps = null, prompt = "";
+    const say = (t) => { if (t) C().say(t); };
+    pic.addEventListener("pointerdown", (e) => { e.preventDefault(); say(prompt); });
+    function cardsFor(letters) {
+      // Deal the cards out between the two players: as even as possible, mixed up.
+      const all = C().shuffle(letters.map((l, k) => ({ l, k })));
+      return [all.filter((_, n) => n % 2 === 0), all.filter((_, n) => n % 2 === 1)];
+    }
+    function drawPads(hands, onTap) {
+      pads.forEach((pad, i) => {
+        pad.innerHTML = `<div class="who">${TEXT.p(i + 1)}</div><div class="btns"></div>`;
+        hands[i].forEach((c) => {
+          const b = el("button", "vt-btn");
+          b.textContent = c.l;
+          b.addEventListener("pointerdown", (e) => { e.preventDefault(); onTap(i, b, c); });
+          pad.lastChild.appendChild(b);
+        });
+      });
+    }
+    function drawWord(letters, gapAt) {
+      wordEl.innerHTML = "";
+      cells = letters.map((l, k) => { const c = el("div", "vx-cell" + (gapAt.includes(k) ? " gap" : "")); c.textContent = gapAt.includes(k) ? "" : l; wordEl.appendChild(c); return c; });
+    }
+    if (isTrain) {
+      // The train: the engine shows where it starts; the carriages in order, split between you.
+      const type = list.type;
+      let letters, start;
+      if (type === "cvc" || type === "hfw") {
+        const it = items.find((x) => x.text.length >= 3 && x.text.length <= 5) || items[0];
+        letters = it.text.split(""); start = it.emoji || "🚂"; prompt = it.say || it.text;
+      } else {
+        const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", it = items.find((x) => /^[A-V]$/i.test(x.text)) || items[0];
+        const k = Math.max(0, Math.min(21, A.indexOf(it.text.toUpperCase())));
+        start = A[k]; letters = A.slice(k + 1, k + 5).split(""); prompt = A[k];
+      }
+      pic.textContent = start === "🚂" ? "🚂" : `🚂 ${start}`;
+      drawWord(letters, letters.map((_, k) => k));
+      need = letters.slice();
+      let at = 0;
+      drawPads(cardsFor(letters), (i, b, c) => {
+        if (over || !alive()) return;
+        if (c.k !== at) { b.animate([{ translate: "0 0" }, { translate: "-6px 0" }, { translate: "6px 0" }, { translate: "0 0" }], { duration: 250 }); C().sfx.tone(200, 0.08, "square", 0.06); return; }
+        b.style.visibility = "hidden";
+        cells[at].classList.remove("gap"); cells[at].textContent = c.l;
+        C().sfx.tone(300 + at * 120, 0.08, "square", 0.08); // clunk
+        at++;
+        if (at >= need.length) done(true);
+      });
+      say(prompt);
+    } else {
+      // The gap games: 3 words, each with a letter missing; 2 cards each, only one right.
+      steps = C().gapSteps(items, list.type, 3, 4, { lowercase: true, slow: true });
+      const next = () => {
+        const st = steps[si];
+        prompt = st.prompt;
+        pic.textContent = st.pic || (st.kind === "letter" ? "❓" : "🔊");
+        drawWord(st.cells, [st.gap]);
+        drawPads(cardsFor(st.options), (i, b, c) => {
+          if (over || !alive()) return;
+          if (c.l !== st.answer) { b.classList.add("bad"); C().sfx.sweep(500, 160, 0.25, "sawtooth", 0.07); word("NOPE!", i); return; }
+          cells[st.gap].classList.remove("gap"); cells[st.gap].textContent = st.answer;
+          word("YES!", i); C().sfx.tone(880, 0.1, "triangle", 0.1); say(st.say);
+          si++;
+          if (si >= steps.length) { done(true); return; }
+          pads.forEach((p) => p.classList.add("wait"));
+          later(() => { pads.forEach((p) => p.classList.remove("wait")); if (!over) next(); }, 900);
+        });
+        say(prompt);
+      };
+      next();
+    }
+    function word(text, i) {
+      const w = el("div", "vt-word");
+      w.textContent = text;
+      w.style.left = i === 0 ? "26%" : "74%";
+      fx.appendChild(w);
+      later(() => w.remove(), 900);
+    }
+    function done(ok) {
+      if (over) return;
+      over = true;
+      cancelAnimationFrame(match.sharedRaf);
+      if (ok) {
+        if (isTrain) { wordEl.animate([{ transform: "none" }, { transform: "translateX(120%)" }], { duration: 900, easing: "ease-in", fill: "forwards" }); C().sfx.tone(392, 0.2, "square", 0.08); C().sfx.tone(392, 0.25, "square", 0.08, 0.3); } // toot toot
+        C().confetti(fx, fx.clientWidth / 2, fx.clientHeight * 0.4, { count: 80 });
+      }
+      later(() => teamRound(ok), 1200);
+    }
+    const T0 = performance.now() + 500, LIMIT = (game.duration || 12000) * 1.4;
+    (function tick() {
+      if (!alive() || over) return;
+      const f = Math.max(0, 1 - (performance.now() - T0) / LIMIT);
+      bar.style.transform = `scaleX(${f.toFixed(3)})`;
+      if (f <= 0) { done(false); return; }
+      match.sharedRaf = requestAnimationFrame(tick);
+    })();
   }
 
   // ---------- Shared-screen versus games (the teacher's idea) ----------
@@ -713,5 +1372,5 @@
     C().say(TEXT.say.win(i + 1));
   }
 
-  window.Versus = { open, close, SKIP: VERSUS_SKIP };
+  window.Versus = { open, close, SKIP: VERSUS_SKIP, openCoop: () => open("coop") };
 })();
