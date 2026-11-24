@@ -28,7 +28,27 @@
     sailing: (name) => `SAILING TO\n${name}!`,
     worldTitle: "🌍 ADVENTURE",
     worldSay: "Where shall we sail?",
+    // 📖 the island's story (the teacher's idea): the boss steals the island's treasure; beat it to get it back
+    tookIt: (boss, loot) => `OH NO!\n${boss.toUpperCase()} TOOK THE ${loot.toUpperCase()}!`,
+    tookItSay: (boss, loot) => `Oh no! ${boss} took the ${loot}! Let's get it back!`,
+    haha: "HA HA HA!",
+    getBack: "LET'S GET IT BACK!",
+    back: (loot) => `HOORAY!\nTHE ${loot.toUpperCase()} IS BACK!`,
+    backSay: (loot) => `Hooray! You got the ${loot} back!`,
+    newCrew: "NEW CREW!",
+    newCrewSay: "New crew!",
+    allAboard: "⛵ ALL ABOARD!",
   };
+  // Each island's treasure, stolen by its boss on your first visit (shown on the boss's spot until you win it back).
+  const LOOT = {
+    jungle: { icon: "🍌", name: "golden banana", gold: true },
+    ninja: { icon: "📜", name: "secret scroll" },
+    funfair: { icon: "🍭", name: "giant lollipop" },
+    nursery: { icon: "🧸", name: "teddy bear" },
+    cottage: { icon: "🐟", name: "golden fish", gold: true },
+  };
+  // How each boss looks when it's lost (Kitty is never hurt: it purrs; Baby falls asleep).
+  const LOSER = { gorilla: "cry", baby: "calm", kitty: "happy" };
 
   const CSS = `
   #adventure { position:fixed; inset:0; z-index:60; display:flex; flex-direction:column; background:transparent;
@@ -89,7 +109,7 @@
   @keyframes aw-bob { from { translate:0 0; rotate:-3deg; } to { translate:0 -6%; rotate:3deg; } }
   @keyframes aw-swim { to { translate:16px -6px; } }
   /* ⛵ Sailing to an island: sky, sea, the island growing on the horizon, your ship bobbing over the waves */
-  .ad-sail { --shz:min(46vw, 38vh, 260px); --mez:calc(var(--shz) * .44); position:relative; flex:1; min-height:0; overflow:hidden; border:5px solid #111; border-radius:24px;
+  .ad-sail { --shz:min(54vw, 44vh, 320px); --mez:calc(var(--shz) * .44); position:relative; flex:1; min-height:0; overflow:hidden; border:5px solid #111; border-radius:24px;
     box-shadow:0 7px 0 #111; background:linear-gradient(#7fd4ff 0 58%, #2f8fe0 58%); cursor:pointer; }
   .ad-sail .sun { position:absolute; left:12%; top:8%; width:14%; aspect-ratio:1; border-radius:50%; background:#fff3a8; box-shadow:0 0 40px 14px rgba(255,240,150,.8); }
   .ad-sail .gull { position:absolute; left:30%; top:16%; font-size:2rem; animation:ad-gull 1.6s ease-in-out infinite alternate; }
@@ -157,13 +177,63 @@
   @keyframes ad-look { 50% { transform:translateX(-4px); } }
   @keyframes ad-yay { 40% { transform:translateY(-16px) rotate(-6deg); } }
   @keyframes ad-no { 25% { transform:rotate(-8deg); } 75% { transform:rotate(8deg); } }
+  /* 🧢 You're the captain: a captain's hat inside your character (so it hops with it) */
+  .ad-cap { position:absolute; left:20%; top:-25%; width:60%; height:21%; z-index:6; background:#fff; border:calc(var(--mz) * .025) solid #111;
+    border-radius:50% 50% 12% 12% / 80% 80% 20% 20%; box-shadow:inset 0 calc(var(--mz) * -.05) 0 #1d3a8a; display:flex; align-items:center; justify-content:center;
+    font-size:calc(var(--mz) * .09); line-height:1; }
+  .ms-blitz .ad-cap { top:-9%; }                 /* (Blitz's round head starts lower than a letter's perched eyes) */
+  .ms-in:has(.ms-boss) .ad-cap { top:-12%; }
+  .ad-cap::after { content:""; position:absolute; left:-14%; right:-14%; bottom:calc(var(--mz) * -.045); height:calc(var(--mz) * .055); background:#111; border-radius:99px; }
+  /* 👥 Your crew: every character you've unlocked (up to a few), small, on deck. Kept still (one shared bob) for the iPad. */
+  .ad-crew { position:absolute; display:flex; flex-wrap:wrap; align-content:flex-end; justify-content:center; pointer-events:none; }
+  .ad-crew .ms { margin:0 calc(var(--cz) * -.1) calc(var(--cz) * -.45); }
+  .ad-crew .ms, .ad-crew .ms * { animation:none !important; }
+  .aw-ship .ad-crew { left:34%; right:-6%; bottom:22%; --cz:calc(var(--sz) * .27); z-index:1; flex-wrap:nowrap; }
+  .ad-sail .ad-crew { left:36%; right:2%; bottom:27%; --cz:calc(var(--shz) * .2); z-index:2; flex-wrap:nowrap; justify-content:flex-start; }
+  .ad-sail .ad-crew .ms { margin:0 calc(var(--cz) * -.12) 0 0; }
+  .ad-sail .more { position:absolute; left:62%; bottom:80%; z-index:3; background:#fff; border:3px solid #111; border-radius:99px; padding:0 7px;
+    font-size:calc(var(--shz) * .075); line-height:1.3; white-space:nowrap; }
+  /* 📖 the stolen treasure on the boss's spot */
+  .ad-boss .loot { position:absolute; left:-22%; bottom:-14%; font-size:calc(var(--bz) * .36); line-height:1; z-index:3; animation:ad-lootb 1s ease-in-out infinite alternate; }
+  .gold-loot { filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 8px #ffd400); }
+  @keyframes ad-lootb { to { transform:translateY(-12%) rotate(8deg); } }
+  /* 📖 the story: the boss steals the treasure */
+  .ad-story { position:absolute; inset:0; z-index:22; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.6); padding:10px; }
+  .ad-story .box { width:min(560px, 100%); display:flex; flex-direction:column; align-items:center; gap:10px; background:#fff; border:6px solid #111; border-radius:24px;
+    box-shadow:0 8px 0 #111; padding:12px 14px 16px; animation:ad-shopin .4s cubic-bezier(.2,1.6,.4,1); }
+  .ad-story .stage { position:relative; width:100%; height:var(--stz); overflow:hidden; border-radius:16px; border:4px solid #111;
+    background:radial-gradient(circle at 50% 70%, var(--b1), var(--b2)); }
+  .ad-rays { position:absolute; left:50%; top:50%; width:max(200%, 160vh); aspect-ratio:1; translate:-50% -50%; pointer-events:none;
+    background:repeating-conic-gradient(rgba(255,255,255,.32) 0 9deg, transparent 9deg 18deg); animation:ad-rays 12s linear infinite; }
+  .ad-story .loot { position:absolute; left:50%; bottom:10%; transform:translateX(-50%); font-size:calc(var(--stz) * .42); line-height:1; z-index:2; }
+  .ad-story .boss { position:absolute; left:56%; bottom:2%; z-index:1; }
+  .ad-story .haha { position:absolute; left:52%; top:6%; z-index:3; padding:2px 10px; background:#fff; border:4px solid #111; border-radius:16px; font-size:clamp(1rem, 4.5vw, 1.5rem);
+    animation:ad-shopin .3s cubic-bezier(.2,1.6,.4,1); }
+  .ad-story .say { font-size:clamp(1.2rem, 5.4vw, 1.9rem); text-align:center; line-height:1.1; white-space:pre-line; min-height:2.2em; }
+  .ad-story .go[hidden], .ad-win .go[hidden] { display:none; }
+  @keyframes ad-rays { to { rotate:360deg; } }
+  /* 🎉 the island won back: the treasure returns, the island parties, new crew come aboard */
+  .ad-win { --wz:min(26vw, 21vh, 170px); position:relative; flex:1; min-height:0; overflow:hidden; border:5px solid #111; border-radius:24px; box-shadow:0 7px 0 #111;
+    background:radial-gradient(ellipse 80% 60% at 50% 50%, var(--b1) 0 55%, var(--b2) 100%); display:flex; flex-direction:column; align-items:center;
+    justify-content:space-around; padding:10px 8px 14px; }
+  .ad-win .ad-rays { top:40%; }
+  .ad-win .say { position:relative; z-index:2; font-size:clamp(1.5rem, 6.6vw, 2.7rem); text-align:center; line-height:1.05; white-space:pre-line; color:#fff;
+    -webkit-text-stroke:2px #111; paint-order:stroke fill; text-shadow:0 5px 0 #111; animation:ad-say .6s cubic-bezier(.2,1.8,.4,1) both; }
+  .ad-win .loot { position:relative; z-index:2; font-size:calc(var(--wz) * .85); line-height:1; }
+  .ad-win .row { position:relative; z-index:2; display:flex; align-items:flex-end; justify-content:center; gap:calc(var(--wz) * .12); min-height:calc(var(--wz) * 1.1); }
+  .ad-win .crit { position:absolute; z-index:1; font-size:clamp(1.6rem, 6vw, 2.6rem); line-height:1; animation:ad-dance .45s ease-in-out infinite alternate; }
+  .ad-win .newc { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .ad-win .tag { margin-bottom:calc(var(--wz) * .22); font-size:clamp(.7rem, 2.6vw, .95rem); background:#ffd400; border:3px solid #111; border-radius:99px; padding:1px 8px; white-space:nowrap; }
+  .ad-win .go { position:relative; z-index:2; }
+  @keyframes ad-dance { from { transform:translateY(0) rotate(-12deg); } to { transform:translateY(-30%) rotate(12deg); } }
+  @media (prefers-reduced-motion: reduce) { .ad-rays, .ad-win .crit, .ad-boss .loot { animation:none !important; } }
   `;
   let cssDone = false;
   function injectCss() { if (cssDone) return; cssDone = true; const s = document.createElement("style"); s.textContent = CSS; document.head.appendChild(s); }
 
   const C = () => window.Core;
   const F = () => window.FrameAPI;
-  const load = () => { const p = C().storage.get(KEY, null) || {}; return { ...p, stars: p.stars || {}, at: p.at, spent: p.spent || 0, shops: p.shops || {} }; }; // spent: ⭐ spent in the item shops; shops: { jungle: true } once a shop has popped up // at: the island your ship is at
+  const load = () => { const p = C().storage.get(KEY, null) || {}; return { ...p, stars: p.stars || {}, at: p.at, spent: p.spent || 0, shops: p.shops || {}, story: p.story || {} }; }; // story: { jungle: true } once the boss has stolen its treasure // spent: ⭐ spent in the item shops; shops: { jungle: true } once a shop has popped up // at: the island your ship is at
   const starsOf = (p, i, j) => p.stars[`${ISLANDS[i].id}-${j}`] || 0;
   const islandOpen = (p, i) => i === 0 || starsOf(p, i - 1, LEVELS - 1) > 0;
   const levelOpen = (p, i, j) => islandOpen(p, i) && (j === 0 || starsOf(p, i, j - 1) > 0);
@@ -171,6 +241,27 @@
   const nextLevel = (p, i) => { for (let j = 0; j < LEVELS; j++) if (!starsOf(p, i, j)) return j; return LEVELS - 1; };
 
   let root = null, shown = 0, hop = null, quiet = false, sailTo = null;
+
+  // 🧢 You, the captain: your character with a captain's hat (inside its bobbing part, so it hops along).
+  function captain(size) {
+    const m = window.Mascot.el(size);
+    const hat = document.createElement("div");
+    hat.className = "ad-cap"; hat.textContent = "⚓";
+    (m.querySelector(".ms-in") || m).appendChild(hat);
+    return m;
+  }
+  // 👥 Your crew (the teacher's idea): the characters you've unlocked, small, on deck. The Adventure letters
+  // (V–Z) first, then the newest; `more` is how many didn't fit.
+  function crew(max, cls) {
+    const M = window.Mascot, me = M.current();
+    const ids = (C().storage.get("wwe.chars", []) || []).filter((id) => id !== me && M.isUnlocked(id));
+    const isle = new Set(M.CHARS.filter((c) => c.unlock === "island").map((c) => c.id));
+    const order = [...ids.filter((id) => isle.has(id)), ...ids.filter((id) => !isle.has(id)).reverse()];
+    const row = document.createElement("div");
+    row.className = "ad-crew" + (cls ? ` ${cls}` : "");
+    order.slice(0, max).forEach((id) => row.appendChild(M.el("var(--cz)", id)));
+    return { row, more: Math.max(0, order.length - max) };
+  }
 
   // The frame reports a level's stars (best kept). A first pass makes your character hop on next time.
   function record(adv, stars) {
@@ -272,7 +363,8 @@
     const ship = document.createElement("div");
     ship.className = "aw-ship";
     ship.innerHTML = '<div class="sail"></div><div class="me"></div><div class="hull"></div>';
-    ship.querySelector(".me").appendChild(window.Mascot.el("var(--mez)"));
+    ship.querySelector(".me").appendChild(captain("var(--mez)"));
+    ship.insertBefore(crew(3).row, ship.querySelector(".me"));
     sea.appendChild(ship);
     const dock = (k) => { const c = pt(k); return { x: c.x - iz * 0.75, y: c.y + iz * 0.3 }; };
     const place = (q) => { ship.style.transform = `translate(${q.x}px, ${q.y}px)`; };
@@ -312,9 +404,13 @@
       `<div class="waves"></div><div class="waves b"></div><div class="say shout"></div>`;
     sc.querySelector(".ic").textContent = isl.icon;
     sc.querySelector(".say").textContent = TEXT.sailing(isl.name);
-    const me = window.Mascot.el("var(--mez)");
+    const me = captain("var(--mez)");
     window.Mascot.mood(me, "cheer");
     sc.querySelector(".me").appendChild(me);
+    // The crew along the rail (up to 4), and a flag with how many more are below deck.
+    const cr = crew(4), shipEl = sc.querySelector(".ship");
+    shipEl.insertBefore(cr.row, sc.querySelector(".hull"));
+    if (cr.more) { const f = document.createElement("div"); f.className = "more shout"; f.textContent = `+${cr.more}`; shipEl.appendChild(f); }
     root.appendChild(sc);
     const isle = sc.querySelector(".isle"), ship = sc.querySelector(".ship");
     const ms = reduce() ? 1 : 3600;
@@ -392,6 +488,8 @@
         n.appendChild(window.Boss.el(isl.boss, nz * 1.5));
         if (!open) n.classList.add("dark");
         if (s) n.insertAdjacentHTML("beforeend", '<span class="crown">👑</span>');
+        // 📖 the treasure it stole, until you win it back
+        else if (p.story[isl.id] && LOOT[isl.id]) n.insertAdjacentHTML("beforeend", `<span class="loot${LOOT[isl.id].gold ? " gold-loot" : ""}">${LOOT[isl.id].icon}</span>`);
         n.setAttribute("aria-label", open ? B.name : "Locked boss");
       } else {
         n.textContent = open ? j + 1 : "🔒";
@@ -412,7 +510,7 @@
     me.className = "ad-me";
     const mz = nz * 1.1;
     me.style.setProperty("--mz", `${mz}px`);
-    const fig = window.Mascot.el(mz);
+    const fig = captain(mz);
     me.appendChild(fig);
     map.appendChild(me);
     const place = (j) => { const a = pt(j); me.style.transform = `translate(${a.x}px, ${a.y - nz * 0.35}px)`; };
@@ -451,7 +549,135 @@
       const q = load(); q.shops[isl.id] = true; C().storage.set(KEY, q);
       setTimeout(() => { if (root && !root.hidden && shown === i) shop(isl, true); }, hop ? 1500 : 500);
     }
+    // 📖 The first visit: the boss steals the island's treasure (not if it's already beaten, from before stories).
+    if (islandOpen(p, i) && !p.story[isl.id] && LOOT[isl.id]) {
+      if (starsOf(p, i, LEVELS - 1)) { const q = load(); q.story[isl.id] = true; C().storage.set(KEY, q); }
+      else { story(map, i); return; }
+    }
     if (!quiet) C().say(TEXT.say(isl.name));
+  }
+
+  // 📖 THE STORY (the teacher's idea): on your first visit the boss drops in, grabs the island's treasure, laughs
+  // and runs off to its spot at the end of the path. LET'S GET IT BACK! closes it (once it's all played out).
+  function story(map, i) {
+    const isl = ISLANDS[i], L = LOOT[isl.id], B = window.Boss.BOSSES[isl.boss];
+    const q = load(); q.story[isl.id] = true; C().storage.set(KEY, q);
+    const ov = document.createElement("div");
+    ov.className = "ad-story";
+    const stz = Math.round(Math.max(150, Math.min(root.clientHeight * 0.4, 280)));
+    ov.innerHTML = `<div class="box"><div class="stage"><div class="ad-rays"></div><div class="loot${L.gold ? " gold-loot" : ""}"></div><div class="boss"></div></div>` +
+      `<div class="say shout"></div><button class="chunky hot go" hidden></button></div>`;
+    const stage = ov.querySelector(".stage");
+    stage.style.setProperty("--stz", `${stz}px`);
+    stage.style.setProperty("--b1", isl.bg[0]); stage.style.setProperty("--b2", isl.bg[1]);
+    const loot = ov.querySelector(".loot"), bossBox = ov.querySelector(".boss"), say = ov.querySelector(".say"), go = ov.querySelector(".go");
+    loot.textContent = L.icon;
+    go.textContent = TEXT.getBack;
+    const bz = stz * 0.78;
+    const boss = window.Boss.el(isl.boss, bz);
+    bossBox.appendChild(boss);
+    bossBox.style.visibility = "hidden";
+    map.appendChild(ov);
+    const alive = () => root.contains(ov);
+    const { tone, sweep, noise } = C().sfx;
+    const fast = reduce() ? 0.05 : 1;
+    [784, 988, 1319].forEach((f, k) => tone(f, 0.18, "triangle", 0.08, k * 0.12)); // the treasure twinkles
+    setTimeout(() => { // the boss drops in
+      if (!alive()) return;
+      bossBox.style.visibility = "";
+      bossBox.animate([{ transform: "translateY(-140%)" }, { transform: "translateY(0)", offset: 0.75 }, { transform: "translateY(-6%)" }, { transform: "translateY(0)" }],
+        { duration: 600 * fast, easing: "ease-in" });
+      sweep(900, 200, 0.5, "square", 0.06); setTimeout(() => noise(0.3, "lowpass", 300, 200, 0.4), 450 * fast); // whistle… THUD
+    }, 900 * fast);
+    setTimeout(() => { // it grabs the treasure and laughs
+      if (!alive()) return;
+      const sw = stage.clientWidth, lx = sw / 2, bx = sw * 0.56 + bz / 2;
+      loot.animate([{ transform: "translateX(-50%)" }, { transform: `translate(calc(-50% + ${bx - lx}px), ${-bz * 0.3}px) scale(.75)` }],
+        { duration: 350 * fast, easing: "ease-out", fill: "forwards" });
+      window.Boss.setMood(boss, "laugh");
+      const h = document.createElement("div"); h.className = "haha shout"; h.textContent = TEXT.haha; stage.appendChild(h);
+      [0, 0.18, 0.36].forEach((t) => tone(330, 0.12, "square", 0.07, t)); // ha ha ha
+      say.textContent = TEXT.tookIt(B.name, L.name);
+      C().say(TEXT.tookItSay(B.name, L.name));
+    }, 1900 * fast);
+    setTimeout(() => { // off it runs, with the treasure
+      if (!alive()) return;
+      const sw = stage.clientWidth, lx = sw / 2, bx = sw * 0.56 + bz / 2;
+      bossBox.animate([{ transform: "translateX(0)" }, { transform: `translateX(${sw}px)` }], { duration: 700 * fast, easing: "ease-in", fill: "forwards" });
+      loot.animate([{ transform: `translate(calc(-50% + ${bx - lx}px), ${-bz * 0.3}px) scale(.75)` }, { transform: `translate(calc(-50% + ${bx - lx + sw}px), ${-bz * 0.3}px) scale(.75)` }],
+        { duration: 700 * fast, easing: "ease-in", fill: "forwards" });
+      sweep(600, 1200, 0.5, "triangle", 0.06);
+      const h = stage.querySelector(".haha"); if (h) h.remove();
+      go.hidden = false;
+    }, 3400 * fast);
+    go.addEventListener("click", () => {
+      C().unlock();
+      tone(523, 0.1, "triangle", 0.1); tone(784, 0.14, "triangle", 0.1, 0.1);
+      ov.remove();
+      render(); // (the map again, with the treasure now on the boss's spot)
+    });
+  }
+
+  // 🎉 AN ISLAND WON BACK (the teacher's idea; instead of the plain results screen after an island's boss): the
+  // treasure flies back, the island's critters dance, the boss sulks, and any new characters hop in as NEW CREW!
+  // ALL ABOARD! goes back to the map (and on to the next island the first time: `sailTo`, from record()).
+  function victory(adv, fresh) {
+    injectCss();
+    if (!root) { root = document.createElement("div"); root.id = "adventure"; document.body.appendChild(root); }
+    root.hidden = false;
+    F().hideAll();
+    if (window.Music) Music.play("menu");
+    const i = Math.max(0, ISLANDS.findIndex((x) => x.id === adv.island)), isl = ISLANDS[i], L = LOOT[isl.id] || { icon: "⭐", name: "treasure" };
+    F().setTheme(i + 1);
+    root.innerHTML = "";
+    const sc = document.createElement("div");
+    sc.className = "ad-win";
+    sc.style.setProperty("--b1", isl.bg[0]); sc.style.setProperty("--b2", isl.bg[1]);
+    sc.innerHTML = `<div class="ad-rays"></div><div class="say shout"></div><div class="loot${L.gold ? " gold-loot" : ""}"></div><div class="row"></div>` +
+      `<button class="chunky hot go" hidden></button>`;
+    sc.querySelector(".say").textContent = TEXT.back(L.name);
+    sc.querySelector(".go").textContent = TEXT.allAboard;
+    const loot = sc.querySelector(".loot"), row = sc.querySelector(".row"), go = sc.querySelector(".go");
+    loot.textContent = L.icon;
+    [[6, 30], [92, 26], [4, 66], [94, 62], [18, 90], [82, 90]].forEach(([x, y], k) => {
+      const c = document.createElement("div"); c.className = "crit"; c.textContent = isl.deco[k % isl.deco.length];
+      c.style.left = `${x}%`; c.style.top = `${y}%`; c.style.transform = "translate(-50%, -50%)"; c.style.animationDelay = `${-k * 0.15}s`;
+      sc.appendChild(c);
+    });
+    root.appendChild(sc);
+    const wz = Math.min(innerWidth * 0.26, innerHeight * 0.21, 170);
+    const boss = window.Boss.el(isl.boss, wz * 0.85);
+    window.Boss.setMood(boss, LOSER[isl.boss] || "hurt");
+    const me = captain(wz);
+    window.Mascot.mood(me, "cheer");
+    row.append(boss, me);
+    const alive = () => root.contains(sc);
+    C().sfx.fanfare();
+    C().say(TEXT.backSay(L.name));
+    loot.animate([{ transform: `translate(${-wz}px, ${wz}px) scale(.3) rotate(-30deg)` }, { transform: "translate(0, -20%) scale(1.15) rotate(8deg)", offset: 0.7 }, { transform: "none" }],
+      { duration: reduce() ? 1 : 900, easing: "ease-out" });
+    setTimeout(() => { if (alive() && C().confetti) C().confetti(sc, sc.clientWidth / 2, sc.clientHeight * 0.35, { count: 120 }); }, 500);
+    // New characters from this win come aboard, one after another.
+    const list = (fresh || []).slice(0, 3);
+    list.forEach((c, k) => setTimeout(() => {
+      if (!alive()) return;
+      const box = document.createElement("div"); box.className = "newc";
+      const m = window.Mascot.el(wz * 0.75, c.id);
+      window.Mascot.mood(m, "cheer");
+      box.innerHTML = `<span class="tag shout"></span>`;
+      box.firstChild.textContent = TEXT.newCrew;
+      box.appendChild(m);
+      row.appendChild(box);
+      box.animate([{ transform: `translateX(${innerWidth}px)` }, { transform: "translateX(-8%)", offset: 0.8 }, { transform: "none" }], { duration: reduce() ? 1 : 700, easing: "ease-out" });
+      [523, 659, 784, 1047].forEach((f, n) => C().sfx.tone(f, 0.12, "triangle", 0.09, n * 0.07));
+      C().say(`${TEXT.newCrewSay} ${window.Mascot.lineOf(c)}`);
+    }, 2800 + k * 2400));
+    setTimeout(() => { if (alive()) go.hidden = false; }, list.length ? 2800 + list.length * 2400 - 600 : 1800);
+    go.addEventListener("click", () => {
+      C().unlock();
+      C().sfx.tone(196, 0.3, "square", 0.08); C().sfx.tone(196, 0.3, "square", 0.08, 0.35); // toot toot
+      open(isl.id); // (the world map, sailing on, the first time: record() set sailTo)
+    });
   }
 
   // 🏪 The shop: a silly shopkeeper (an original: a round green monster in a striped apron with a curly moustache
@@ -534,5 +760,5 @@
   function playNext(adv) { const n = nextOf(adv); if (!n) return false; hop = null; play(n); return true; }
   // Islands whose boss the active player has beaten (the V–Z characters: js/mascot.js).
   function beaten() { const p = load(); return ISLANDS.filter((_, i) => starsOf(p, i, LEVELS - 1) > 0).map((x) => x.id); }
-  window.Adventure = { open, close, record, beaten, nextOf, playNext, ISLANDS };
+  window.Adventure = { open, close, record, beaten, nextOf, playNext, victory, ISLANDS };
 })();

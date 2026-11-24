@@ -1348,6 +1348,17 @@
     const results = state.results;
     const cleared = results.filter((r) => r.won).length;
     const accuracy = window.SCORING.accuracy(results);
+    // 🗺️ An Adventure island's boss beaten: the island's own ending (the treasure back, a party, new crew
+    // aboard: Adventure.victory) instead of the results screen.
+    if (m.id === "boss" && state.adv && state.boss && state.boss.done === "won" && window.Adventure && window.Adventure.victory) {
+      const b = state.boss, beaten = new Set(C.storage.get(BOSS_KEY, []) || []);
+      beaten.add(b.id); C.storage.set(BOSS_KEY, [...beaten]);
+      window.Adventure.record(state.adv, 3);
+      const fresh = window.Mascot ? window.Mascot.checkUnlocks({ mode: "boss", cleared, bossWon: b.id, bossesBeaten: [...beaten] }) : [];
+      if (fresh.length) renderCharBtn();
+      window.Adventure.victory(state.adv, fresh);
+      return;
+    }
     showScreen("results");
     els.record.hidden = true;
     els.stars.hidden = true;
