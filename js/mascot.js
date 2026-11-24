@@ -95,7 +95,7 @@
   .ms-glyph { top:4%; height:84%; font-size:calc(var(--mz) * .92); }
   .ms-elephant .ms-d.trunk { top:22%; height:26%; }
   .ms-elephant .ms-mouth { top:60% !important; }
-  .ms-apple .ms-d.stalk, .ms-apple .ms-d.leaf { top:-18%; }
+  .ms-apple .ms-d.stalk { top:2%; } .ms-apple .ms-d.leaf { top:4%; }   /* planted on the A's point (top ~15%) */
   /* Blitz: the orange monster (its own round body; the face sits on it) */
   .ms-blitz .ms-face { left:18%; right:18%; top:8%; bottom:16%; }
   .ms-blitz .ms-eye.l { left:10%; width:34%; top:16%; } .ms-blitz .ms-eye.r { right:8%; width:28%; top:20%; }
@@ -120,8 +120,8 @@
   /* (positions are against the letter itself: a capital spans about 18%–84% across and 15%–83% down) */
   .ms-cat .ms-d.ear { top:-12%; width:26%; height:26%; background:var(--cc); border:calc(var(--mz) * .025) solid #111; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
   .ms-cat .ms-d.ear::after { content:""; position:absolute; left:30%; right:30%; top:38%; bottom:8%; background:#ff9cc0; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
-  .ms-cat .ms-d.ear.l { left:12%; transform:rotate(-22deg); } .ms-cat .ms-d.ear.r { left:62%; transform:rotate(22deg); }
-  .ms-cat .ms-d.tail { left:70%; top:42%; width:30%; height:38%; border:calc(var(--mz) * .05) solid #111; border-color:transparent #111 #111 transparent; border-radius:50%; transform-origin:0 100%;
+  .ms-cat .ms-d.ear.l { left:16%; top:-4%; transform:rotate(-22deg); } .ms-cat .ms-d.ear.r { left:58%; top:-4%; transform:rotate(22deg); }
+  .ms-cat .ms-d.tail { left:66%; top:50%; width:30%; height:38%; border:calc(var(--mz) * .05) solid #111; border-color:transparent #111 #111 transparent; border-radius:50%; transform-origin:15% 85%; /* (the arc's end on the C: it wags from there) */
     animation:ms-tail .6s ease-in-out infinite alternate; }
   .ms-cat .ms-d.whisk { left:10%; right:10%; top:42%; height:12%; z-index:4; border-top:2px solid #111; border-bottom:2px solid #111; }
   /* D for dinosaur: spikes down its back and a tail */
@@ -138,21 +138,23 @@
   .ms-elephant .ms-mouth { top:58%; }
   /* F for flower: a big flower blooming on top, and a leaf */
   .ms-flower .ms-leg.l, .ms-pirate .ms-leg.l { left:24%; } .ms-flower .ms-leg.r, .ms-pirate .ms-leg.r { right:auto; left:38%; }   /* under the F's stem */
-  .ms-flower .ms-d.bloom { left:50%; top:-26%; transform:translateX(-50%); font-size:calc(var(--mz) * .38); animation:ms-spin 4s linear infinite; }
+  .ms-flower .ms-d.bloom { left:76%; top:4%; transform:translateX(-50%); font-size:calc(var(--mz) * .3); animation:ms-spin 4s linear infinite; z-index:3; }  /* on the end of the F's top bar */
   .ms-flower .ms-d.leaf { left:8%; top:58%; width:24%; height:14%; background:#3fb54a; border:calc(var(--mz) * .02) solid #111; border-radius:0 80% 0 80%; }
   /* G for guitar: a neck with tuning pegs sticking up, a sound hole, a floating note */
-  .ms-guitar .ms-d.neck { left:60%; top:-30%; width:10%; height:44%; background:#5a3510; border:calc(var(--mz) * .02) solid #111; border-radius:3px; transform:rotate(20deg);
+  .ms-guitar .ms-d.neck { left:66%; top:-14%; width:10%; height:44%; background:#5a3510; border:calc(var(--mz) * .02) solid #111; border-radius:3px; transform-origin:50% 100%; transform:rotate(24deg);
     box-shadow:inset 0 calc(var(--mz) * .06) 0 #222; }
   .ms-guitar .ms-d.hole { left:56%; top:56%; width:14%; aspect-ratio:1; z-index:3; background:#3a2208; border:calc(var(--mz) * .02) solid #111; border-radius:50%; }
   .ms-guitar .ms-d.note { right:-14%; top:-10%; font-size:calc(var(--mz) * .2); animation:ms-twinkle .5s ease-in-out infinite alternate; }
   /* H for helicopter: a spinning rotor on top and a tail rotor; it hovers */
-  .ms-helicopter .ms-d.mast { left:47%; top:-12%; width:6%; height:14%; background:#555; border:calc(var(--mz) * .015) solid #111; }
-  .ms-helicopter .ms-d.rotor { left:0; right:0; top:-16%; height:5%; background:#333; border-radius:99px; animation:ms-rotor .18s linear infinite; }
-  .ms-helicopter .ms-d.tailr { right:-14%; top:30%; width:18%; aspect-ratio:1; border-radius:50%; border:calc(var(--mz) * .025) dashed #333; animation:ms-spin2 .3s linear infinite; }
+  /* (the mast rises from the H's crossbar through the gap; the tail rotor sits on a boom off the right post) */
+  .ms-helicopter .ms-d.mast { left:47%; top:-12%; width:6%; height:58%; background:#555; border:calc(var(--mz) * .015) solid #111; }
+  .ms-helicopter .ms-d.rotor { left:4%; right:4%; top:-15%; height:5%; background:#333; border-radius:99px; animation:ms-rotor .18s linear infinite; }
+  .ms-helicopter .ms-d.boom { left:80%; top:33%; width:14%; height:6%; background:#555; border:calc(var(--mz) * .015) solid #111; border-radius:0 99px 99px 0; }
+  .ms-helicopter .ms-d.tailr { left:86%; top:25%; width:20%; aspect-ratio:1; border-radius:50%; border:calc(var(--mz) * .025) dashed #333; animation:ms-spin2 .3s linear infinite; }
   .ms-helicopter .ms-in { animation:ms-hover 1s ease-in-out infinite alternate; }
   /* I for iguana: a spiky crest down its back and a long curly tail */
-  .ms-iguana .ms-d.crest { left:20%; width:12%; top:2%; height:76%; background:#2f8a2a; clip-path:polygon(100% 0, 0 8%, 100% 16%, 0 24%, 100% 32%, 0 40%, 100% 48%, 0 56%, 100% 64%, 0 72%, 100% 80%, 100% 100%); }
-  .ms-iguana .ms-d.tail { right:-18%; bottom:8%; width:44%; height:26%; border:calc(var(--mz) * .045) solid #2f8a2a; border-color:transparent #2f8a2a #2f8a2a transparent; border-radius:50%;
+  .ms-iguana .ms-d.crest { left:28%; width:12%; top:2%; height:76%; background:#2f8a2a; clip-path:polygon(100% 0, 0 8%, 100% 16%, 0 24%, 100% 32%, 0 40%, 100% 48%, 0 56%, 100% 64%, 0 72%, 100% 80%, 100% 100%); }
+  .ms-iguana .ms-d.tail { left:50%; top:52%; width:44%; height:30%; transform-origin:15% 85%; border:calc(var(--mz) * .045) solid #2f8a2a; border-color:transparent #2f8a2a #2f8a2a transparent; border-radius:50%;
     animation:ms-tail .7s ease-in-out infinite alternate; }
   /* J for jelly baby: shiny, see-through and wobbly, like the sweet */
   .ms-jellybaby .ms-glyph { opacity:.9; text-shadow:0 0 calc(var(--mz) * .08) rgba(255,255,255,.9); }
@@ -161,17 +163,17 @@
   /* L for lion: a big shaggy mane behind it and a tufted tail */
   .ms-lion .ms-d.mane { left:-6%; right:-6%; top:-12%; height:96%; z-index:0; border-radius:50%;
     background:repeating-conic-gradient(#e07a1c 0 14deg, #b85a10 14deg 28deg); border:calc(var(--mz) * .03) solid #111; }
-  .ms-lion .ms-d.tuft { right:-8%; bottom:8%; width:16%; aspect-ratio:1; background:#b85a10; border:calc(var(--mz) * .02) solid #111; border-radius:50% 50% 50% 0; }
+  .ms-lion .ms-d.tuft { left:80%; top:62%; width:16%; aspect-ratio:1; background:#b85a10; border:calc(var(--mz) * .02) solid #111; border-radius:50% 50% 50% 0; }
   /* M for monkey: round ears, a tan muzzle and a curly tail */
   .ms-monkey .ms-d.ear { top:2%; width:24%; aspect-ratio:1; background:#a8652f; border:calc(var(--mz) * .03) solid #111; border-radius:50%; box-shadow:inset 0 0 0 calc(var(--mz) * .04) #f0c48a; }
-  .ms-monkey .ms-d.ear.l { left:-14%; } .ms-monkey .ms-d.ear.r { right:-14%; }
+  .ms-monkey .ms-d.ear.l { left:2%; } .ms-monkey .ms-d.ear.r { right:2%; }
   .ms-monkey .ms-d.patch { left:34%; right:34%; top:50%; height:24%; z-index:2; background:#f0c48a; border:calc(var(--mz) * .02) solid #111; border-radius:50%; }
-  .ms-monkey .ms-d.tail { left:-20%; bottom:10%; width:34%; height:30%; border:calc(var(--mz) * .045) solid #111; border-color:#111 transparent transparent #111; border-radius:50%; animation:ms-tail .6s ease-in-out infinite alternate; }
+  .ms-monkey .ms-d.tail { left:2%; bottom:14%; width:34%; height:30%; border:calc(var(--mz) * .045) solid #111; border-color:#111 transparent transparent #111; border-radius:50%; transform-origin:85% 15%; animation:ms-tail .6s ease-in-out infinite alternate; }
   /* N for ninja: a red headband with flapping tails, and a sword on its back */
   .ms-ninja .ms-d.band { left:6%; right:6%; top:14%; height:10%; z-index:2; background:#e8173c; border:calc(var(--mz) * .02) solid #111; }
   .ms-ninja .ms-d.tails { right:-12%; top:12%; width:22%; height:16%; background:#e8173c; border:calc(var(--mz) * .02) solid #111; clip-path:polygon(0 20%, 100% 0, 60% 50%, 100% 100%, 0 80%);
     transform-origin:0 50%; animation:ms-flap .3s ease-in-out infinite alternate; }
-  .ms-ninja .ms-d.sword { left:-4%; top:-16%; width:7%; height:60%; background:linear-gradient(#e6e6e6 68%, #5a3510 68%); border:calc(var(--mz) * .015) solid #111; transform:rotate(-26deg); }
+  .ms-ninja .ms-d.sword { left:6%; top:-12%; width:7%; height:60%; background:linear-gradient(#e6e6e6 68%, #5a3510 68%); border:calc(var(--mz) * .015) solid #111; transform:rotate(-26deg); }
   /* O for orange: a stalk and a leaf on top, and dimpled peel */
   .ms-orange .ms-d.stalk { left:47%; top:6%; width:7%; height:12%; background:#6b4a1f; border:calc(var(--mz) * .015) solid #111; border-radius:3px; z-index:1; }
   .ms-orange .ms-d.leaf { left:52%; top:3%; width:20%; height:10%; background:#3fb54a; border:calc(var(--mz) * .02) solid #111; border-radius:0 80% 0 80%; transform:rotate(-14deg); z-index:1; }
@@ -181,9 +183,9 @@
   .ms-pirate .ms-eye.r { background:#111 !important; } .ms-pirate .ms-eye.r i { display:none; }
   .ms-pirate .ms-d.strap { left:30%; right:16%; top:2%; height:3%; background:#111; transform:rotate(-10deg); z-index:4; }
   /* Q for queen: a golden tiara with a gem, and a pearl necklace */
-  .ms-queen .ms-d.tiara { left:30%; top:-20%; width:40%; height:16%; background:#ffd400; border:calc(var(--mz) * .018) solid #111; z-index:1;
+  .ms-queen .ms-d.tiara { left:30%; top:-15%; width:40%; height:16%; background:#ffd400; border:calc(var(--mz) * .018) solid #111; z-index:1;
     clip-path:polygon(0 100%, 0 40%, 20% 70%, 35% 10%, 50% 60%, 65% 10%, 80% 70%, 100% 40%, 100% 100%); }
-  .ms-queen .ms-d.gem { left:46%; top:-14%; width:8%; height:8%; background:#ff4fa0; border:2px solid #111; border-radius:50%; z-index:2; }
+  .ms-queen .ms-d.gem { left:46%; top:-9%; width:8%; height:8%; background:#ff4fa0; border:2px solid #111; border-radius:50%; z-index:2; }
   .ms-queen .ms-d.pearls { left:30%; right:30%; top:70%; height:7%; z-index:3; background:radial-gradient(circle, #fff 0 40%, #111 42% 55%, transparent 57%) 0 0 / 20% 100%; }
   /* R for rabbit: long ears (one flopped), buck teeth, a fluffy tail */
   .ms-rabbit .ms-d.ear { top:-40%; width:16%; height:44%; background:var(--cc); border:calc(var(--mz) * .025) solid #111; border-radius:50%; z-index:1; transform-origin:50% 100%; }
@@ -204,7 +206,7 @@
   /* U for umbrella: a striped canopy over its head (the U is the handle), and a raindrop */
   .ms-umbrella .ms-d.canopy { left:4%; right:4%; top:-36%; height:30%; z-index:1; border:calc(var(--mz) * .025) solid #111; border-radius:100% 100% 0 0 / 100% 100% 0 0;
     background:repeating-conic-gradient(from -90deg at 50% 100%, #e8173c 0 22.5deg, #fff 22.5deg 45deg); }
-  .ms-umbrella .ms-d.pole { left:48.5%; top:-8%; width:3%; height:26%; background:#111; z-index:1; }
+  .ms-umbrella .ms-d.pole { left:48.5%; top:-8%; width:3%; height:70%; background:#111; z-index:1; }  /* down to the U's curve */
   .ms-umbrella .ms-d.drop { right:-8%; top:-30%; font-size:calc(var(--mz) * .16); animation:ms-drip 1.2s ease-in infinite; }
   @keyframes ms-flop { from { transform:rotate(30deg); } to { transform:rotate(48deg); } }
   @keyframes ms-tongue { from { transform:scaleY(.3); } to { transform:scaleY(1); } }
@@ -257,8 +259,8 @@
   .ms-zombie .ms-in { animation:ms-lurch 1.1s ease-in-out infinite alternate; }
   .ms.ms-zombie .ms-arm.l, .ms.ms-zombie .ms-arm.r, .ms.ms-zombie.cheer .ms-arm.l, .ms.ms-zombie.cheer .ms-arm.r { left:auto; transform-origin:0 50%; z-index:3; }
   .ms.ms-zombie .ms-arm.l { right:-8%; top:28%; transform:rotate(-4deg); }
-  .ms.ms-zombie .ms-arm.r { right:-12%; top:58%; transform:rotate(6deg); }
-  .ms.ms-zombie.cheer .ms-arm.l { right:-8%; top:28%; transform:rotate(-30deg); } .ms.ms-zombie.cheer .ms-arm.r { right:-12%; top:58%; transform:rotate(-20deg); }
+  .ms.ms-zombie .ms-arm.r { right:-10%; top:68%; transform:rotate(4deg); }   /* (on the Z's bottom bar: the diagonal doesn't reach out there) */
+  .ms.ms-zombie.cheer .ms-arm.l { right:-8%; top:28%; transform:rotate(-30deg); } .ms.ms-zombie.cheer .ms-arm.r { right:-10%; top:68%; transform:rotate(-20deg); }
   .ms-zombie .ms-d.hair { left:22%; top:-12%; width:56%; height:16%; z-index:1; background:#2d3a1f;
     clip-path:polygon(0 100%, 6% 20%, 16% 70%, 26% 0, 38% 60%, 50% 10%, 60% 70%, 72% 0, 82% 60%, 94% 15%, 100% 100%); }
   .ms-zombie .ms-d.scar { left:28%; top:22%; width:30%; height:1.5%; z-index:4; background:#111; transform:rotate(-8deg); }
@@ -382,12 +384,13 @@
     apple: '<div class="ms-d stalk"></div><div class="ms-d leaf"></div>',
     ball: '<div class="ms-d tennis"></div><div class="ms-d soccer"></div>',
     cat: '<div class="ms-d ear l"></div><div class="ms-d ear r"></div><div class="ms-d tail"></div>',
-    dinosaur: '<div class="ms-d tail"></div>' + [[67, 20, 30], [80, 37, 70], [80, 61, 110], [67, 78, 150]].map(([x, y, a]) =>
+    // (spikes down the D's straight left side, its back, pointing left; the teacher found them odd on the curve)
+    dinosaur: '<div class="ms-d tail"></div>' + [[19, 24, -90], [19, 39, -90], [19, 54, -90], [19, 69, -90]].map(([x, y, a]) =>
       `<div class="ms-d spk" style="left:${x}%;top:${y}%;--a:${a}deg"></div>`).join(""),
     elephant: '<div class="ms-d ear l"></div><div class="ms-d ear r"></div>',
     flower: '<div class="ms-d bloom">🌸</div><div class="ms-d leaf"></div>',
-    guitar: '<div class="ms-d neck"></div><div class="ms-d note">🎵</div>',
-    helicopter: '<div class="ms-d mast"></div><div class="ms-d rotor"></div><div class="ms-d tailr"></div>',
+    guitar: '<div class="ms-d neck"></div>',
+    helicopter: '<div class="ms-d mast"></div><div class="ms-d rotor"></div><div class="ms-d boom"></div><div class="ms-d tailr"></div>',
     iguana: '<div class="ms-d crest"></div><div class="ms-d tail"></div>',
     jellybaby: '',
     lion: '<div class="ms-d mane"></div><div class="ms-d tuft"></div>',
