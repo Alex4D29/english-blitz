@@ -19,6 +19,7 @@
     <button class="mode-btn boss" id="bossBtn" disabled><span class="ico" aria-hidden="true">👑</span><span class="mode-txt"><span data-text="boss"></span><span class="mode-desc" data-text="bossDesc"></span></span></button>
     <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span class="mode-txt"><span data-text="practice"></span><span class="mode-desc" data-text="practiceDesc"></span></span></button>
     <button class="mode-btn tutorials" id="tutorialsBtn" disabled><span class="ico" aria-hidden="true">👀</span><span class="mode-txt"><span data-text="tutorials"></span><span class="mode-desc" data-text="tutorialsDesc"></span></span></button>
+    <button class="chunky char-btn" id="charBtn"><span class="char-mini" aria-hidden="true"></span><span data-text="character"></span></button>
     <button class="chunky" id="settingsBtn">⚙️ <span data-text="settings"></span></button>
   </div>
   <p id="loading" data-text="loading"></p>
@@ -82,6 +83,11 @@
       <button class="set-toggle" id="listeningBtn" aria-pressed="true"></button>
     </div>
     <p class="set-note" data-text="listeningNote"></p>
+    <div class="set-row">
+      <span class="set-ico" aria-hidden="true">👤</span>
+      <span class="set-name" data-text="resetCharsLabel"></span>
+      <button class="set-toggle" id="resetCharsBtn" data-text="resetChars"></button>
+    </div>
   </div>
   <button class="chunky" id="backBtn">⬅️ <span data-text="back"></span></button>
 </section>
@@ -97,7 +103,7 @@
   <div id="timer" role="progressbar" aria-hidden="true"><div id="bar"></div></div>
   <main id="stage">
     <div id="game"></div>
-    <div id="banner" hidden><div class="banner-icon" aria-hidden="true"></div><div class="shout"></div></div>
+    <div id="banner" hidden><div class="banner-icon" aria-hidden="true"></div><div class="shout"></div><div class="banner-char" aria-hidden="true"></div></div>
     <div id="stamp" hidden><div class="shout"></div></div>
   </main>
 </div>
@@ -116,6 +122,7 @@
 
 <!-- Results -->
 <section id="results" class="screen" hidden>
+  <div id="resChar" aria-hidden="true"></div>
   <h1 class="shout" id="resTitle"></h1>
   <div id="stars" role="img" hidden></div>
   <div class="card" id="resStats"></div>

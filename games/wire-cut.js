@@ -20,7 +20,7 @@
       ],
       tips: [
         "Follow the colours: the wires cross over.",
-        "A wrong wire makes the bomb tick faster. Three wrong wires and BOOM!",
+        "A wrong wire makes the bomb tick faster. Two wrong wires and BOOM!",
         "Tap the screen to hear it again.",
         "When the game speeds up, there are 4 wires.",
       ],
@@ -35,7 +35,7 @@
     haha: "HA HA!",
     tick: "TICK TICK!",
   };
-  const NEED = 3, MISSES = 3, BEAT_MS = 800;
+  const NEED = 3, MISSES = 2, BEAT_MS = 800; // one mistake is allowed, the second blows it (3 was too generous: the teacher)
   const WIRE_COLORS = ["#ff2e3b", "#1e6bff", "#1fd65f", "#b04dff", "#ff8a00"];
   const SVG_NS = "http://www.w3.org/2000/svg";
 

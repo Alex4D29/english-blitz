@@ -67,6 +67,7 @@
     funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"),
     bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
+    charBtn: $("#charBtn"), resChar: $("#resChar"), resetCharsBtn: $("#resetCharsBtn"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
     pickerTitle: $("#pickerTitle"), pickerNote: $("#pickerNote"),
@@ -89,6 +90,7 @@
     pendingMode: null,          // the mode button pressed before the content picker
     tutorial: C.storage.get(TUTORIAL_KEY, true) !== false, // show each game once before it's played (Fun, Challenge)
     seen: new Set(),            // games whose tutorial this run has already shown
+    played: new Set(),          // games played this run (no repeats: chooseRound)
     forceDemo: null,            // a game id whose tutorial the next round must show (Tutorials menu)
     picker: "practice",         // what the game grid is for: "practice" or "tutorial"
     practiceSpeed: Number(C.storage.get(PRACTICE_SPEED_KEY, 1)) || 1, // Practice difficulty (1, 1.75 or 2.5)
@@ -238,20 +240,29 @@
     // from its own short list (in order of preference), as long as the content in play suits it.
     if (bossFight()) {
       const b = state.boss, B = window.Boss.BOSSES[b.id];
-      const ids = b.phase === "showdown" ? C.shuffle(window.Boss.SHOWDOWN.filter((id) => id !== state.lastGame)) : B.stages[Math.min(2, b.stage)];
+      // (the showdown prefers games not played yet this run)
+      const sd = C.shuffle(window.Boss.SHOWDOWN.filter((id) => id !== state.lastGame));
+      const ids = b.phase === "showdown" ? [...sd.filter((id) => !state.played.has(id)), ...sd.filter((id) => state.played.has(id))] : B.stages[Math.min(2, b.stage)];
       for (const id of ids) {
         const g = C.MICROGAMES.find((x) => x.id === id);
         // (a boss version can take more content than the game itself: `bossContentTypes`, e.g. Feed Me)
         const types = (b.phase === "battle" && g && g.bossContentTypes) || (g && g.contentTypes) || [];
         const ls = g && usable(g) ? listsInPlay().filter((l) => types.includes(l.type)) : [];
-        if (ls.length) { state.lastGame = g.id; return { game: g, list: C.pick(ls) }; }
+        if (ls.length) { state.lastGame = g.id; state.played.add(g.id); return { game: g, list: C.pick(ls) }; }
       }
     }
-    const list = C.pick(lists);
+    // No game twice in a run (the teacher: there are enough games now). Endless mode starts over once every game
+    // has been played; elsewhere, if the content in play runs out of new games, a repeat is allowed (never the last one).
+    const unplayed = (gs) => gs.filter((g) => !state.played.has(g.id));
+    let freshLists = lists.filter((l) => unplayed(gamesFor(l)).length);
+    if (!freshLists.length && state.mode && state.mode.id === "challenge") { state.played.clear(); freshLists = lists; }
+    const list = C.pick(freshLists.length ? freshLists : lists);
     const playable = gamesFor(list);
-    const fresh = playable.filter((g) => g.id !== state.lastGame);
+    let fresh = unplayed(playable);
+    if (!fresh.length) fresh = playable.filter((g) => g.id !== state.lastGame);
     const game = C.pick(fresh.length ? fresh : playable);
     state.lastGame = game.id;
+    state.played.add(game.id);
     return { game, list };
   }
   function instructionFor(game, list) {
@@ -388,7 +399,9 @@
       } else {
         const hearts = [...Array(window.Boss.HEARTS)].map((_, i) => (i < b.hearts ? "❤️" : "🖤")).join("");
         const hp = [...Array(window.Boss.HP)].map((_, i) => `<span class="seg${i < b.hp ? "" : " gone"}"></span>`).join("");
-        els.status.innerHTML = `<span class="bs-hud">${hearts} <b>VS</b> ${B.icon} ${hp}</span>`;
+        // Two separate chips, well apart: yours (YOU + red hearts) and the boss's (its icon + a bar in its colour).
+        els.status.innerHTML = `<span class="bs-hud"><span class="bs-side you"><small>${T.bossYou}</small>${hearts}</span> <b>VS</b> ` +
+          `<span class="bs-side boss" style="--hc:${B.color}">${B.icon}${hp}</span></span>`;
         els.status.setAttribute("aria-label", T.bossBattleLabel(b.hearts, b.hp));
       }
       els.roundPill.hidden = true;
@@ -402,7 +415,7 @@
       els.status.innerHTML = html;
       els.status.setAttribute("aria-label", T.livesLabel(state.lives));
       els.roundPill.hidden = false;
-      els.roundPill.textContent = T.roundPill(Math.max(1, state.round));
+      els.roundPill.textContent = T.pointsPill(state.results.filter((r) => r.won).length); // (Endless: points, not rounds)
     } else {
       let html = "";
       for (let i = 0; i < m.totalGames; i++) {
@@ -499,8 +512,19 @@
       if (window.Music) Music.play(null);
       // Boss Battle: SHOWDOWN n / STAGE n instead of the round number.
       const b = state.boss, BT = window.Boss && window.Boss.TEXT;
-      const label = !bossFight() ? T.round(state.round) : b.phase === "showdown" ? BT.showdown(b.you + b.them + 1) : BT.stage(b.stage + 1);
-      later(() => { shout(els.banner, label, "round"); if (window.Music) Music.jingle(state.round - 1); else C.sfx.whoosh(); }, t);
+      // Endless mode: ONE POINT! / TWO POINTS! after a win, TRY AGAIN! after a miss (GET READY! first).
+      const wins = state.results.filter((r) => r.won).length, prev = state.results[state.results.length - 1];
+      const endless = state.mode && state.mode.id === "challenge";
+      const label = endless && !bossFight() ? (!prev ? T.getReady : prev.won ? T.points(wins) : T.tryAgain)
+        : !bossFight() ? T.round(state.round) : b.phase === "showdown" ? BT.showdown(b.you + b.them + 1) : BT.stage(b.stage + 1);
+      later(() => {
+        // Your character pops up beside ROUND n, cheering (js/mascot.js).
+        const bc = els.banner.querySelector(".banner-char");
+        bc.innerHTML = "";
+        if (window.Mascot) { const m = window.Mascot.el(76); window.Mascot.mood(m, "cheer"); bc.appendChild(m); }
+        shout(els.banner, label, "round");
+        if (window.Music) Music.jingle(state.round - 1); else C.sfx.whoosh();
+      }, t);
       t += ROUND_MS;
     }
     // In the final battle a boss can have its own instruction for each stage (Baby Boss: FIND THE MILK!),
@@ -1068,6 +1092,7 @@
     const timeMs = Math.max(0, Math.round(Math.min(elapsedOf(state.current, state.current.frozenAt || performance.now()), timeLimit)));
     els.game.classList.add("locked");
     state.results.push({ gameId: game.id, won, timedOut, timeMs, timeLimit, speed: state.speed });
+    if (window.Mascot) window.Mascot.played(game.id); // (Zebra: play lots of different games)
     // Boss Battle: keep the showdown score / the battle's HP and hearts (the cut-scenes follow in nextRound).
     const bossRound = bossFight();
     if (bossRound) {
@@ -1133,9 +1158,12 @@
     showScreen("results");
     els.record.hidden = true;
     els.stars.hidden = true;
+    const run = { mode: m.id, cleared }; // what this run did, for character unlocks (js/mascot.js)
+    let happyEnd = true;         // your character cheers (or is sad, after a lost boss battle)
 
     if (m.id === "fun") {
       const stars = window.SCORING.stars(cleared, m.totalGames);
+      run.stars = stars;
       els.resTitle.textContent = T.funTitle[stars];
       els.stars.hidden = false;
       els.stars.setAttribute("aria-label", T.starsLabel(stars));
@@ -1152,6 +1180,9 @@
       const b = state.boss, B = window.Boss.BOSSES[b.id], won = b.done === "won";
       const beaten = new Set(C.storage.get(BOSS_KEY, []) || []);
       if (won) { beaten.add(b.id); C.storage.set(BOSS_KEY, [...beaten]); }
+      if (won) run.bossWon = b.id;
+      run.bossesBeaten = [...beaten];
+      happyEnd = won;
       const levels = results.slice(0, b.levels).filter((r) => r.won).length;
       els.resTitle.textContent = won ? T.bossResWin(B.name) : T.bossResLose;
       const shelf = window.Boss.IDS.map((id) => (beaten.has(id) ? window.Boss.BOSSES[id].icon : "❔")).join("");
@@ -1163,6 +1194,7 @@
       C.say(won ? T.spoken.bossWin : T.spoken.bossLose);
     } else {
       const score = window.SCORING.speedScore(results);
+      run.score = score;
       const best = C.storage.get(m.highScoreKey, null);
       const bestScore = (best && best.score) || 0;
       const isRecord = score > bestScore;
@@ -1182,6 +1214,21 @@
       C.say(isRecord ? T.spoken.record : T.spoken.done);
     }
     restartAnim(els.resTitle);
+    // Your character at the top: the victory cheer at the end of every run (the teacher asked for it), then any
+    // new characters this run unlocked (NEW CHARACTER!).
+    els.resChar.innerHTML = "";
+    if (window.Mascot) {
+      const me = window.Mascot.el(Math.min(96, innerHeight * 0.13));
+      window.Mascot.mood(me, happyEnd ? "cheer" : "sad");
+      els.resChar.appendChild(me);
+      if (happyEnd) later(() => {
+        [392, 523, 659, 784].forEach((f, i) => C.sfx.tone(f, 0.12, "square", 0.07, i * 0.09));
+        C.sfx.tone(1047, 0.35, "triangle", 0.09, 0.36);
+        C.confetti(els.results, els.results.clientWidth / 2, 120, { count: 80 });
+      }, 250);
+      const fresh = window.Mascot.checkUnlocks(run);
+      if (fresh.length) later(() => window.Mascot.celebrate(fresh, renderCharBtn), 2600);
+    }
   }
 
   // ---------- Navigation ----------
@@ -1191,7 +1238,7 @@
     clearRound();
     const mode = window.MODES[id];
     Object.assign(state, {
-      mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(),
+      mode, round: 0, lives: mode.lives, speed: 1, results: [], lastGame: null, phase: "transition", seen: new Set(), played: new Set(),
     });
     // Boss Battle: a random boss waits at the end (?boss=banana|baby|robot picks one, for testing).
     const q = new URLSearchParams(location.search), bossParam = q.get("boss");
@@ -1470,6 +1517,21 @@
     renderSettings();
   });
   els.settingsBtn.addEventListener("click", () => { renderSettings(); showScreen("settings"); });
+  // ---------- Characters (js/mascot.js) ----------
+  // The title menu's 👤 button shows your character; tap it to choose another.
+  function renderCharBtn() {
+    if (!window.Mascot) return;
+    const mini = els.charBtn.querySelector(".char-mini");
+    mini.innerHTML = "";
+    mini.appendChild(window.Mascot.el(38));
+  }
+  els.charBtn.addEventListener("click", () => { C.unlock(); window.Mascot.openPicker({ onDone: renderCharBtn }); });
+  els.resetCharsBtn.addEventListener("click", () => { // Settings: start the characters over (unlocks and the choice)
+    window.Mascot.reset();
+    renderCharBtn();
+    els.resetCharsBtn.textContent = T.resetCharsDone;
+    later(() => { els.resetCharsBtn.textContent = T.resetChars; }, 1800);
+  });
   els.backBtn.addEventListener("click", () => showScreen("title"));
   els.quitBtn.addEventListener("click", quitPlay);
   els.againBtn.addEventListener("click", () => (state.mode.id === "practice" ? startMode("practice") : askWatch(state.mode.id)));
@@ -1497,6 +1559,9 @@
       return;
     }
     els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = false;
+    renderCharBtn();
+    // The very first run: choose your character (after that, from the title menu's 👤 button).
+    if (window.Mascot && !window.Mascot.chosen()) window.Mascot.openPicker({ onDone: renderCharBtn });
   }
   const files = window.GAME_FILES || [];
   let pending = files.length;

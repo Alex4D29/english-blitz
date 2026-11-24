@@ -4,16 +4,26 @@
 window.TEXT = {
   title: "ENGLISH\nBLITZ!",            // working title — rename freely
   fun: "FUN\nMODE",
-  challenge: "CHALLENGE\nMODE",
+  challenge: "ENDLESS\nMODE",           // (was CHALLENGE MODE; the code still says challenge)
   boss: "BOSS\nBATTLE",
   practice: "PICK A GAME",              // (Practice mode in the code)
   // One line under each title-menu button
   funDesc: "10 games, no pressure",
-  challengeDesc: "4 lives. It gets faster!",
+  challengeDesc: "4 lives. How far can you go?",
   bossDesc: "10 games, then beat a boss!",
   practiceDesc: "Play one game you like",
   tutorialsDesc: "Watch how each game works",
   tutorials: "TUTORIALS",
+  // Characters (js/mascot.js): pick one the first time; change it from the title menu
+  character: "CHARACTER",
+  pickChar: "CHOOSE YOUR\nCHARACTER!",
+  letsGo: "LET'S GO!",
+  newChar: "NEW CHARACTER!",
+  newCharSay: "New character!",
+  yay: "YAY!",
+  resetCharsLabel: "Characters",
+  resetChars: "RESET",
+  resetCharsDone: "Characters reset!",
   pickTutorial: "Pick a game to watch!",
   pickGame: "Tap a game to play it!",
   bossSection: "👑 BOSS BATTLE",       // PICK A GAME: a section with one card per boss (its final battle)
@@ -61,6 +71,15 @@ window.TEXT = {
 
   round: (n) => `ROUND\n${n}`,
   roundPill: (n) => `🏁 ${n}`,
+  // Endless mode: the banner between games counts points instead of rounds (the teacher: rounds counted the misses too)
+  points: (n) => {
+    const W = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN",
+      "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN", "TWENTY"];
+    return `${W[n] || n}\n${n === 1 ? "POINT" : "POINTS"}!`;
+  },
+  tryAgain: "TRY\nAGAIN!",
+  getReady: "GET\nREADY!",
+  pointsPill: (n) => `⭐ ${n}`,
   speedUp: "SPEED\nUP!",
   finish: "FINISH!",
   gameOver: "GAME\nOVER!",
@@ -88,12 +107,14 @@ window.TEXT = {
   bossWinsStamp: "BOSS\nWINS!",
   bossShowdownLabel: (you, them) => `You ${you}, boss ${them}`,
   bossBattleLabel: (hearts, hp) => `${hearts} hearts left, boss has ${hp} left`,
+  bossYou: "YOU",                       // on your hearts in the final battle's top bar
 
   spoken: {
     ready: "Let's go!",
     watch: "Watch me!",
     yourTurn: "Your turn!",
     askWatch: "Do you want to watch first?",
+    cheer: "Hooray!",            // the victory cheer at the end of every run
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
     done: "Well done!",
     record: "New high score!", // not "new record": TTS stresses "record" like the verb

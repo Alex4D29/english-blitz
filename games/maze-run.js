@@ -283,7 +283,9 @@
           pos = target; target = null;
           path.push({ ...pos });
           rooms[key(pos.c, pos.r)].el.classList.add("seen");
-          const hit = wanderers.find((w) => w.c === pos.c && w.r === pos.r);
+          // A monster in this room (and staying), or one stepping into it right now (the teacher hit a monster arriving
+          // at the same moment that didn't count; one already stepping OUT doesn't count either).
+          const hit = wanderers.find((w) => (w.to ? w.to.c === pos.c && w.to.r === pos.r : w.c === pos.c && w.r === pos.r));
           if (hit) { caught(TEXT.bump, { el: hit.el, c: hit.c, r: hit.r }); return; }  // walked into one
           if (chaseAt && chaseAt.c === pos.c && chaseAt.r === pos.r) { caught(TEXT.caught, { el: chaser, ...chaseAt }); return; }
           busy = false; markNext();
@@ -305,7 +307,11 @@
           const [x, y] = ahead && Math.random() < 0.6 ? ahead : options[Math.floor(Math.random() * options.length)];
           w.dir = [x - w.c, y - w.r];
           w.to = { c: x, r: y };
-          walk(w.el, w, w.to, reduceMotion ? 1 : 520, () => { w.c = x; w.r = y; w.to = null; markNext(); });
+          walk(w.el, w, w.to, reduceMotion ? 1 : 520, () => {
+            w.c = x; w.r = y; w.to = null;
+            if (!done && !busy && x === pos.c && y === pos.r) { caught(TEXT.bump, { el: w.el, c: x, r: y }); return; } // (it stepped onto you)
+            markNext();
+          });
         });
         markNext();
         ctx.later(wander, wanderMs * (0.8 + Math.random() * 0.4));

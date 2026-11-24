@@ -105,6 +105,32 @@
   .gh-cot .bx-boss { position:absolute; left:0; top:-12%; }
   .gh-cot::after { content:""; position:absolute; left:-8%; right:-8%; bottom:0; height:40%; border:5px solid #111; border-radius:10px; z-index:2;
     background:repeating-linear-gradient(90deg, #f0c27a 0 10px, transparent 10px 24px), linear-gradient(#f0c27a 0 16%, transparent 16% 84%, #f0c27a 84%); }   /* the cot's bars */
+  /* The ghost hunter (the teacher's idea, original: a green monster in a yellow raincoat and rain hat with a red canister
+     vacuum on wheels), in the bottom-left corner, above the dark like Baby's cot. The right ghost gets sucked up its nozzle. */
+  .gh-hunter { position:absolute; left:1%; bottom:1%; z-index:3; pointer-events:none; width:var(--hz); height:var(--hz); }
+  .gh-hunter > * { position:absolute; box-sizing:border-box; }
+  .gh-hunter::before { content:""; position:absolute; inset:-25%; border-radius:50%; background:radial-gradient(circle, rgba(255,240,170,.35), transparent 65%); z-index:-1; }
+  .gh-hose { left:0; top:0; width:100%; height:100%; overflow:visible; }
+  .gh-vac { left:0; bottom:6%; width:42%; height:34%; background:#e8173c; border:4px solid #111; border-radius:30% 30% 20% 20%; box-shadow:inset -6px -6px 0 rgba(0,0,0,.2); }
+  .gh-vac::before { content:""; position:absolute; left:30%; top:18%; width:40%; height:30%; border-radius:50%; background:#ffd400; border:3px solid #111; }  /* the dial */
+  .gh-wheel { bottom:0; width:16%; height:16%; background:#222; border:3px solid #111; border-radius:50%; }
+  .gh-wheel.a { left:2%; } .gh-wheel.b { left:26%; }
+  .gh-hb { left:40%; bottom:2%; width:48%; height:50%; background:#ffd400; border:4px solid #111; border-radius:42% 42% 18% 18%; box-shadow:inset -6px -6px 0 rgba(0,0,0,.12); }
+  .gh-hb::after { content:""; position:absolute; left:47%; top:8%; bottom:8%; width:4px; background:#111; opacity:.5; }   /* the coat's buttons line */
+  .gh-hh { left:42%; bottom:44%; width:44%; height:38%; background:#7ee07e; border:4px solid #111; border-radius:50%; }
+  .gh-heye { bottom:58%; width:17%; height:17%; background:#fff; border:3px solid #111; border-radius:50%; overflow:hidden; z-index:2; }
+  .gh-heye.l { left:46%; } .gh-heye.r { left:64%; width:14%; height:14%; bottom:59%; }
+  .gh-heye i { position:absolute; left:26%; top:28%; width:48%; height:48%; background:#111; border-radius:50%; animation:gh-hlook 1.2s ease-in-out infinite alternate; }
+  .gh-hmouth { left:53%; bottom:49%; width:20%; height:8%; background:#5a0f1e; border:3px solid #111; border-radius:10% 10% 50% 50%; z-index:2; }
+  .gh-hat { left:34%; bottom:76%; width:60%; height:15%; background:#ffd400; border:4px solid #111; border-radius:60% 60% 14% 14%; z-index:2; }
+  .gh-noz { left:74%; bottom:36%; width:13%; height:44%; transform-origin:50% 100%; transform:rotate(28deg); background:#9aa6b8; border:4px solid #111; border-radius:6px; z-index:3; }
+  .gh-noz::after { content:""; position:absolute; left:-60%; right:-60%; top:-26%; height:30%; background:#677385; border:4px solid #111; border-radius:4px 4px 0 0; clip-path:polygon(0 0, 100% 0, 80% 100%, 20% 100%); }
+  .gh-hunter.suck .gh-noz { animation:gh-noz .08s linear infinite alternate; }
+  .gh-hunter.cheer { animation:gh-hcheer .3s ease-in-out infinite alternate; }
+  .gh-hunter.sad .gh-hmouth { border-radius:50% 50% 10% 10%; bottom:47%; height:5%; }
+  @keyframes gh-hlook { 0% { transform:translate(-30%, -20%); } 100% { transform:translate(30%, 15%); } }
+  @keyframes gh-noz { from { transform:rotate(25deg); } to { transform:rotate(31deg); } }
+  @keyframes gh-hcheer { to { transform:translateY(-8%); } }
   .gh-fly { position:absolute; font-size:calc(var(--gw) * .5); line-height:1; transform:translate(-50%, -50%); z-index:5; pointer-events:none; }
 
   @keyframes gh-in     { from { transform:scale(.6); opacity:0; } }
@@ -218,6 +244,17 @@
         cot.appendChild(baby);
         room.insertBefore(cot, fx);
       }
+      // The ghost hunter and their ghost vacuum (not in Baby Boss's version: the cot is there).
+      let hunter = null;
+      if (!babyMode) {
+        hunter = document.createElement("div");
+        hunter.className = "gh-hunter";
+        hunter.innerHTML = '<svg class="gh-hose" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M22 62 C18 20 66 96 78 62" fill="none" stroke="#111" stroke-width="9" vector-effect="non-scaling-stroke"/>' +
+          '<path d="M22 62 C18 20 66 96 78 62" fill="none" stroke="#677385" stroke-width="4" vector-effect="non-scaling-stroke"/></svg>' +
+          '<div class="gh-vac"></div><div class="gh-wheel a"></div><div class="gh-wheel b"></div><div class="gh-hb"></div><div class="gh-hh"></div>' +
+          '<div class="gh-heye l"><i></i></div><div class="gh-heye r"><i></i></div><div class="gh-hmouth"></div><div class="gh-hat"></div><div class="gh-noz"></div>';
+        room.insertBefore(hunter, fx);
+      }
       wrap.append(card, room);
       ctx.root.appendChild(wrap);
 
@@ -248,6 +285,7 @@
         R = Math.max(70, gw * 0.95);
         room.style.setProperty("--gw", `${gw}px`);
         if (babyMode) room.style.setProperty("--cz", `${Math.max(70, Math.min(w * 0.24, h * 0.3, 140))}px`);
+        else room.style.setProperty("--hz", `${Math.max(70, Math.min(w * 0.24, h * 0.3, 130))}px`);
         ghosts.forEach((g) => {
           if (g.tag.kind !== "word") return;
           g.tagEl.style.fontSize = `${Math.min(gw * 0.3, (gw * 0.84) / (g.tag.text.length * 0.6))}px`;
@@ -329,7 +367,7 @@
 
       function step(dt) {
         t += dt;
-        const f = 1 - Math.exp(-7 * dt); // the beam's lag
+        const f = 1 - Math.exp(-5 * dt); // the beam's lag (7 was a little too quick: the teacher asked for slower)
         light.x += (aim.x - light.x) * f;
         light.y += (aim.y - light.y) * f;
 
@@ -455,10 +493,11 @@
         done = true;
         g.state = "pop";
         g.face.classList.remove("charge", "lit");
-        g.el.classList.add("pop");
-        g.face.classList.add("pop");
         ctx.win();
         lightsUp();
+        if (hunter) { suckUp(g); ghosts.forEach((o) => { if (o !== g && o.state === "roam") { o.stateT = 0; scare(o); } }); return; }
+        g.el.classList.add("pop");
+        g.face.classList.add("pop");
         noise(0.12, "highpass", 800, 4000, 0.6);
         sweep(300, 1200, 0.15, "triangle", 0.15);
         ctx.later(() => ctx.sfx.happy && ctx.sfx.happy(), 120);
@@ -477,6 +516,28 @@
         if (babyMode) milkToBaby(g);
         // The others flee from the noise.
         ghosts.forEach((o) => { if (o !== g && o.state === "roam") { o.stateT = 0; scare(o); } });
+      }
+
+      // SHLOOP: the ghost stretches, spins and shrinks down the vacuum's nozzle; the hunter cheers.
+      function suckUp(g) {
+        const nb = hunter.querySelector(".gh-noz").getBoundingClientRect(), r = room.getBoundingClientRect();
+        const to = { x: nb.left - r.left + nb.width * 0.75, y: nb.top - r.top + nb.height * 0.05 };
+        const dx = to.x - g.x, dy = to.y - g.y;
+        hunter.classList.add("suck");
+        noise(1.0, "lowpass", 400, 2400, 0.5); sweep(200, 900, 0.9, "sawtooth", 0.05); // WHOOOOSH
+        const keys = [{ translate: "0 0", scale: "1", rotate: "0deg" }, { translate: `${dx * 0.35}px ${dy * 0.35}px`, scale: ".9 1.3", rotate: "-40deg", offset: 0.35 },
+          { translate: `${dx}px ${dy}px`, scale: ".05 .3", rotate: "-200deg" }];
+        const opts = { duration: reduceMotion ? 1 : 850, easing: "cubic-bezier(.5,0,.9,.4)", fill: "forwards" };
+        g.el.querySelector(".gh-in").animate(keys, opts);
+        g.face.querySelector(".gh-in").animate(keys, opts);
+        ctx.later(() => {
+          hunter.classList.remove("suck");
+          hunter.classList.add("cheer");
+          tone(300, 0.06, "square", 0.1); sweep(900, 200, 0.12, "sine", 0.1, 0.05); // SHLOOP… pop
+          ctx.later(() => ctx.sfx.happy && ctx.sfx.happy(), 120);
+          ctx.confetti(fx, to.x, to.y, { count: 60 });
+          ctx.say(answer);
+        }, reduceMotion ? 20 : 860);
       }
 
       // Baby Boss's milk: the bottle the right ghost was holding flies to the baby, who gulps it down and cheers up.
@@ -499,6 +560,7 @@
       }
 
       ctx.onTimeout(() => {
+        if (hunter) hunter.classList.add("sad");
         done = true;
         if (baby) window.Boss.setMood(baby, "angry"); // waaah!
         lightsUp();

@@ -84,6 +84,21 @@
       instruction: ["STRENGTH\nCONTEST! 💪", "RACE TO THE\nGOLD BANANA!", "TUG OF\nWAR! 🪢"],
       stages: [["strength-test"], ["monkey-swing"], ["tug-of-war"]],
     },
+    kitty: {
+      id: "kitty", icon: "🐱", name: "KITTY BOSS", color: "#ffa94d", dark: "#b35a12",
+      intro: "Meow! I am Kitty Boss! Feed me! Play with me! Now!",
+      taunt: "Meow ha ha! Silly human!",
+      angry: "Hiss! Not fair!",
+      battleLine: "Meow! Catch me some fish!",
+      defeatLine: "Hee hee hee! Stop! Hic! Hic! Bleh!",
+      defeatWord: "HAIRBALL!",
+      hitWord: "PURR!",
+      // A spoiled kitten (the teacher's idea): hungry → playful → tickle time. Catch 3 fish for its bowl
+      // (Gone Fishing), chase the yarn (Yarn Ball Chase, a longer version), then rub its tummy without getting
+      // scratched (Tickle Tummy) until it laughs so hard it coughs up a hairball. Never hurt: it gets happy (purrs).
+      instruction: ["FEED THE\nKITTY! 🐟", "CHASE THE\nYARN! 🧶", "TICKLE THE\nTUMMY! 🤭"],
+      stages: [["fishing"], ["yarn-chase"], ["tickle-tummy"]],
+    },
   };
   const IDS = Object.keys(BOSSES);
   // Games the boss plays alongside you in the showdown, drawn into the game itself (each has `bossRival`:
@@ -216,6 +231,44 @@
     background:radial-gradient(circle at 30% 20%, #6b4320 0 7%, transparent 8%), radial-gradient(circle at 62% 30%, #6b4320 0 9%, transparent 10%), radial-gradient(circle at 44% 58%, #6b4320 0 11%, transparent 12%),
       radial-gradient(circle at 75% 70%, #6b4320 0 9%, transparent 10%), radial-gradient(circle at 22% 78%, #6b4320 0 8%, transparent 9%), radial-gradient(circle at 52% 88%, #6b4320 0 10%, transparent 11%); }
   .bx-gorilla.muddy .bx-mud { display:block; }
+  /* Kitty Boss: a huge, fluffy, spoiled ginger kitten with a jewelled collar (the teacher's idea) */
+  .bx-kitty .bx-tail { position:absolute; right:0; top:34%; width:30%; height:50%; z-index:0; border:calc(var(--bs) * .07) solid #111; border-color:#111 #111 transparent transparent;
+    border-radius:50%; transform-origin:0 100%; animation:bx-swish .8s ease-in-out infinite alternate; }
+  .bx-kitty .bx-tail::after { content:""; position:absolute; inset:calc(var(--bs) * -.045); border:calc(var(--bs) * .035) solid #ffa94d; border-color:#ffa94d #ffa94d transparent transparent; border-radius:50%; }
+  .bx-kitty .bx-body { position:absolute; left:20%; right:20%; top:50%; bottom:0; background:#ffa94d; border:var(--bw) solid #111; border-radius:46% 46% 30% 30%; }
+  .bx-kitty .bx-body::after { content:""; position:absolute; left:26%; right:26%; top:18%; bottom:8%; background:#fff3dc; border-radius:50%; }   /* fluffy tummy */
+  .bx-kitty .bx-paw { position:absolute; bottom:0; width:16%; height:11%; z-index:2; background:#fff3dc; border:var(--bw) solid #111; border-radius:50% 50% 40% 40%; }
+  .bx-kitty .bx-paw.l { left:30%; } .bx-kitty .bx-paw.r { right:30%; }
+  .bx-kitty .bx-ear { position:absolute; top:0; width:26%; height:26%; z-index:1; background:#111; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+  .bx-kitty .bx-ear::after { content:""; position:absolute; inset:calc(var(--bs) * .025) calc(var(--bs) * .035) 0; background:#ffa94d; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+  .bx-kitty .bx-ear i { position:absolute; left:30%; right:30%; top:40%; bottom:4%; z-index:1; background:#ff9cc0; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+  .bx-kitty .bx-ear.l { left:12%; transform:rotate(-14deg); } .bx-kitty .bx-ear.r { right:12%; transform:rotate(14deg); }
+  .bx-kitty .bx-head { position:absolute; left:10%; right:10%; top:10%; height:50%; z-index:2; background:#ffa94d; border:var(--bw) solid #111; border-radius:50% 50% 46% 46%;
+    overflow:hidden; }
+  .bx-kitty .bx-head::before { content:""; position:absolute; left:34%; right:34%; top:0; height:26%; background:repeating-linear-gradient(90deg, #d9731f 0 14%, transparent 14% 28%); }  /* tabby stripes */
+  .bx-kitty .bx-head::after { content:""; position:absolute; left:22%; right:22%; bottom:-10%; height:46%; background:#fff3dc; border-radius:50%; }   /* white muzzle */
+  .bx-kitty .bx-eye { width:26%; height:26%; z-index:4; } .bx-kitty .bx-eye.l { left:20%; top:20%; } .bx-kitty .bx-eye.r { right:20%; top:21%; width:22%; height:22%; }
+  .bx-kitty .bx-nose { position:absolute; left:45%; top:42%; width:10%; height:5%; z-index:5; background:#ff6f91; border:calc(var(--bw) * .7) solid #111; border-radius:20% 20% 50% 50%; }
+  .bx-kitty .bx-mouth { top:47%; width:20%; height:9%; z-index:5; }
+  .bx-kitty .bx-mouth::before { left:8%; right:auto; width:22%; height:36%; background:#fff; clip-path:polygon(0 0, 100% 0, 50% 100%); }   /* little fangs */
+  .bx-kitty .bx-mouth::after { left:auto; right:8%; width:22%; top:0; bottom:auto; height:36%; background:#fff; border-radius:0; clip-path:polygon(0 0, 100% 0, 50% 100%); }
+  .bx-kitty .bx-whisk { position:absolute; top:42%; width:24%; height:9%; z-index:6; border-top:calc(var(--bw) * .6) solid #111; border-bottom:calc(var(--bw) * .6) solid #111; }
+  .bx-kitty .bx-whisk.l { left:2%; transform:rotate(8deg); } .bx-kitty .bx-whisk.r { right:2%; transform:rotate(-8deg); }
+  .bx-kitty .bx-collar { position:absolute; left:28%; right:28%; top:56%; height:7%; z-index:3; background:#e8173c; border:var(--bw) solid #111; border-radius:99px;
+    display:flex; justify-content:center; align-items:center; font-size:calc(var(--bs) * .1); line-height:1; }
+  .bx-kitty .bx-collar span { translate:0 45%; }
+  .bx-kitty.happy .bx-eye { height:8%; background:none; border-color:#111; border-bottom-color:transparent; border-left-color:transparent; border-right-color:transparent; border-radius:50% 50% 0 0; overflow:visible; }
+  .bx-kitty.happy .bx-eye.l { top:26%; } .bx-kitty.happy .bx-eye.r { top:26%; height:8%; }
+  .bx-kitty.happy .bx-eye i { display:none; }
+  .bx-kitty.happy .bx-in { animation:bx-purr .12s linear infinite alternate; }
+  .bx-kitty.angry .bx-ear.l { transform:rotate(-55deg) translate(-10%, 20%); } .bx-kitty.angry .bx-ear.r { transform:rotate(55deg) translate(10%, 20%); }
+  .bx-kitty.angry .bx-mouth, .bx-kitty.laugh .bx-mouth { height:14%; width:26%; }
+  .bx-kitty.angry .bx-tail { animation-duration:.2s; }
+  .bx-hairball { position:absolute; left:50%; top:50%; width:var(--hb); height:var(--hb); margin:calc(var(--hb) / -2) 0 0 calc(var(--hb) / -2); z-index:20; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #a67c52, #6b4a2b 70%); border:3px solid #111;
+    box-shadow:inset 6px -4px 0 rgba(0,0,0,.2), 0 0 0 3px #6b4a2b, 4px -3px 0 3px #111; }
+  @keyframes bx-swish { from { transform:rotate(-12deg); } to { transform:rotate(16deg); } }
+  @keyframes bx-purr { from { transform:translate(-1%, 0); } to { transform:translate(1%, -1%); } }
   @keyframes bx-flex { from { transform:rotate(var(--r)); } to { transform:rotate(calc(var(--r) * -.4)) translateY(-6%); } }
   /* The gold banana: the prize for every stage won against Gorilla Boss */
   .bx-gold { filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 10px #ffd400); }
@@ -244,10 +297,15 @@
   .bx-warn.top { top:6%; } .bx-warn.bot { bottom:6%; }
   .bx-drop { animation:bx-drop .7s cubic-bezier(.5,0,.75,.6) both; }
   .bx-hp { display:flex; align-items:center; gap:8px; padding:6px 10px; background:#fff; border:4px solid #111; border-radius:14px; box-shadow:0 5px 0 #111; z-index:3; }
-  .bx-hp .seg { width:clamp(34px, 9vw, 52px); height:22px; border:3px solid #111; border-radius:6px; background:linear-gradient(#ff6f6f, #e01b3c); transition:background .3s, transform .3s; }
+  .bx-hp .seg { width:clamp(34px, 9vw, 52px); height:22px; border:3px solid #111; border-radius:6px; background:var(--hc, #e01b3c); box-shadow:inset 0 -6px 0 rgba(0,0,0,.18); transition:background .3s, transform .3s; }
   .bx-hp .seg.gone { background:#ddd; transform:scale(.8); }
   .bx-hp .seg.hit { animation:bx-seg .6s ease-out forwards; }
   .bx-hp .ico { font-size:1.4rem; }
+  /* Yours and the boss's are easy to tell apart (the teacher found them confusing): the boss's bar is in ITS colour, at the
+     top, with its icon; your red hearts are in a white YOU panel with your monster's face, at the bottom, well apart */
+  .bx-hp .lbl, .bx-you .lbl { font-size:1rem; letter-spacing:1px; }
+  .bx-you { display:flex; align-items:center; gap:10px; margin-top:16px; padding:6px 14px; background:#fff; border:4px solid #111; border-radius:16px; box-shadow:0 5px 0 #111; z-index:3; }
+  .bx-you .ms { flex:none; }
   .bx-hearts { display:flex; gap:6px; font-size:1.9rem; z-index:3; }
   .bx-hearts .broke { animation:bx-broke .6s ease-out; }
   .bx-score { display:flex; align-items:center; gap:14px; padding:8px 16px; background:#fff; border:5px solid #111; border-radius:18px; box-shadow:0 6px 0 #111; font-size:2.4rem; z-index:3; }
@@ -303,6 +361,9 @@
     gorilla: '<div class="bx-arm l"></div><div class="bx-arm r"></div><div class="bx-body"></div><div class="bx-belt">🍌</div><div class="bx-head"></div>' +
       '<div class="bx-face"></div><div class="bx-brow uni"></div><div class="bx-eye l big"><i></i></div><div class="bx-eye r"><i></i></div>' +
       '<div class="bx-nose"></div><div class="bx-mouth"></div><div class="bx-tear l"></div><div class="bx-tear r"></div><div class="bx-mud"></div>',
+    kitty: '<div class="bx-tail"></div><div class="bx-body"></div><div class="bx-paw l"></div><div class="bx-paw r"></div><div class="bx-ear l"><i></i></div><div class="bx-ear r"><i></i></div>' +
+      '<div class="bx-head"></div><div class="bx-eye l big"><i></i></div><div class="bx-eye r"><i></i></div><div class="bx-nose"></div><div class="bx-mouth"></div>' +
+      '<div class="bx-whisk l"></div><div class="bx-whisk r"></div><div class="bx-collar"><span>💎</span></div>',
   };
   // A boss character, `size` px square (a number), or any CSS length ("1.3em", "var(--mz)").
   function el(id, size) {
@@ -460,15 +521,22 @@
   function hpBar(boss, hp, hitNow) {
     const d = document.createElement("div");
     d.className = "bx-hp";
+    d.style.setProperty("--hc", boss.color); // (the boss's own colour: never mixed up with your red hearts)
     d.innerHTML = `<span class="ico">${boss.icon}</span>` + [...Array(HP)].map((_, i) =>
       `<span class="seg${i >= hp ? (hitNow && i === hp ? " hit" : " gone") : ""}"></span>`).join("");
     return d;
   }
+  // Your hearts, in a white YOU panel with your monster's face (js/mascot.js).
   function hearts(n, brokeNow) {
+    const p = document.createElement("div");
+    p.className = "bx-you";
+    if (window.Mascot) p.appendChild(window.Mascot.el(44));
+    p.insertAdjacentHTML("beforeend", `<span class="lbl">${TEXT.you}</span>`);
     const d = document.createElement("div");
     d.className = "bx-hearts";
     d.innerHTML = [...Array(HEARTS)].map((_, i) => `<span class="${brokeNow && i === n ? "broke" : ""}">${i < n ? "❤️" : "🖤"}</span>`).join("");
-    return d;
+    p.appendChild(d);
+    return p;
   }
   function fly(parent, emoji, from, to, ms, env, size = "2.4rem") {
     const f = document.createElement("div");
@@ -566,6 +634,18 @@
     name.style.visibility = "hidden";
     s.append(hpBar(boss, hp, true), wrap, name);
     const { tone, noise, sweep } = env.sfx;
+    if (boss.id === "kitty") {
+      // Never hurt: a 🐟 (after stage 1) or a 🧶 (after stage 2) flies in and it purrs, happy… for now.
+      fly(wrap, stageNext >= 3 ? "🧶" : "🐟", { x: 0, y: size * 0.9 }, { x: 0, y: size * 0.05, fade: true }, 600, env, `${size * 0.25}px`);
+      env.later(() => {
+        setMood(b, "happy");
+        for (let i = 0; i < 10; i++) noise(0.07, "lowpass", 180, 120, 0.5, i * 0.09); // purrrrr
+        word(wrap, boss.hitWord, "", null);
+        for (let i = 0; i < 5; i++) fly(wrap, "💖", { x: 0, y: 0 }, { x: (Math.random() - 0.5) * size, y: -size * 0.7, fade: true }, 900, env, `${size * 0.12}px`);
+      }, 550);
+      env.later(() => { name.style.visibility = ""; setMood(b, "angry"); env.say(stageNext >= 3 ? "Hiss! Now tickle me!" : "Hiss! More! Play with me!"); }, 1500);
+      return 2600;
+    }
     if (boss.id === "banana") {
       const sl = document.createElement("div"); sl.className = "bx-slash"; wrap.appendChild(sl);
       noise(0.2, "highpass", 3000, 6000, 0.3); sweep(1600, 400, 0.2, "sawtooth", 0.08);
@@ -640,6 +720,33 @@
       split(wrap, boss.id, size, 0);
       tone(90, 0.3, "square", 0.15); burst();
       for (let i = 0; i < 10; i++) fly(s, "🍌", { x: 0, y: 0 }, { x: (Math.random() - 0.5) * W, y: (Math.random() - 0.7) * H, fade: true }, 1100, env, "2rem");
+    } else if (boss.id === "kitty") {
+      // Tickled silly: it rolls about giggling, hiccups twice, then coughs up a hairball (the ending: silly).
+      b.classList.remove("dead");
+      setMood(b, "happy");
+      const roll = b.animate([{ transform: "rotate(0)" }, { transform: "rotate(-25deg) translateX(-8%)" }, { transform: "rotate(25deg) translateX(8%)" }, { transform: "rotate(0)" }],
+        { duration: 600, iterations: 2 });
+      for (let i = 0; i < 8; i++) tone(700 + (i % 2) * 200, 0.07, "triangle", 0.08, i * 0.12); // hee hee hee
+      word(s, "HEE HEE!", "", { x: "50%", y: "16%" });
+      [1300, 1800].forEach((t) => env.later(() => {
+        b.animate([{ transform: "translateY(0)" }, { transform: "translateY(-14%)" }, { transform: "translateY(0)" }], { duration: 260 });
+        tone(520, 0.08, "square", 0.1); tone(780, 0.06, "square", 0.08, 0.05);
+        word(s, "HIC!", "", { x: `${40 + Math.random() * 20}%`, y: "24%" });
+      }, t));
+      env.later(() => {
+        setMood(b, null);
+        b.animate([{ transform: "scale(1)" }, { transform: "scale(1.12, .88)" }, { transform: "scale(.94, 1.08)" }, { transform: "scale(1)" }], { duration: 500 });
+        noise(0.35, "lowpass", 600, 150, 0.7); sweep(300, 120, 0.4, "sawtooth", 0.1); // BLEH
+        const hb = document.createElement("div");
+        hb.className = "bx-hairball";
+        hb.style.setProperty("--hb", `${size * 0.3}px`);
+        word(wrap, "BLEH!", "bad", { x: "78%", y: "20%" });
+        wrap.appendChild(hb);
+        hb.animate([{ transform: `translate(0, ${-size * 0.08}px) scale(.3)` }, { transform: `translate(${size * 0.3}px, ${-size * 0.35}px) scale(1)`, offset: 0.45 },
+          { transform: `translate(${size * 0.48}px, ${size * 0.36}px) scale(1, .8)`, offset: 0.85 }, { transform: `translate(${size * 0.5}px, ${size * 0.34}px) scale(1)` }], { duration: 900, easing: "ease-out", fill: "forwards" });
+        env.later(() => { setMood(b, "happy"); burst(110); tone(90, 0.2, "square", 0.12); }, 900);
+      }, 2400);
+      void roll;
     } else if (boss.id === "gorilla") {
       // In the mud, crying, as his gold banana flies away (the teacher's choice for the ending).
       b.classList.remove("dead");
@@ -705,6 +812,11 @@
         for (let i = 0; i < 12; i++) fly(s, ["🔩", "⚙️", "🔧"][i % 3], { x: 0, y: 0 }, { x: (Math.random() - 0.5) * W, y: (Math.random() - 0.6) * H, fade: true }, 1200, env, "2rem");
         s.animate([{ transform: "translate(0,0)" }, { transform: "translate(-10px,5px)" }, { transform: "translate(10px,-5px)" }, { transform: "translate(0,0)" }], { duration: 200, iterations: 3 });
       }, 1300);
+    }
+    if (boss.id === "kitty") { // (its line is the giggles and the BLEH, so it starts with them; HAIRBALL! once it is out)
+      env.say(boss.defeatLine);
+      env.later(() => word(s, boss.defeatWord, "big", { x: "50%", y: "82%" }), 3300);
+      return 6000;
     }
     env.later(() => { word(s, boss.defeatWord, "big", { x: "50%", y: "82%" }); env.say(boss.defeatLine); }, boss.id === "baby" ? 2000 : 1400);
     return 5200;

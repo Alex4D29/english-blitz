@@ -29,6 +29,8 @@
     strike: "STRIKE!",
     out: "STRIKE OUT!",
     wait: "WAIT FOR IT!",
+    zoneWait: "WAIT…",   // on the hit zone while the ball is on its way (red)
+    zoneHit: "HIT!",     // …and when it's in range (green)
     listen: "🔊",
   };
   const GOAL = 2, STRIKES = 3;
@@ -42,9 +44,16 @@
   .bb-pip.k.on { background:#444; } .bb-pip.k.on::after { content:"K"; color:#fff; font-weight:900; }
   /* The ballpark from home plate: sky, a fence with three signs, the outfield, the infield dirt, the mound */
   .bb-park { position:relative; flex:1; min-height:0; width:100%; max-width:560px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111; touch-action:none;
-    background:linear-gradient(180deg, #8fd3ff 0 26%, #2f7a2f 26% 27%, #5cc34a 27%); }
-  .bb-dirt { position:absolute; left:50%; bottom:-30%; width:120%; height:80%; transform:translateX(-50%); border-radius:50% 50% 0 0; background:#c98a4b; border-top:5px solid #111; }
-  .bb-dirt::before { content:""; position:absolute; left:50%; top:16%; width:22%; height:16%; transform:translateX(-50%); border-radius:50%; background:#b87a3d; border:4px solid #111; }   /* the mound */
+    background:linear-gradient(180deg, #8fd3ff 0 26%, #2f7a2f 26% 27%, #c98a4b 27% 31%, transparent 31%), repeating-linear-gradient(90deg, #5cc34a 0 44px, #4fb23f 44px 88px); }   /* sky, the fence's foot, the warning track, mown grass */
+  /* The infield: a brown square (a diamond, seen from home plate) with chalk base lines, the mound in the middle */
+  .bb-diamond { position:absolute; left:4%; right:4%; top:34%; height:70%; z-index:1; overflow:visible; pointer-events:none; }
+  /* The hit zone round home plate: red while the ball's on its way, GREEN when it's in range (the teacher asked for it) */
+  .bb-zone { position:absolute; left:50%; bottom:0; width:56%; height:24%; transform:translateX(-50%); z-index:2; pointer-events:none; border:5px solid #e8173c; border-bottom:0;
+    border-radius:50% 50% 0 0 / 70% 70% 0 0; background:rgba(255,77,109,.45); display:flex; justify-content:center; align-items:flex-start; padding-top:4px; transition:background .1s, border-color .1s; }
+  .bb-zone::after { content:attr(data-wait); font-size:1.1rem; color:#fff; -webkit-text-stroke:1.5px #111; paint-order:stroke fill; }
+  .bb-park.ready .bb-zone { background:rgba(60,220,100,.6); border-color:#00b86b; box-shadow:0 0 24px 8px rgba(80,255,130,.6); }
+  .bb-park.ready .bb-zone::after { content:attr(data-hit); font-size:1.5rem; color:#fff; }
+  .bb-park.idle .bb-zone { opacity:.35; }
   .bb-sign { position:absolute; top:4%; width:28%; height:22%; transform:translateX(-50%); z-index:2; padding:0; font:inherit; cursor:pointer; touch-action:manipulation;
     background:#fff; color:#111; border:5px solid #111; border-radius:12px; box-shadow:0 5px 0 #111; display:flex; align-items:center; justify-content:center; line-height:1; white-space:nowrap; }
   .bb-sign.l { left:17%; } .bb-sign.c { left:50%; top:1%; } .bb-sign.r { left:83%; }
@@ -53,7 +62,8 @@
   .bb-sign.right { background:#b8ffcf; box-shadow:0 0 0 5px #fff, 0 0 0 10px #00b86b; }
   .bb-sign.bad { background:#ff5a6e; color:#fff; }
   .bb-plate { position:absolute; left:50%; bottom:5%; width:70px; height:24px; transform:translateX(-50%); background:#fff; border:4px solid #111; clip-path:polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); z-index:2; }
-  .bb-park.ready .bb-plate { background:#ffd400; }
+  .bb-park.ready .bb-plate { background:#b8ffcf; }
+  .bb-plate { z-index:3; }
   /* The pitcher: a round blue monster in a red cap, on the mound. --pz is its size */
   .bb-pitcher { position:absolute; left:50%; top:var(--py); width:var(--pz); height:var(--pz); transform:translate(-50%, -100%); z-index:3; cursor:pointer; }
   .bb-pbody { position:absolute; left:12%; right:12%; top:20%; bottom:0; background:#3d7bff; border:4px solid #111; border-radius:46% 46% 34% 34%; }
@@ -124,7 +134,16 @@
       pips.innerHTML = `<div class="bb-row hr">${'<span class="bb-pip"></span>'.repeat(GOAL)}</div><div class="bb-row ks">${'<span class="bb-pip k"></span>'.repeat(STRIKES)}</div>`;
       const park = document.createElement("div");
       park.className = "bb-park";
-      park.innerHTML = '<div class="bb-dirt"></div><div class="bb-plate"></div>';
+      // The infield (a brown diamond in perspective: home at the bottom, second base at the top), chalk lines
+      // from home to first and third, the mound in the middle; the hit zone round home plate.
+      park.innerHTML = '<svg class="bb-diamond" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+        '<polygon points="50,100 97,54 50,0 3,54" fill="#c98a4b" stroke="#111" stroke-width="4" vector-effect="non-scaling-stroke"/>' +
+        '<polyline points="9,55 50,96 91,55" fill="none" stroke="#fff" stroke-width="4" vector-effect="non-scaling-stroke"/>' +
+        '<ellipse cx="50" cy="50" rx="11" ry="8" fill="#b5773b" stroke="#111" stroke-width="3" vector-effect="non-scaling-stroke"/>' +
+        '<rect x="47" y="1" width="6" height="5" fill="#fff" stroke="#111" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>' +
+        '<div class="bb-zone"></div><div class="bb-plate"></div>';
+      park.querySelector(".bb-zone").dataset.wait = TEXT.zoneWait;
+      park.querySelector(".bb-zone").dataset.hit = TEXT.zoneHit;
       const signs = SIDES.map((side, i) => {
         const b = document.createElement("button");
         b.className = `bb-sign ${side}`;
@@ -157,7 +176,7 @@
         W = park.clientWidth; H = park.clientHeight;
         pz = Math.max(60, Math.min(H * 0.22, W * 0.2, 110));
         park.style.setProperty("--pz", `${pz}px`);
-        park.style.setProperty("--py", `${H * 0.5}px`);
+        park.style.setProperty("--py", `${H * 0.68}px`); // on the mound, in the middle of the infield
         park.style.setProperty("--bw", `${Math.max(22, Math.min(W * 0.06, 34))}px`);
         const sw = W * 0.28 - 18, sh = H * 0.22 - 14;
         signs.forEach((s) => {
@@ -181,7 +200,7 @@
       // state: wind (winding up, saying it), fly (ball on its way; `ready` near the plate), done
       let state = "wind", hits = 0, strikes = 0, done = false, t0 = 0, flyMs = 0, swung = false;
       const plate = () => ({ x: W / 2, y: H * 0.9 });
-      const hand = () => ({ x: W / 2 + pz * 0.35, y: H * 0.5 - pz * 0.6 });
+      const hand = () => ({ x: W / 2 + pz * 0.35, y: H * 0.68 - pz * 0.6 });
       function say() {
         pitcher.querySelector(".bb-say")?.remove();
         const b = document.createElement("div");

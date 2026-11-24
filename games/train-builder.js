@@ -101,6 +101,15 @@
   .tb-chimney { position:absolute; left:calc(var(--u) * .24); bottom:calc(var(--u) * .74); width:calc(var(--u) * .2); height:calc(var(--u) * .3);
     background:#333; border:4px solid #111; border-bottom:0; }
   .tb-chimney::before { content:""; position:absolute; left:-40%; right:-40%; top:-30%; height:35%; background:#333; border:4px solid #111; border-radius:4px; }
+  /* Googly eyes and a grin on the boiler (the teacher asked for eyes on the train) */
+  .tb-eye { position:absolute; bottom:calc(var(--u) * .42); width:calc(var(--u) * .22); height:calc(var(--u) * .22); background:#fff; border:3px solid #111; border-radius:50%; overflow:hidden; z-index:2; }
+  .tb-eye.l { left:calc(var(--u) * .16); } .tb-eye.r { left:calc(var(--u) * .42); width:calc(var(--u) * .18); height:calc(var(--u) * .18); bottom:calc(var(--u) * .44); }
+  .tb-eye i { position:absolute; left:26%; top:28%; width:48%; height:48%; background:#111; border-radius:50%; animation:tb-look 1.1s ease-in-out infinite alternate; }
+  .tb-eye.r i { animation-delay:-.5s; }
+  .tb-grin { position:absolute; left:calc(var(--u) * .14); bottom:calc(var(--u) * .25); width:calc(var(--u) * .3); height:calc(var(--u) * .12); background:#5a0f1e; border:3px solid #111;
+    border-radius:10% 10% 50% 50% / 14% 14% 86% 86%; z-index:2; overflow:hidden; }
+  .tb-grin::after { content:""; position:absolute; left:6%; right:6%; top:0; height:34%; background:#fff; }
+  @keyframes tb-look { 0% { transform:translate(-30%, -15%); } 100% { transform:translate(30%, 15%); } }
   .tb-catcher { position:absolute; left:0; bottom:calc(var(--u) * .08); width:calc(var(--u) * .26); height:calc(var(--u) * .24);
     background:#ffd400; clip-path:polygon(100% 0, 100% 100%, 0 100%); }
   .tb-smoke { position:absolute; left:calc(var(--u) * .2); bottom:calc(var(--u) * 1.05); width:calc(var(--u) * .3); height:calc(var(--u) * .3);
@@ -254,6 +263,7 @@
               <div class="tb-smoke"></div><div class="tb-smoke b"></div>
               <div class="tb-chimney"></div>
               <div class="tb-boiler"></div>
+              <div class="tb-eye l"><i></i></div><div class="tb-eye r"><i></i></div><div class="tb-grin"></div>
               <div class="tb-cab"><div class="tb-roof"></div><div class="tb-face"></div></div>
               <div class="tb-catcher"></div>
               <div class="tb-wheel" style="left:12%"></div>

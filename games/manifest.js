@@ -44,4 +44,6 @@ window.GAME_FILES = [
   "monster-golf",
   "strength-test",
   "maze-run",
+  "yarn-chase",
+  "tickle-tummy",
 ];

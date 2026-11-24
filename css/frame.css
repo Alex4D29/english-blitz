@@ -118,14 +118,15 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 
 /* ---------- Practice: game picker ---------- */
 #practice .card { font-size: clamp(1.1rem, 5.5vw, 1.5rem); }
-#practiceGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; width: min(100%, 460px); }
+/* 3 columns (2 got crowded with 40+ games: the teacher asked), so the cards are a bit smaller */
+#practiceGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(100%, 600px); }
 .game-card {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  min-height: 120px; padding: 12px 8px; background: var(--paper);
-  border: 5px solid var(--ink); border-radius: 24px; box-shadow: 0 7px 0 var(--ink);
-  font-size: clamp(1rem, 4.6vw, 1.3rem); line-height: 1.1; transition: transform .08s, box-shadow .08s;
+  min-height: 100px; padding: 10px 4px; background: var(--paper); text-align: center; overflow-wrap: break-word; min-width: 0;
+  border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink);
+  font-size: clamp(.8rem, 3.5vw, 1.15rem); line-height: 1.1; transition: transform .08s, box-shadow .08s;
 }
-.game-card .ico { font-size: clamp(2.6rem, 13vw, 3.4rem); line-height: 1; }
+.game-card .ico { font-size: clamp(2rem, 10vw, 3rem); line-height: 1; }
 .game-card:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); }
 
 /* ---------- Practice: how to play ---------- */
@@ -389,7 +390,13 @@ body.demo #stage::before {
 .bs-hud { display: flex; align-items: center; gap: 6px; font-size: 1.2rem; white-space: nowrap; }
 .bs-hud .dot { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--ink); background: #eee; display: inline-block; }
 .bs-hud .dot.win { background: #4dd36b; } .bs-hud .dot.miss { background: #ff4d6d; }
-.bs-hud .seg { width: 18px; height: 14px; border: 3px solid var(--ink); border-radius: 4px; background: #e01b3c; display: inline-block; }
+.bs-hud .seg { width: 18px; height: 14px; border: 3px solid var(--ink); border-radius: 4px; background: var(--hc, #e01b3c); display: inline-block; }
+/* The final battle: your hearts and the boss's bar in separate chips (the teacher found them hard to tell apart) */
+.bs-hud .bs-side { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 10px; border: 3px solid var(--ink); }
+.bs-hud .bs-side.you { background: #fff; }
+.bs-hud .bs-side.you small { font-size: .7rem; margin-right: 2px; }
+.bs-hud .bs-side.boss { background: #333; gap: 4px; }
+.bs-hud b { margin: 0 4px; }
 .bs-hud .seg.gone { background: #ddd; }
 .bs-hud b { font-size: .9rem; }
 .res-bosses { font-size: 1.8rem; letter-spacing: 4px; }
@@ -404,3 +411,15 @@ body.demo #stage::before {
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); }
 .game-card.boss-card { background: var(--bc); }
 .game-card.boss-card .bx-boss { margin: 2px auto; }
+
+/* ---------- Characters (js/mascot.js) ---------- */
+.char-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.char-btn .char-mini { display: inline-flex; }
+/* Your character beside ROUND n */
+#banner .banner-char { display: none; justify-content: center; margin-top: 6px; }
+#banner.round .banner-char { display: flex; }
+/* Results: your character, cheering */
+#results { overflow-x: hidden; } /* (the cheer's confetti mustn't make it scroll sideways) */
+#resChar { display: flex; justify-content: center; flex: none; margin-top: auto; }
+#results .buttons { margin-bottom: auto; }
+#resChar:empty { display: none; }

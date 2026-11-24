@@ -74,8 +74,15 @@
     border:4px solid #111; transform:rotate(45deg); border-radius:3px; z-index:-1; }
   .bp-string { position:absolute; left:50%; top:100%; width:20px; height:calc(var(--bw) * .5); margin-left:-10px;
     pointer-events:none; overflow:visible; z-index:-2; }
-  .bp-text { position:absolute; inset:0 0 6% 0; display:flex; align-items:center; justify-content:center; color:#fff;
+  .bp-text { position:absolute; inset: 14% 0 0 0; display:flex; align-items:center; justify-content:center; color:#fff;
     font-size:calc(var(--bw) * .56); line-height:1; -webkit-text-stroke:3px #111; paint-order:stroke fill; text-shadow:0 4px 0 #111; }
+  /* Silly googly eyes up top, clear of the answer (the teacher asked for them) */
+  .bp-eye { position:absolute; top:6%; width:24%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; overflow:hidden; z-index:1; }
+  .bp-eye.l { left:24%; } .bp-eye.r { left:50%; width:19%; top:8%; }
+  .bp-eye i { position:absolute; left:26%; top:28%; width:48%; aspect-ratio:1; background:#111; border-radius:50%; animation:bp-look 1.2s ease-in-out infinite alternate; }
+  .bp-eye.r i { animation-delay:-.55s; animation-duration:.9s; }
+  .bp-balloon.popped .bp-eye { animation:bp-burst .14s ease-out forwards; }
+  @keyframes bp-look { 0% { transform:translate(-32%, -20%); } 50% { transform:translate(30%, 10%); } 100% { transform:translate(-10%, 30%); } }
   .bp-balloon.word .bp-text { font-size:calc(var(--bw) * .3); }
   .bp-balloon.pic .bp-text { font-size:calc(var(--bw) * .5); -webkit-text-stroke:0; text-shadow:none; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
 
@@ -179,7 +186,7 @@
           '<div class="bp-bob"><div class="bp-knot"></div>' +
           '<svg class="bp-string" viewBox="0 0 20 60" preserveAspectRatio="none">' +
           '<path d="M10 0 C2 12 18 24 10 36 S4 52 10 60" fill="none" stroke="#111" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>' +
-          '<div class="bp-body"></div><div class="bp-text"></div></div>';
+          '<div class="bp-body"></div><div class="bp-eye l"><i></i></div><div class="bp-eye r"><i></i></div><div class="bp-text"></div></div>';
         const txt = el.querySelector(".bp-text");
         txt.textContent = item.text;
         // Long sight words ("because") shrink so they stay inside the balloon. 3–4 letters keep the CSS size.

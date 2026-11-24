@@ -1,4 +1,3 @@
-          const h = holes.find((x) => x.el.classList.contains("up")) || bossHole; // (it swings from where it stands, so the mole stays in sight)
 // WHACK-A-MOLE — the target letter (or word) sits in a card at the top, and the
 // voice says it. Moles pop out of their holes for a couple of seconds, each
 // holding a sign on its belly. Whack 3 moles with the target to win.
@@ -607,8 +606,7 @@
           }, 350);
         });
         rv.onTimeUp(() => {
-          const h = holes.find((x) => x.el.classList.contains("up")) || bossHole;
-          bossTo(h);
+          const h = holes.find((x) => x.el.classList.contains("up")) || bossHole; // (it swings from where it stands, so the mole stays in sight)
           ctx.later(() => {
             const at = pointIn(fx, null, h.el);
             mallet(at);

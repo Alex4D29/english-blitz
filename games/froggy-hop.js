@@ -89,6 +89,18 @@
   .fh-frog.sad .fh-fmouth { border-bottom:0; border-top:4px solid #111; border-radius:50% 50% 0 0; top:58%; }
   .fh-frog.sad .fh-feye::after { background-image:radial-gradient(circle at 50% 75%, #111 0 30%, transparent 32%); }
   .fh-frog.wet { filter:saturate(.6) brightness(.9); }
+  /* Full of fly: hopping for joy (the teacher asked for a happier, livelier frog) — happy closed eyes, a huge grin, rosy cheeks */
+  .fh-frog.happy { animation:fh-joy .32s cubic-bezier(.3,.1,.5,1) infinite alternate; }
+  .fh-frog.happy .fh-feye::after { background:none; background-image:none; border:0; border-top:5px solid #111; border-radius:50% 50% 0 0; top:42%; height:30%; }
+  .fh-frog.happy .fh-fmouth { left:18%; right:18%; top:48%; height:26%; background:#c2185b; border:4px solid #111; border-top-width:3px; border-radius:10% 10% 50% 50% / 10% 10% 90% 90%; }
+  .fh-frog.happy .fh-fbody::before, .fh-frog.happy .fh-fbody::after { content:""; position:absolute; top:22%; width:16%; height:12%; background:#ff8fab; border-radius:50%; opacity:.85; }
+  .fh-frog.happy .fh-fbody::before { left:8%; } .fh-frog.happy .fh-fbody::after { right:8%; }
+  .fh-frog.munch .fh-fmouth { animation:fh-munch .14s ease-in-out infinite alternate; }
+  .fh-joyword { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); font-size:2rem; color:#ffd400; -webkit-text-stroke:2px #111; paint-order:stroke fill; text-shadow:0 4px 0 #111;
+    white-space:nowrap; z-index:8; pointer-events:none; animation:fh-joyword 1.2s ease-out forwards; }
+  @keyframes fh-joy { from { translate:0 0; rotate:-8deg; scale:1.04 .94; } to { translate:0 -22%; rotate:8deg; scale:.96 1.06; } }
+  @keyframes fh-munch { from { scale:1 1; } to { scale:1 .4; } }
+  @keyframes fh-joyword { from { opacity:1; scale:.4; } 25% { scale:1.2; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
   .fh-tongue { position:absolute; left:50%; top:58%; width:8px; margin-left:-4px; height:0; background:#ff4d7a; border:3px solid #111; border-radius:99px;
     transform-origin:50% 100%; transform:translateY(-100%); }
   .fh-splash { position:absolute; width:20px; height:20px; margin:-10px 0 0 -10px; border:4px solid #fff; border-radius:50%; z-index:4;
@@ -345,6 +357,28 @@
           tone(660, 0.08, "triangle", 0.12); tone(880, 0.08, "triangle", 0.12, 0.08); tone(1320, 0.14, "triangle", 0.12, 0.16);
           ctx.confetti(fx, frogPos.x, frogPos.y);
         }, 230);
+        // Munch munch, then hop for joy: YUM!, hearts, a happy little tune, and a burp to finish.
+        ctx.later(() => {
+          frog.classList.add("munch");
+          [0, 0.15, 0.3].forEach((t) => noise(0.05, "bandpass", 900, 600, 0.4, t));
+          const yum = document.createElement("div");
+          yum.className = "fh-joyword"; yum.textContent = "YUM!";
+          yum.style.left = `${frogPos.x}px`; yum.style.top = `${Math.max(30, frogPos.y - ps * 0.9)}px`;
+          fx.appendChild(yum);
+        }, 260);
+        ctx.later(() => {
+          frog.classList.remove("munch");
+          frog.classList.add("happy");
+          [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.1, "square", 0.06, i * 0.1));
+          if (!reduceMotion) for (let i = 0; i < 6; i++) {
+            const h = document.createElement("div");
+            h.className = "fh-joyword"; h.textContent = i % 2 ? "💚" : "✨";
+            h.style.left = `${frogPos.x + (Math.random() - 0.5) * ps}px`; h.style.top = `${frogPos.y - ps * 0.3}px`;
+            h.style.animationDelay = `${i * 0.12}s`;
+            fx.appendChild(h);
+          }
+        }, 720);
+        ctx.later(() => { sweep(160, 90, 0.3, "sawtooth", 0.1); }, 1250); // burp
         ctx.say(answer);
       }
 

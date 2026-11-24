@@ -157,8 +157,8 @@
       const bankY = () => H * 0.56;
       function layout() {
         W = lake.clientWidth; H = lake.clientHeight;
-        colW = Math.max(100, Math.min(W * 0.3, 170));
-        ss = Math.max(64, Math.min(colW * 0.66, H * 0.26, 120));
+        colW = Math.max(96, Math.min(W * 0.25, 145));     // (closer together than at first: the teacher asked)
+        ss = Math.max(76, Math.min(colW * 0.86, H * 0.3, 135)); // (and bigger)
         lake.style.setProperty("--ss", `${ss}px`);
         lake.style.setProperty("--llz", `${Math.min(ss * 0.95, H * 0.3)}px`);
         lake.style.setProperty("--fz", `${Math.min(ss * 0.8, H * 0.24)}px`);
@@ -168,7 +168,7 @@
         farBank.style.cssText = `left:${farX}px;width:${W}px;`;
         party.style.cssText = `left:${farX + colW * 0.6}px;top:${bankY() - ss * 0.2}px;`;
         cols.forEach((col) => col.forEach((s) => {
-          s.x = colX(s.c); s.y = s.k === 0 ? H * 0.34 : H * 0.74;
+          s.x = colX(s.c); s.y = s.k === 0 ? H * 0.37 : H * 0.71;
           s.el.style.transform = `translate(${s.x}px, ${s.y}px)`;
           if (s.item.kind === "word") s.sign.style.fontSize = `${Math.min(ss * 0.3, (ss * 0.86) / (s.item.text.length * 0.6))}px`;
         }));

@@ -162,6 +162,16 @@
   .fi-bob.boss { z-index:5; }
   .fi-fish.bossfish { z-index:8; }
 
+  /* ---- Boss Battle: Kitty Boss on the shore (stage 1) ---- */
+  .fi-kitty { position:absolute; z-index:3; right:12px; top:calc(var(--shore) - var(--ks) * .95); width:var(--ks); height:var(--ks); pointer-events:none; }
+  .fi-kitty .bx-boss { position:absolute; inset:0; }
+  .fi-bowl { position:absolute; left:-22%; bottom:-2%; width:48%; height:24%; z-index:2; background:linear-gradient(#48b4ff, #1e7fd6); border:4px solid #111;
+    border-radius:8% 8% 50% 50% / 10% 10% 90% 90%; box-shadow:0 4px 0 rgba(0,0,0,.3); }
+  .fi-bowl::before { content:"KITTY"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:calc(var(--ks) * .07); color:#fff; -webkit-text-stroke:1px #111; }
+  .fi-kpips { position:absolute; right:102%; top:4%; display:flex; gap:4px; }
+  .fi-kpips span { width:26px; height:26px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; }
+  .fi-kpips span.on { background:#ffd400; } .fi-kpips span.on::after { content:"🐟"; }
+
   @keyframes fi-bob    { to { transform:translateY(-6%); } }
   @keyframes fi-jump   { 50% { transform:translateY(-22%) scale(1.08); } }
   @keyframes fi-no     { 25% { transform:rotate(-10deg); } 75% { transform:rotate(10deg); } }
@@ -205,12 +215,19 @@
     input: "tap",
     tutorial: true, // has a ctx.tutorial script
     bossRival: true, // Boss Battle showdown: the boss fishes from its own boat
+    bossArt: true,   // Boss Battle: Kitty Boss's stage 1: catch 3 fish for its bowl (a new target each)
+    bossDuration: 30000,
+    bossContentTypes: ["letter", "phonics", "cvc", "hfw"], // (ABC too: the fish carry letters)
 
     start(ctx) {
       injectCss();
       const type = ctx.list.type;
       const isLetter = type === "phonics"; // a letter with first-sound pictures
       const isHfw = type === "hfw";
+      const kitty = !!(window.Boss && Boss.fighting(ctx) === "kitty"); // Kitty Boss's stage 1
+      const isAbc = type === "letter";                       // (only in Kitty Boss's version)
+      const textTag = isHfw || isAbc;                        // fish carry words / letters, not pictures
+      const KGOAL = 3;
       const speed = ctx.speed || 1;
       const pace = 0.6 + 0.4 * speed;               // 1 at 1×, 1.6 at 2.5×
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -221,21 +238,30 @@
 
       // ---------- Content ----------
       // Letters: the picture's word must start with the letter ("X for fox" can't work).
-      const fits = (it) => (isHfw ? true : it.emoji && (!isLetter || firstLetter(it) === it.text.toUpperCase()));
-      const target = ctx.items.find(fits) || ctx.items[0];
-      const nFish = speed >= 2 ? 6 : speed >= 1.5 ? 5 : 4;
+      const fits = (it) => (textTag ? true : it.emoji && (!isLetter || firstLetter(it) === it.text.toUpperCase()));
+      // Kitty Boss: 3 targets, one after another (all their fish are in the pond from the start).
+      const targets = [];
+      ctx.items.forEach((it) => { if (targets.length < (kitty ? KGOAL : 1) && fits(it) && !targets.some((t) => t.text === it.text || (it.emoji && t.emoji === it.emoji))) targets.push(it); });
+      if (!targets.length) targets.push(ctx.items[0]);
+      let target = targets[0];
+      const isTarget = (it) => targets.some((t) => t === it || t.text === it.text);
+      const nFish = (speed >= 2 ? 6 : speed >= 1.5 ? 5 : 4) + (kitty ? targets.length - 1 : 0);
       let others;
-      if (isHfw) {
-        others = ctx.pickOptions(target, nFish).filter((it) => it !== target && it.text !== target.text);
+      if (textTag) {
+        others = ctx.pickOptions(target, nFish + 3).filter((it) => !isTarget(it));
       } else {
         // Never another picture that would also be right.
         others = ctx.pickOptions(target, ctx.items.length).filter((it) =>
-          it !== target && it.emoji && it.emoji !== target.emoji &&
-          (!isLetter || firstLetter(it) !== target.text.toUpperCase()));
+          !isTarget(it) && it.emoji && !targets.some((t) => t.emoji === it.emoji) &&
+          (!isLetter || !targets.some((t) => firstLetter(it) === t.text.toUpperCase())));
       }
-      const catchItems = ctx.shuffle([target, ...others.slice(0, nFish - 1)]);
-      const prompt = isHfw ? spoken(target) : TEXT.prompt(spoken(target));
-      const answer = isLetter ? TEXT.answer(spoken(target), target.word) : spoken(target);
+      const catchItems = ctx.shuffle([...targets, ...others.slice(0, nFish - targets.length)]);
+      let prompt, answer;
+      const setWords = () => {
+        prompt = isHfw ? spoken(target) : TEXT.prompt(spoken(target));
+        answer = isLetter || isAbc ? TEXT.answer(spoken(target), target.word) : spoken(target);
+      };
+      setWords();
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -249,7 +275,7 @@
       dock.className = "fi-dock";
 
       const mon = document.createElement("button");
-      mon.className = "fi-mon" + (isLetter ? "" : " word"); // HFW holds its word too (it used to be listening-only)
+      mon.className = "fi-mon" + (isLetter || isAbc ? "" : " word"); // HFW holds its word too (it used to be listening-only)
       mon.style.setProperty("--mc", ctx.pick(MONSTER_COLORS));
       mon.setAttribute("aria-label", TEXT.monsterLabel);
       mon.innerHTML =
@@ -258,8 +284,11 @@
         '<div class="fi-tear l"></div><div class="fi-tear r"></div>' +
         '<div class="fi-mouth"></div><div class="fi-bubble"></div></div>';
       const glyph = mon.querySelector(".fi-glyph");
-      glyph.textContent = target.text;
-      if (!isLetter && target.text.length > 4) glyph.style.fontSize = `${(2.2 / target.text.length).toFixed(2)}em`; // long sight words shrink to fit
+      const setGlyph = () => {
+        glyph.textContent = target.text;
+        glyph.style.fontSize = !isLetter && !isAbc && target.text.length > 4 ? `${(2.2 / target.text.length).toFixed(2)}em` : ""; // long sight words shrink to fit
+      };
+      setGlyph();
       const bubble = mon.querySelector(".fi-bubble");
       const restBubble = isHfw ? TEXT.bubbleListen : TEXT.bubble;
       bubble.textContent = restBubble;
@@ -288,7 +317,7 @@
         el.innerHTML =
           '<div class="fi-flip"><div class="fi-tail"></div><div class="fi-fin"></div><div class="fi-fbody"></div><div class="fi-feye"></div></div>' +
           '<div class="fi-tag"></div><div class="fi-alert"><span class="fi-bang"></span><span class="fi-tap"></span></div>';
-        el.querySelector(".fi-tag").textContent = isHfw ? item.text : item.emoji;
+        el.querySelector(".fi-tag").textContent = textTag ? item.text : item.emoji;
         el.querySelector(".fi-bang").textContent = TEXT.alert;
         el.querySelector(".fi-tap").textContent = TEXT.tapHint;
         wrap.appendChild(el);
@@ -303,6 +332,20 @@
       });
       wrap.append(mon, svg, bob, fx);
       ctx.root.appendChild(wrap);
+
+      // Kitty Boss's stage 1: Kitty sits on the shore at the right with its bowl and 3 🐟 pips. Each right fish flies
+      // into the bowl (CHOMP!), then a beat and a new target; a wrong one makes it hiss.
+      let kit = null, caught = 0;
+      if (kitty) {
+        const k = document.createElement("div");
+        k.className = "fi-kitty";
+        const b = Boss.el("kitty", "var(--ks)");
+        k.innerHTML = '<div class="fi-bowl"></div><div class="fi-kpips"></div>';
+        k.prepend(b);
+        k.querySelector(".fi-kpips").innerHTML = '<span></span>'.repeat(KGOAL);
+        wrap.appendChild(k);
+        kit = { box: k, b, bowl: k.querySelector(".fi-bowl"), pips: k.querySelector(".fi-kpips") };
+      }
 
       // Boss Battle showdown: the boss fishes too, from its own boat at the top right, with its own line
       // and float. Fish never go to it: it gets a few nibbles that come to nothing, and when time runs
@@ -351,13 +394,17 @@
         wrap.style.setProperty("--fh", `${FH}px`);
         fish.forEach((f) => {
           const tagW = FW * 0.5, tagH = FH * 0.76 - 6;
-          if (isHfw) {
-            const len = f.item.text.length;
+          if (textTag) {
+            const len = Math.max(2, f.item.text.length);
             f.tag.style.fontSize = `${Math.min(tagH * 0.75, (tagW - 8) / (len * 0.58))}px`;
           } else {
             f.tag.style.fontSize = `${tagH * 0.9}px`;
           }
         });
+        if (kit) { // Kitty on the shore, right
+          const sh = parseFloat(getComputedStyle(wrap).getPropertyValue("--shore")) || 140;
+          wrap.style.setProperty("--ks", `${clamp(Math.min(sh * 0.82, W * 0.3), 80, 160)}px`);
+        }
         if (rb) { // the boss's boat, rod and float
           const btw = clamp(W * 0.36, 110, 170), bbs = btw * 0.72;
           const bx = P.l + P.w - btw - 4, by = P.t - btw * 0.2;
@@ -677,7 +724,7 @@
       // Tap on a biting fish: reel it up to the monster.
       function pull(f) {
         const won = f.item === target;
-        if (won) { done = true; ctx.win(); }
+        if (won && (!kitty || caught + 1 >= KGOAL)) { done = true; ctx.win(); }
         const now = performance.now();
         f.el.classList.remove("bite");
         f.el.classList.add("hooked");
@@ -713,6 +760,7 @@
       }
 
       function landed(f) {
+        if (kitty) { kittyEats(f); return; }
         f.state = "held";
         bubble.textContent = TEXT.bubbleHappy;
         mon.classList.add("happy");
@@ -724,6 +772,7 @@
 
       function wrongFish(f) {
         f.state = "held";
+        if (kit) { Boss.setMood(kit.b, "angry"); later(() => { if (!ctx.ended) Boss.setMood(kit.b, null); }, 1200); }
         mon.classList.add("sad");
         bubble.textContent = TEXT.bubbleSad;
         sadSound();
@@ -746,6 +795,42 @@
           bubble.textContent = restBubble;
           ctx.say(prompt);
         }, 1300);
+      }
+
+      // Kitty Boss: the fish flies into its bowl, CHOMP; then a beat and the next target.
+      function kittyEats(f) {
+        hooked = null;
+        f.state = "gone";
+        const wr = wrap.getBoundingClientRect(), br = kit.bowl.getBoundingClientRect();
+        const to = { x: br.left - wr.left + br.width / 2, y: br.top - wr.top + br.height * 0.2 };
+        const from = f.el.style.transform;
+        f.el.animate([{ transform: from }, { transform: `translate(${to.x}px,${to.y}px) scale(.35)` }], { duration: reduceMotion ? 1 : 420, easing: "ease-in", fill: "forwards" });
+        bob.classList.remove("hide");
+        state = "ready";
+        mon.classList.add("happy");
+        if (!isHfw && !isAbc) ctx.say(answer);
+        later(() => {
+          f.el.style.display = "none";
+          kit.pips.children[caught].classList.add("on");
+          caught++;
+          Boss.setMood(kit.b, "happy");
+          [0, 0.12, 0.24].forEach((t) => noise(0.06, "bandpass", 900, 600, 0.5, t)); // CHOMP chomp chomp
+          tone(660, 0.1, "triangle", 0.08, 0.3); tone(880, 0.14, "triangle", 0.08, 0.4);
+          hearts(to.x, to.y - 30);
+          if (done) { ctx.confetti(fx, to.x, to.y - 40, { count: 60 }); return; }
+          // The beat: the clock stops, a new target.
+          ctx.pauseTimer(800);
+          target = targets[Math.min(caught, targets.length - 1)];
+          setWords(); setGlyph();
+          later(() => {
+            if (done || ctx.ended) return;
+            mon.classList.remove("happy");
+            Boss.setMood(kit.b, null);
+            tone(98, 0.08, "square", 0.1); tone(98, 0.08, "square", 0.1, 0.16);
+            mon.animate([{ scale: ".5" }, { scale: "1.2" }, { scale: "1" }], { duration: 420, easing: "cubic-bezier(.2,1.8,.4,1)" });
+            ctx.say(prompt);
+          }, 500);
+        }, 430);
       }
 
       function splashBack(f) {
@@ -797,6 +882,7 @@
         bubble.textContent = TEXT.bubbleSad;
         const f = fish.find((x) => x.item === target);
         if (f) f.el.classList.add("answer");
+        if (kit) Boss.setMood(kit.b, "laugh");
         ctx.say(answer);
       });
 

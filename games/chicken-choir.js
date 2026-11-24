@@ -52,7 +52,16 @@
   /* A chicken: --cz is its size. White and round, a red comb, a yellow beak, googly eyes, a sign under its wing */
   .ch-chick { position:absolute; left:0; top:0; width:var(--cz); height:var(--cz); margin:calc(var(--cz) * -1) 0 0 calc(var(--cz) * -.5); z-index:3; padding:0; border:0; background:none;
     font:inherit; cursor:pointer; touch-action:manipulation; }
-  .ch-in { position:absolute; inset:0; transform-origin:50% 100%; animation:ch-sway 1s ease-in-out infinite alternate; }
+  .ch-in { position:absolute; inset:0; transform-origin:50% 100%; animation:ch-sway .7s ease-in-out infinite alternate; }   /* (livelier: a bouncy sway with a head bob) */
+  .ch-wing { position:absolute; top:44%; width:22%; height:30%; background:#f4f4f4; border:4px solid #111; border-radius:50% 50% 40% 60%; z-index:1; transform-origin:50% 10%;
+    animation:ch-wingidle 1.4s ease-in-out infinite; }
+  .ch-wing.l { left:4%; } .ch-wing.r { right:4%; transform:scaleX(-1); animation-delay:-.7s; }
+  .ch-comb { animation:ch-comb .5s ease-in-out infinite alternate; transform-origin:50% 100%; }
+  .ch-chick.sing .ch-wing { animation:ch-flapw .09s ease-in-out 8 alternate; }
+  .ch-chick.sing .ch-comb { animation:ch-comb .1s ease-in-out 6 alternate; }
+  .ch-chick.bop .ch-in { animation:ch-bop .3s ease-out; }
+  .ch-chick.sing::after { content:""; position:absolute; left:50%; top:30%; width:180%; aspect-ratio:1; transform:translate(-50%, -50%); border-radius:50%; z-index:-1; pointer-events:none;
+    background:radial-gradient(circle, rgba(255,240,120,.75), transparent 60%); animation:ch-glow .6s ease-out forwards; }   /* a spotlight flash */
   .ch-body { position:absolute; left:12%; right:12%; top:24%; bottom:6%; background:#fff; border:4px solid #111; border-radius:50% 50% 46% 46%; }
   .ch-comb { position:absolute; left:38%; top:8%; width:26%; height:18%; background:#e8173c; border:4px solid #111; border-radius:50% 50% 20% 20%; clip-path:polygon(0 100%, 0 30%, 25% 0, 50% 30%, 75% 0, 100% 30%, 100% 100%); }
   .ch-eye { position:absolute; top:32%; width:20%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:2; }
@@ -63,12 +72,14 @@
     font-size:calc(var(--cz) * .28); line-height:1; color:#111; white-space:nowrap; z-index:3; }
   .ch-sign.pic { font-size:calc(var(--cz) * .3); }
   .ch-legs { position:absolute; left:34%; right:34%; bottom:-8%; height:12%; border-left:4px solid #ff8a00; border-right:4px solid #ff8a00; }
-  .ch-chick.sing .ch-in { animation:ch-sing .35s ease-out; }
-  .ch-chick.sing .ch-beak { animation:ch-beak .12s ease-in-out 4 alternate; }
+  .ch-chick.sing .ch-in { animation:ch-sing .55s cubic-bezier(.2,1.6,.4,1); }
+  .ch-chick.sing .ch-beak { animation:ch-beak .09s ease-in-out 8 alternate; }
   .ch-chick.sour .ch-in { animation:ch-flap .1s linear 6; }
   .ch-chick.right .ch-sign { background:#b8ffcf; box-shadow:0 0 0 4px #fff, 0 0 0 8px #00b86b; }
   .ch-chick.dim { opacity:.45; }
-  .ch-all .ch-in { animation:ch-sing .3s ease-in-out infinite alternate; }
+  .ch-all .ch-in { animation:ch-party .4s ease-in-out infinite alternate; animation-delay:var(--wd, 0s); }   /* a jumping wave */
+  .ch-all .ch-wing { animation:ch-flapw .12s ease-in-out infinite alternate; }
+  .ch-all .ch-beak { animation:ch-beak .15s ease-in-out infinite alternate; }
   .ch-me { position:absolute; left:50%; bottom:2%; z-index:4; pointer-events:none; transform:translateX(-50%); }
   .ch-baton { position:absolute; right:-4%; top:30%; width:6px; height:calc(var(--chz) * .6); background:#fff; border:2px solid #111; border-radius:3px; transform-origin:50% 100%;
     transform:rotate(-30deg); animation:ch-wave .5s ease-in-out infinite alternate; z-index:6; }
@@ -78,15 +89,21 @@
     text-shadow:0 4px 0 #111; white-space:nowrap; pointer-events:none; animation:ch-word .9s ease-out forwards; }
   .ch-word.bad { color:#fff; } .ch-word.big { font-size:3rem; animation-duration:2s; }
   @keyframes ch-next { 0% { transform:scale(.4) rotate(-10deg); } 60% { transform:scale(1.25) rotate(4deg); } 100% { transform:none; } }
-  @keyframes ch-sway { from { transform:rotate(-4deg); } to { transform:rotate(4deg); } }
+  @keyframes ch-sway { 0% { transform:rotate(-7deg) translateY(0); } 50% { transform:rotate(0) translateY(-5%); } 100% { transform:rotate(7deg) translateY(0); } }
+  @keyframes ch-wingidle { 0%, 70%, 100% { rotate:0deg; } 80% { rotate:-35deg; } 90% { rotate:5deg; } }
+  @keyframes ch-flapw { from { rotate:10deg; } to { rotate:-70deg; } }
+  @keyframes ch-comb { from { transform:rotate(-10deg); } to { transform:rotate(10deg); } }
+  @keyframes ch-bop { 50% { transform:translateY(-8%) rotate(-6deg); } }
+  @keyframes ch-glow { from { opacity:1; transform:translate(-50%, -50%) scale(.5); } to { opacity:0; transform:translate(-50%, -50%) scale(1.2); } }
+  @keyframes ch-party { from { transform:translateY(0) rotate(-10deg); } to { transform:translateY(-22%) rotate(10deg) scale(1.06); } }
   @keyframes ch-goggle { 0%, 100% { transform:translate(-16%, 0); } 50% { transform:translate(16%, -12%); } }
-  @keyframes ch-sing { 40% { transform:translateY(-18%) scale(1.08, .94); } }
-  @keyframes ch-beak { to { transform:scaleY(1.8); } }
+  @keyframes ch-sing { 0% { transform:scale(1.1, .85); } 35% { transform:translateY(-32%) scale(.92, 1.12) rotate(-8deg); } 65% { transform:translateY(-32%) scale(.95, 1.08) rotate(8deg); } 100% { transform:none; } }
+  @keyframes ch-beak { to { transform:scaleY(2.4); } }
   @keyframes ch-flap { 25% { transform:rotate(-12deg); } 75% { transform:rotate(12deg); } }
   @keyframes ch-wave { from { transform:rotate(-40deg); } to { transform:rotate(10deg); } }
   @keyframes ch-word { from { opacity:1; transform:translate(-50%, -50%) rotate(-8deg) scale(.5); } 25% { transform:translate(-50%, -60%) rotate(-8deg) scale(1.15); }
     75% { opacity:1; } to { opacity:0; transform:translate(-50%, -100%) rotate(-8deg); } }
-  @media (prefers-reduced-motion: reduce) { .ch-in, .ch-eye i, .ch-baton, .ch-card.next, .ch-word, .ch-all .ch-in { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .ch-in, .ch-eye i, .ch-baton, .ch-card.next, .ch-word, .ch-all .ch-in, .ch-wing, .ch-comb, .ch-chick.sing::after { animation:none !important; } }
   `;
   function injectCss() {
     if (document.getElementById("ch-css")) return;
@@ -144,7 +161,7 @@
       const chicks = [...Array(N)].map((_, i) => {
         const b = document.createElement("button");
         b.className = "ch-chick";
-        b.innerHTML = '<div class="ch-in"><div class="ch-legs"></div><div class="ch-comb"></div><div class="ch-body"></div><div class="ch-eye l"><i></i></div><div class="ch-eye r"><i></i></div>' +
+        b.innerHTML = '<div class="ch-in"><div class="ch-legs"></div><div class="ch-comb"></div><div class="ch-wing l"></div><div class="ch-wing r"></div><div class="ch-body"></div><div class="ch-eye l"><i></i></div><div class="ch-eye r"><i></i></div>' +
           '<div class="ch-beak"></div><div class="ch-sign"></div></div>';
         b.querySelector(".ch-in").style.animationDelay = `${-i * 0.25}s`;
         b.addEventListener("pointerdown", (e) => { e.preventDefault(); pick(c); });
@@ -189,8 +206,14 @@
       }
       function sing(c) {
         c.el.classList.remove("sing"); void c.el.offsetWidth; c.el.classList.add("sing");
-        tone(TUNE[step], 0.32, "square", 0.08); tone(TUNE[step] * 1.5, 0.3, "triangle", 0.04, 0.02); // the note
-        pop("🎵", c.x, c.y - cz * 1.05);
+        // A chirpy "ba-GAWK", then its note, held with a wobble (two voices a hair apart) and a harmony above.
+        sweep(500, 1300, 0.07, "square", 0.06); sweep(900, 1500, 0.06, "square", 0.05, 0.08);
+        const f = TUNE[step];
+        tone(f, 0.5, "square", 0.07, 0.14); tone(f * 1.006, 0.5, "square", 0.05, 0.14); tone(f * 1.5, 0.45, "triangle", 0.05, 0.16);
+        ["🎵", "🎶", "🎵"].forEach((n, k) => ctx.later(() => pop(n, c.x + (k - 1) * cz * 0.35, c.y - cz * (1.05 + k * 0.08)), k * 90));
+        // the others bop along to it
+        chicks.forEach((o) => { if (o !== c) { o.el.classList.remove("bop"); void o.el.offsetWidth; o.el.classList.add("bop"); } });
+        me.querySelector(".ch-baton").animate([{ transform: "rotate(-60deg)" }, { transform: "rotate(30deg)" }, { transform: "rotate(-40deg)" }], { duration: 350 });
         word(TEXT.sing[step % TEXT.sing.length], false);
         if (c.opt.kind === "pic") ctx.later(() => ctx.say(c.opt.spoken), 250);
         top.querySelectorAll(".ch-note")[step].classList.add("on");
@@ -234,10 +257,17 @@
       }
       // All 5 notes: the whole choir sings the song together, ENCORE!
       function encore() {
+        chicks.forEach((c, i) => c.el.style.setProperty("--wd", `${-i * 0.12}s`)); // they jump in a wave
         stage.classList.add("ch-all");
         window.Mascot.mood(me, "cheer");
-        TUNE.forEach((f, i) => { tone(f, 0.22, "square", 0.07, i * 0.2); tone(f / 2, 0.22, "triangle", 0.05, i * 0.2); });
-        tone(1047, 0.6, "square", 0.07, TUNE.length * 0.2); tone(784, 0.6, "triangle", 0.05, TUNE.length * 0.2);
+        // The whole song together: the tune with harmony and a bass line, bawks on the beat, then a big finish.
+        TUNE.forEach((f, i) => {
+          tone(f, 0.2, "square", 0.07, i * 0.18); tone(f * 1.26, 0.2, "triangle", 0.04, i * 0.18); tone(f / 2, 0.2, "triangle", 0.05, i * 0.18);
+          sweep(700, 1400, 0.05, "square", 0.03, i * 0.18);
+        });
+        const end = TUNE.length * 0.18;
+        [1047, 1319, 1568].forEach((f) => tone(f, 0.7, "square", 0.05, end));
+        sweep(600, 1600, 0.25, "sawtooth", 0.05, end + 0.6); // and one last BAWK!
         word(TEXT.encore, false, true);
         for (let k = 0; k < 6; k++) ctx.later(() => pop("🎶", W * (0.15 + Math.random() * 0.7), H * (0.2 + Math.random() * 0.3)), k * 150);
         ctx.confetti(fx, W / 2, H * 0.35, { count: 90 });
@@ -272,6 +302,16 @@
       deal();
       const ro = new ResizeObserver(layout);
       ro.observe(stage);
+      // Between notes, now and then a chicken gives a little "bok" and a bop (quietly), so the choir's never still.
+      (function cluck() {
+        if (done || ctx.ended) return;
+        if (!busy) {
+          const c = ctx.pick(chicks);
+          c.el.classList.remove("bop"); void c.el.offsetWidth; c.el.classList.add("bop");
+          tone(640 + Math.random() * 200, 0.04, "square", 0.02); tone(520, 0.05, "square", 0.02, 0.06);
+        }
+        ctx.later(cluck, 1300 + Math.random() * 1200);
+      })();
       ctx.say(C.prompt);
       ctx.reveal(card);
 
