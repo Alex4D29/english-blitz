@@ -284,7 +284,7 @@
       const q = load();
       q.at = k;
       C().storage.set(KEY, { ...q, at: k });
-      if (k === at) { sail(k, () => { shown = k; render(); }); return; }
+      if (k === at) { shown = k; render(); return; } // already docked there: straight to the island (no sailing again)
       // Sail along the route to the island, then the close-up.
       const a = dock(at), b = dock(k);
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + 40 };
@@ -402,9 +402,8 @@
         C().unlock();
         if (!open || !islandOpen(p, i)) { C().sfx.tone(200, 0.1, "square", 0.08); return; }
         hop = null;
-        const adv = { island: isl.id, level: j, games: isl.games, speed: SPEEDS[Math.min(j, SPEEDS.length - 1)], boss: isBoss ? isl.boss : null };
         root.hidden = true;
-        if (isBoss) F().playBoss(adv); else F().playLevel(adv);
+        play(advFor(i, j));
       });
       map.appendChild(n);
     }
@@ -517,7 +516,23 @@
 
   // Turning the iPad redraws the map.
   window.addEventListener("resize", () => { if (root && !root.hidden && root.querySelector(".ad-map")) { /* (not mid-sail) */ const h = hop; hop = null; quiet = true; render(); quiet = false; hop = h; } });
+  // A level to play (the boss level is the last), and playing it.
+  function advFor(i, j) {
+    const isl = ISLANDS[i], isBoss = j === LEVELS - 1;
+    return { island: isl.id, level: j, games: isl.games, speed: SPEEDS[Math.min(j, SPEEDS.length - 1)], boss: isBoss ? isl.boss : null };
+  }
+  function play(adv) { if (adv.boss) F().playBoss(adv); else F().playLevel(adv); }
+  // ▶ NEXT on the results screen (the teacher asked for it): the level after `adv` if it's open now, else null.
+  // Not straight past level 4 the first time, so the item shop still gets to pop up on the map.
+  function nextOf(adv) {
+    if (!adv) return null;
+    const p = load(), i = ISLANDS.findIndex((x) => x.id === adv.island), j = adv.level + 1;
+    if (i < 0 || j >= LEVELS || !levelOpen(p, i, j)) return null;
+    if (adv.level === SHOP_AFTER && !p.shops[adv.island] && window.Items && window.Items.on()) return null;
+    return advFor(i, j);
+  }
+  function playNext(adv) { const n = nextOf(adv); if (!n) return false; hop = null; play(n); return true; }
   // Islands whose boss the active player has beaten (the V–Z characters: js/mascot.js).
   function beaten() { const p = load(); return ISLANDS.filter((_, i) => starsOf(p, i, LEVELS - 1) > 0).map((x) => x.id); }
-  window.Adventure = { open, close, record, beaten, ISLANDS };
+  window.Adventure = { open, close, record, beaten, nextOf, playNext, ISLANDS };
 })();

@@ -94,7 +94,7 @@
     status: $("#status"), roundPill: $("#roundPill"), bar: $("#bar"), timer: $("#timer"),
     game: $("#game"), banner: $("#banner"), stamp: $("#stamp"),
     resTitle: $("#resTitle"), stars: $("#stars"), resStats: $("#resStats"), record: $("#record"),
-    againBtn: $("#againBtn"), menuBtn: $("#menuBtn"),
+    againBtn: $("#againBtn"), menuBtn: $("#menuBtn"), nextBtn: $("#nextBtn"),
   };
 
   const state = {
@@ -1421,6 +1421,10 @@
     }
     // (🗺️ Adventure: MAP instead of MENU)
     els.menuBtn.innerHTML = state.adv ? `🗺️ <span>${T.map}</span>` : `🏠 <span>${T.menu}</span>`;
+    // (🗺️ Adventure: ▶ NEXT once the next level is open; then it's the big pulsing button, not PLAY AGAIN)
+    const hasNext = !!(state.adv && window.Adventure && window.Adventure.nextOf(state.adv));
+    els.nextBtn.hidden = !hasNext;
+    els.againBtn.classList.toggle("hot", !hasNext);
     restartAnim(els.resTitle);
     // Your character at the top: the victory cheer at the end of every run (the teacher asked for it), then any
     // new characters this run unlocked (NEW CHARACTER!).
@@ -1909,7 +1913,9 @@
   els.quitBtn.addEventListener("click", quitPlay);
   els.againBtn.addEventListener("click", () => (state.mode.id === "practice" ? startMode("practice") : askWatch(state.mode.id)));
   // (🗺️ Adventure: MAP goes back to the map instead)
-  els.menuBtn.addEventListener("click", () => { if (state.adv && window.Adventure) { clearRound(); window.Adventure.open(); } else goTitle(); });
+  // (back to the island's own map; Adventure.open still goes to the world map after a boss is beaten, to sail on)
+  els.menuBtn.addEventListener("click", () => { if (state.adv && window.Adventure) { clearRound(); window.Adventure.open(state.adv.island); } else goTitle(); });
+  els.nextBtn.addEventListener("click", () => { if (state.adv && window.Adventure) { clearRound(); C.unlock(); window.Adventure.playNext(state.adv); } });
 
 
   // ---------- No accidental zooming ----------

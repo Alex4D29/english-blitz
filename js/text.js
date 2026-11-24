@@ -135,6 +135,7 @@ window.TEXT = {
   funTitle: { 1: "GOOD\nTRY!", 2: "GREAT!", 3: "AMAZING!" },
   // 🗺️ Adventure
   map: "MAP",
+  next: "NEXT",
   advRetry: "TRY\nAGAIN!",
   adventure: "ADVENTURE",
   adventureDesc: "Explore the islands, beat the bosses!",
