@@ -54,4 +54,12 @@ window.GAME_FILES = [
   "cookie-cutter",
   "chicken-banana",
   "six-seven-seesaw",
+  "smelly-socks",
+  "bubblegum-blow",
+  "conga-line",
+  "doorbell-dash",
+  "belly-flop",
+  "dangerous-dentist",
+  "scratch-sniff",
+  "shopping-sweep",
 ];
