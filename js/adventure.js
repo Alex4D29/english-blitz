@@ -517,5 +517,7 @@
 
   // Turning the iPad redraws the map.
   window.addEventListener("resize", () => { if (root && !root.hidden && root.querySelector(".ad-map")) { /* (not mid-sail) */ const h = hop; hop = null; quiet = true; render(); quiet = false; hop = h; } });
-  window.Adventure = { open, close, record, ISLANDS };
+  // Islands whose boss the active player has beaten (the V–Z characters: js/mascot.js).
+  function beaten() { const p = load(); return ISLANDS.filter((_, i) => starsOf(p, i, LEVELS - 1) > 0).map((x) => x.id); }
+  window.Adventure = { open, close, record, beaten, ISLANDS };
 })();

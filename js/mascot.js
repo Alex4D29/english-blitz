@@ -8,7 +8,8 @@
 // The characters (the teacher's idea): Blitz, the orange monster, and LETTER MONSTERS: a big chunky capital
 // letter dressed up as its word (A is an apple, B a ball…), with googly eyes, arms and legs, so each one
 // is a little phonics lesson ("A for apple!"). A–F are there from the start; the rest are unlocked by
-// playing (Star, Rocket, Zebra, King), and beating a boss unlocks that boss as a character.
+// playing (Fun, Endless, Boss Battle), beating a boss unlocks that boss as a character, and beating each
+// Adventure island's boss unlocks V–Z.
 (function () {
   const C = () => window.Core;
   const CHAR_KEY = "wwe.char", UNLOCK_KEY = "wwe.chars", PLAYED_KEY = "wwe.played";
@@ -38,6 +39,12 @@
     { id: "snake", name: "Snake", letter: "S", word: "snake", color: "#46b84a", unlock: "endless", at: 40, hint: "Clear 40 in Endless mode!" },
     { id: "tiger", name: "Tiger", letter: "T", word: "tiger", color: "#ff8c1a", unlock: "endless", at: 45, hint: "Clear 45 in Endless mode!" },
     { id: "umbrella", name: "Umbrella", letter: "U", word: "umbrella", color: "#2f8fe0", unlock: "endless", at: 50, hint: "Clear 50 in Endless mode!" },
+    // Adventure (the teacher's plan): beat an island's boss for its letter, V to Z in island order.
+    { id: "volcano", name: "Volcano", letter: "V", word: "volcano", color: "#8a5a3c", unlock: "island", island: "jungle", hint: "Beat 🌴 JUNGLE in Adventure!" },
+    { id: "watermelon", name: "Watermelon", letter: "W", word: "watermelon", color: "#ff4f6d", unlock: "island", island: "ninja", hint: "Beat 🏯 NINJA CASTLE in Adventure!" },
+    { id: "fox", name: "Fox", letter: "X", word: "fox", color: "#ff7a1a", unlock: "island", island: "funfair", line: "X is in fox!", hint: "Beat 🎡 ROBOT FUNFAIR in Adventure!" },
+    { id: "yarn", name: "Yarn", letter: "Y", word: "yarn", color: "#c04dd9", unlock: "island", island: "nursery", hint: "Beat 🧸 TOY NURSERY in Adventure!" },
+    { id: "zombie", name: "Zombie", letter: "Z", word: "zombie", color: "#8fd16a", unlock: "island", island: "cottage", hint: "Beat 🏡 COSY COTTAGE in Adventure!" },
     // Boss Battle: beat a boss to play as it; beat all four for King.
     { id: "king", name: "King", letter: "K", word: "king", color: "#9c6bff", unlock: "allBosses", hint: "Beat 4 bosses!" },
     { id: "banana", name: "Banana Boss", boss: true, unlock: "boss", hint: "Beat Banana Boss!" },
@@ -202,6 +209,66 @@
   @keyframes ms-flop { from { transform:rotate(30deg); } to { transform:rotate(48deg); } }
   @keyframes ms-tongue { from { transform:scaleY(.3); } to { transform:scaleY(1); } }
   @keyframes ms-drip { from { translate:0 0; opacity:1; } to { translate:0 calc(var(--mz) * .6); opacity:0; } }
+  /* V for volcano: lava bubbling up in the V's crater, spurting blobs, lava dribbling over both rims, smoke */
+  .ms-volcano .ms-d.lava { left:39%; top:12%; width:24%; height:34%; z-index:1; background:radial-gradient(circle at 50% 30%, #fff36b 0 18%, #ffb000 30%, #ff4a00 70%);
+    border-radius:50% 50% 40% 40%; box-shadow:0 0 calc(var(--mz) * .08) #ff7a00; animation:ms-glowp .5s ease-in-out infinite alternate; }
+  .ms-volcano .ms-d.blob { left:45%; top:8%; width:12%; aspect-ratio:1; z-index:4; background:#ff6a00; border:calc(var(--mz) * .015) solid #111; border-radius:50%;
+    animation:ms-spurt 1.1s ease-out infinite; }
+  .ms-volcano .ms-d.blob.b { animation-delay:-.4s; --dx:-1; } .ms-volcano .ms-d.blob.c { animation-delay:-.75s; --dx:1.2; width:7%; }
+  .ms-volcano .ms-d.smoke { left:30%; top:-40%; width:44%; height:30%; z-index:0; animation:ms-smoke 2s ease-out infinite;
+    background:radial-gradient(circle at 30% 65%, #9a9aa6 0 24%, transparent 25%), radial-gradient(circle at 55% 40%, #b4b4c0 0 28%, transparent 29%),
+      radial-gradient(circle at 76% 64%, #8a8a96 0 22%, transparent 23%); }
+  .ms-volcano .ms-d.drip { z-index:3; top:13%; width:15%; height:14%; background:#ff5a00; border:calc(var(--mz) * .018) solid #111; border-top:0;
+    border-radius:0 0 40% 60% / 0 0 100% 70%; }
+  .ms-volcano .ms-d.drip.l { left:17%; } .ms-volcano .ms-d.drip.r { left:69%; border-radius:0 0 60% 40% / 0 0 70% 100%; }
+  @keyframes ms-glowp { to { filter:brightness(1.25); } }
+  @keyframes ms-spurt { 0% { transform:translate(0, 60%) scale(.6); opacity:0; } 15% { opacity:1; } 100% { transform:translate(calc(var(--dx, .6) * 120%), -260%) scale(1); opacity:0; } }
+  @keyframes ms-smoke { from { transform:translateY(30%) scale(.6); opacity:.9; } to { transform:translateY(-40%) scale(1.3); opacity:0; } }
+  /* W for watermelon: the letter itself is the fruit (red flesh with black seeds, a green rind along the top), so
+     nothing floats off the strokes */
+  .ms-watermelon .ms-glyph, .ms-yarn .ms-glyph { color:transparent; -webkit-background-clip:text; background-clip:text; text-shadow:none; }
+  /* (the seeds are a repeating pattern, so wherever the strokes fall they get seeds) */
+  .ms-watermelon .ms-glyph { background-color:#ff4f6d;
+    background-image:linear-gradient(#1f7a2a 0 22%, #8fe36b 22% 27%, #fff4f0 27% 31%, transparent 31%),
+      radial-gradient(ellipse 16% 24% at 50% 50%, #111 85%, transparent 100%), radial-gradient(ellipse 16% 24% at 50% 50%, #111 85%, transparent 100%);
+    background-size:100% 100%, 13% 14%, 13% 14%; background-position:0 0, 0 0, 6.5% 7%; background-repeat:no-repeat, repeat, repeat; }
+  /* X is in fox: pointy ears on the top tips, a bushy white-tipped tail, white cheeks and a black nose */
+  .ms-fox .ms-d.ear { top:-12%; width:24%; height:30%; background:var(--cc); border:calc(var(--mz) * .025) solid #111; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+  .ms-fox .ms-d.ear::after { content:""; position:absolute; left:28%; right:28%; top:40%; bottom:6%; background:#3a2208; clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+  .ms-fox .ms-d.ear.l { left:6%; transform:rotate(-24deg); } .ms-fox .ms-d.ear.r { left:70%; transform:rotate(24deg); }
+  .ms-fox .ms-d.tail { left:72%; top:52%; width:34%; height:24%; z-index:1; border:calc(var(--mz) * .025) solid #111; border-radius:30% 80% 80% 30% / 50%;
+    background:linear-gradient(90deg, var(--cc) 62%, #fff 62%); transform-origin:0 70%; animation:ms-wag .5s ease-in-out infinite alternate; }
+  .ms-fox .ms-d.nose { left:45%; top:47%; width:10%; height:8%; z-index:4; background:#111; border-radius:50% 50% 60% 60%; }
+  .ms-fox .ms-d.nose::after { content:""; position:absolute; left:20%; top:18%; width:30%; height:30%; background:#fff; border-radius:50%; opacity:.7; }
+  @keyframes ms-wag { from { transform:rotate(-14deg); } to { transform:rotate(18deg); } }
+  /* Y for yarn: woolly stripes on the letter, two knitting needles stuck in its fork, a loose strand */
+  .ms-yarn .ms-glyph { background-image:repeating-linear-gradient(60deg, #c04dd9 0 6%, #e07cf0 6% 9%, #9a2fb3 9% 11%); }
+  /* a ball of wool sitting in the Y's fork, two knitting needles stuck through it */
+  .ms-yarn .ms-d.ball { left:37%; top:19%; width:26%; aspect-ratio:1; z-index:4; border:calc(var(--mz) * .022) solid #111; border-radius:50%;
+    background:repeating-linear-gradient(-35deg, #ff6fb0 0 12%, #ffa3cf 12% 18%), #ff6fb0; overflow:visible; }
+  .ms-yarn .ms-d.needle { left:-60%; top:40%; width:220%; height:17%; z-index:5; background:#b9c2d6; border:calc(var(--mz) * .012) solid #111; border-radius:99px; }
+  .ms-yarn .ms-d.needle::before { content:""; position:absolute; right:-8%; top:50%; height:200%; aspect-ratio:1; transform:translateY(-50%); background:#ffd400; border:calc(var(--mz) * .012) solid #111; border-radius:50%; }
+  .ms-yarn .ms-d.needle.a { transform:rotate(-28deg); } .ms-yarn .ms-d.needle.b { transform:rotate(28deg) scaleX(-1); } .ms-yarn .ms-d.needle.b::before { background:#4dd3ff; }
+  .ms-yarn .ms-d.strand { left:50%; top:70%; width:42%; height:26%; border:calc(var(--mz) * .03) solid #c04dd9; border-color:transparent transparent #c04dd9 #c04dd9; border-radius:0 0 0 70%;
+    transform-origin:0 0; animation:ms-strand .8s ease-in-out infinite alternate; }
+  .ms-yarn .ms-d.strand::after { content:""; position:absolute; right:-14%; bottom:-30%; width:28%; aspect-ratio:1; border:calc(var(--mz) * .03) solid #c04dd9; border-radius:50%; }
+  @keyframes ms-strand { from { transform:rotate(-6deg); } to { transform:rotate(10deg); } }
+  /* Z for zombie: pale green, messy hair, a stitched scar, arms stuck straight out in front, a lurching shuffle */
+  .ms-zombie .ms-in { animation:ms-lurch 1.1s ease-in-out infinite alternate; }
+  .ms.ms-zombie .ms-arm.l, .ms.ms-zombie .ms-arm.r, .ms.ms-zombie.cheer .ms-arm.l, .ms.ms-zombie.cheer .ms-arm.r { left:auto; transform-origin:0 50%; z-index:3; }
+  .ms.ms-zombie .ms-arm.l { right:-8%; top:28%; transform:rotate(-4deg); }
+  .ms.ms-zombie .ms-arm.r { right:-12%; top:58%; transform:rotate(6deg); }
+  .ms.ms-zombie.cheer .ms-arm.l { right:-8%; top:28%; transform:rotate(-30deg); } .ms.ms-zombie.cheer .ms-arm.r { right:-12%; top:58%; transform:rotate(-20deg); }
+  .ms-zombie .ms-d.hair { left:22%; top:-12%; width:56%; height:16%; z-index:1; background:#2d3a1f;
+    clip-path:polygon(0 100%, 6% 20%, 16% 70%, 26% 0, 38% 60%, 50% 10%, 60% 70%, 72% 0, 82% 60%, 94% 15%, 100% 100%); }
+  .ms-zombie .ms-d.scar { left:28%; top:22%; width:30%; height:1.5%; z-index:4; background:#111; transform:rotate(-8deg); }
+  .ms-zombie .ms-d.scar::before { content:""; position:absolute; left:0; right:0; top:-250%; bottom:-250%; background:repeating-linear-gradient(90deg, transparent 0 15%, #111 15% 21%); }
+  .ms.ms-zombie .ms-eye.r { width:15%; top:2%; }  /* one eye small and droopy */
+  .ms-zombie .ms-eye.l i { animation-duration:2.4s; }
+  .ms-zombie .ms-d.drool { left:56%; top:66%; width:3.5%; height:10%; z-index:4; background:#bff0ff; border:1px solid #111; border-radius:0 0 99px 99px;
+    transform-origin:50% 0; animation:ms-drool 1.6s ease-in-out infinite; }
+  @keyframes ms-lurch { from { transform:rotate(-5deg) translateX(-2%); } to { transform:rotate(5deg) translateX(2%); } }
+  @keyframes ms-drool { 0%, 100% { transform:scaleY(.4); } 60% { transform:scaleY(1.3); } }
   /* K for king: a crown and a red cape */
   .ms-king .ms-d.crown { left:50%; top:-28%; transform:translateX(-50%) rotate(-8deg); font-size:calc(var(--mz) * .34); z-index:4; }
   .ms-king .ms-d.cape { left:10%; right:10%; top:22%; bottom:10%; background:#e8173c; border:calc(var(--mz) * .025) solid #111; border-radius:30% 30% 10% 10%; z-index:0; }
@@ -301,6 +368,9 @@
       if (c.unlock === "endless" && run.mode === "challenge" && run.cleared >= c.at) add(c.id);
     });
     if (run.bossWon) add(run.bossWon);
+    // 🗺️ Adventure islands beaten (read from the save, so islands beaten before V–Z existed count too)
+    const isles = window.Adventure && window.Adventure.beaten ? window.Adventure.beaten() : [];
+    CHARS.forEach((c) => { if (c.unlock === "island" && isles.includes(c.island)) add(c.id); });
     if (run.bossesBeaten && run.bossesBeaten.length >= 4) add("king"); // (any 4 of the 5 bosses: the teacher kept it at 4)
     return out;
   }
@@ -330,11 +400,19 @@
     rabbit: '<div class="ms-d ear l"></div><div class="ms-d ear r"></div><div class="ms-d puff"></div>',
     tiger: '<div class="ms-d ear l"></div><div class="ms-d ear r"></div>',
     umbrella: '<div class="ms-d pole"></div><div class="ms-d canopy"></div><div class="ms-d drop">💧</div>',
+    volcano: '<div class="ms-d smoke">💨</div><div class="ms-d lava"></div><div class="ms-d blob"></div><div class="ms-d blob b"></div><div class="ms-d blob c"></div>',
+    fox: '<div class="ms-d ear l"></div><div class="ms-d ear r"></div><div class="ms-d tail"></div>',
+    yarn: '<div class="ms-d strand"></div>',
+    zombie: '<div class="ms-d hair"></div>',
   };
   const OVER = { // drawn over the face
     elephant: '<div class="ms-d trunk"></div>', guitar: '<div class="ms-d hole"></div>', jellybaby: '<div class="ms-d shine"></div>',
     monkey: '<div class="ms-d patch"></div>', ninja: '<div class="ms-d band"></div><div class="ms-d tails"></div>',
     pirate: '<div class="ms-d strap"></div>', queen: '<div class="ms-d pearls"></div>', rabbit: '<div class="ms-d teeth"></div>', snake: '<div class="ms-d tongue"></div>',
+    volcano: '<div class="ms-d drip l"></div><div class="ms-d drip r"></div>',
+    fox: '<div class="ms-d nose"></div>',
+    zombie: '<div class="ms-d scar"></div><div class="ms-d drool"></div>',
+    yarn: '<div class="ms-d ball"><div class="ms-d needle a"></div><div class="ms-d needle b"></div></div>',
     tiger: '<div class="ms-d stripe a"></div><div class="ms-d stripe b"></div><div class="ms-d stripe c"></div><div class="ms-d stripe d"></div>',
   };
   // `size`: px (a number) or any CSS length. `id`: a character (the chosen one if left out).
