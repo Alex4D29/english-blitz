@@ -74,6 +74,7 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 .mode-btn.challenge { background: #1e6bff; }
 .mode-btn.boss { background: linear-gradient(135deg, #ff7a00, #c4161c); }
 .mode-btn.practice, .mode-btn.tutorials { background: #1fd65f; min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
+.mode-btn.versus { background: linear-gradient(90deg, #3d8bff 0 50%, #ff4d6d 50%); min-height: min(14dvh, 110px); font-size: clamp(1.4rem, 7.5vw, 2.2rem); }
 .mode-btn.tutorials { background: #9c6bff; }
 .mode-btn:disabled { opacity: .5; }
 #loading { font-size: 1.2rem; }
@@ -423,3 +424,20 @@ body.demo #stage::before {
 #resChar { display: flex; justify-content: center; flex: none; margin-top: auto; }
 #results .buttons { margin-bottom: auto; }
 #resChar:empty { display: none; }
+
+/* ---------- ⭐ MY WORDS (Word of the Week) ---------- */
+#myWordsBox { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(100%, 440px); }
+.content-btn.mywords { width: 100%; background: #ffd400; }
+.content-btn.mywords[aria-pressed="false"] { background: #ddd; }
+.content-btn.by-words { opacity: .35; }
+.words-edit { font-size: clamp(1.1rem, 5vw, 1.4rem) !important; padding: 10px 18px !important; background: var(--paper); }
+.words-note { margin: 0; font-size: 1rem; font-family: system-ui, sans-serif; font-weight: 700; text-align: center; }
+#words .grid-head { margin: 12px 0 4px; }
+#wordsCount { margin: 0; font-size: clamp(1.4rem, 6vw, 2rem); }
+#wordsGrid { width: min(100%, 640px); display: flex; flex-direction: column; align-items: stretch; }
+.words-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.word-chip { min-width: 64px; padding: 8px 12px; border: 4px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 0 4px 0 var(--ink);
+  font: inherit; font-size: clamp(1rem, 4.4vw, 1.3rem); line-height: 1; cursor: pointer; touch-action: manipulation; display: inline-flex; align-items: center; gap: 6px; }
+.word-chip .em { font-size: 1.1em; }
+.word-chip[aria-pressed="true"] { background: #ffd400; transform: translateY(2px); box-shadow: 0 2px 0 var(--ink), 0 0 0 3px #fff inset; }
+.word-chip[aria-pressed="true"]::before { content: "⭐"; font-size: .8em; }

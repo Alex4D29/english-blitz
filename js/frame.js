@@ -57,6 +57,17 @@
     const ok = Array.isArray(saved) ? saved.filter((t) => CONTENT_TYPES.includes(t)) : [];
     return ok.length ? ok : [...DEFAULT_TYPES];
   }
+  // ⭐ MY WORDS (Word of the Week): the words chosen per list type, and whether it's switched on.
+  const MYWORDS_KEY = "wwe.mywords";
+  function loadMyWords() {
+    const s = C.storage.get(MYWORDS_KEY, null) || {};
+    const arr = (a) => (Array.isArray(a) ? a.filter((x) => typeof x === "string") : []);
+    return { on: !!s.on, letter: arr(s.letter), cvc: arr(s.cvc), hfw: arr(s.hfw) };
+  }
+  const saveMyWords = () => C.storage.set(MYWORDS_KEY, state.myWords);
+  const chosenFor = (type) => state.myWords[type === "phonics" ? "letter" : type] || [];
+  const chosenCount = () => ["letter", "cvc", "hfw"].reduce((n, t) => n + state.myWords[t].length, 0);
+  const myWordsOn = () => !listParam && state.myWords.on && chosenCount() > 0;
 
   const $ = (s) => document.querySelector(s);
   const els = {
@@ -64,9 +75,11 @@
     practice: $("#practice"), howto: $("#howto"), content: $("#content"),
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
     askWatch: $("#askWatch"), watchYes: $("#watchYes"), watchNo: $("#watchNo"),
-    funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"),
+    funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"), versusBtn: $("#versusBtn"),
     bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
+    words: $("#words"), wordsGrid: $("#wordsGrid"), wordsCount: $("#wordsCount"), wordsDoneBtn: $("#wordsDoneBtn"), wordsClearBtn: $("#wordsClearBtn"),
+    myWordsBox: $("#myWordsBox"),
     charBtn: $("#charBtn"), resChar: $("#resChar"), resetCharsBtn: $("#resetCharsBtn"),
     backBtn: $("#backBtn"), quitBtn: $("#quitBtn"), helpBtn: $("#helpBtn"),
     practiceGrid: $("#practiceGrid"), practiceBackBtn: $("#practiceBackBtn"),
@@ -87,6 +100,7 @@
     mode: null,
     practiceGame: null,         // the game Practice mode is playing
     types: loadTypes(),         // content types ticked on the picker: "letter", "phonics", "cvc", "hfw"
+    myWords: loadMyWords(),     // ⭐ MY WORDS: { on, letter: [texts], cvc: [...], hfw: [...] } (Word of the Week)
     pendingMode: null,          // the mode button pressed before the content picker
     tutorial: C.storage.get(TUTORIAL_KEY, true) !== false, // show each game once before it's played (Fun, Challenge)
     seen: new Set(),            // games whose tutorial this run has already shown
@@ -137,7 +151,7 @@
     state.timers.push(setTimeout(() => guard("frame", fn), ms));
   }
   function showScreen(name) {
-    ["title", "settings", "content", "practice", "howto", "play", "results"].forEach((n) => { els[n].hidden = n !== name; });
+    ["title", "settings", "content", "words", "practice", "howto", "play", "results"].forEach((n) => { els[n].hidden = n !== name; });
     els.askWatch.hidden = true;
     state.screen = name;
     if (name !== "play") els[name].scrollTop = 0;
@@ -216,6 +230,8 @@
   function listsInPlay() {
     const lists = window.WORD_LISTS || [];
     if (listParam) return lists.filter((l) => l.id === listParam);
+    // MY WORDS: the types that have chosen words (letters count for ABC and PHONICS).
+    if (myWordsOn()) return CONTENT_TYPES.filter((t) => chosenFor(t).length).map((t) => lists.find((l) => l.type === t)).filter(Boolean);
     return CONTENT_TYPES.filter((t) => state.types.includes(t))
       .map((t) => lists.find((l) => l.type === t)).filter(Boolean);
   }
@@ -895,6 +911,24 @@
     return (c.pauseTo ? c.pauseFrom : now) - c.t0;
   }
 
+  // A round's items: shuffled, with one picture picked for items that have several (`pics`), so "A" can be
+  // apple, ant or arrow (pickOptions uses these same objects).
+  // ⭐ MY WORDS: the chosen words go first, so every target is one of them (games take targets from the
+  // front); the rest of the list stays behind them for the wrong answers. C.focus lets choiceSteps reuse
+  // the chosen words before it reaches the others. (Versus uses this too.)
+  function prepItems(list) {
+    let items = C.shuffle(list.items.map((it) => (it.pics && it.pics.length ? { ...it, ...C.pick(it.pics) } : it)));
+    C.focus = null;
+    if (myWordsOn()) {
+      const mine = new Set(chosenFor(list.type));
+      if (mine.size) {
+        items = [...items.filter((it) => mine.has(it.text)), ...items.filter((it) => !mine.has(it.text))];
+        C.focus = mine;
+      }
+    }
+    return items;
+  }
+
   function startGame(game, list, opts = {}) {
     const token = ++state.token;
     const alive = () => token === state.token;
@@ -913,10 +947,15 @@
 
     // Items with several pictures (`pics`) get one picked at random for this round,
     // so "A" can be apple, ant or arrow. pickOptions uses these same objects.
-    let items = C.shuffle(list.items.map((it) => (it.pics && it.pics.length ? { ...it, ...C.pick(it.pics) } : it)));
+    let items = prepItems(list);
     // After a demo, the demo's answer goes to the back, so the child's round has a different one
     // (games take their target from the front of ctx.items).
-    if (opts.avoid && opts.avoid.size) items = [...items.filter((it) => !opts.avoid.has(it.text)), ...items.filter((it) => opts.avoid.has(it.text))];
+    if (opts.avoid && opts.avoid.size) {
+      const keep = items.filter((it) => !opts.avoid.has(it.text)), back = items.filter((it) => opts.avoid.has(it.text));
+      // (with MY WORDS, the demo's word only goes behind the other chosen words, not behind the whole list)
+      const nMine = C.focus ? keep.filter((it) => C.focus.has(it.text)).length : keep.length;
+      items = C.focus && nMine ? [...keep.slice(0, nMine), ...back, ...keep.slice(nMine)] : [...keep, ...back];
+    }
     const ctx = {
       root: els.game,
       items,
@@ -1293,9 +1332,90 @@
       b.querySelector(".lbl").textContent = info.label;
       b.querySelector(".sample").textContent = info.sample;
       b.addEventListener("click", () => toggleType(type, b));
+      if (myWordsOn()) { b.classList.add("by-words"); b.disabled = true; } // (MY WORDS decides the types)
       els.contentGrid.appendChild(b);
     });
+    renderMyWordsBox();
   }
+
+  // ---------- ⭐ MY WORDS (Word of the Week) ----------
+  // On the content picker: a MY WORDS switch and CHOOSE WORDS. While it's on, every target comes from the
+  // chosen words (the type toggles grey out: the chosen words decide which types play).
+  function renderMyWordsBox() {
+    const box = els.myWordsBox;
+    box.innerHTML = "";
+    const info = T.myWords, n = chosenCount();
+    const b = document.createElement("button");
+    b.className = "content-btn mywords long";
+    b.setAttribute("aria-pressed", String(myWordsOn()));
+    b.innerHTML = `<span class="tick" aria-hidden="true">✔</span><span class="what"><span class="nm"></span><span class="lbl"></span></span><span class="sample" aria-hidden="true"></span>`;
+    b.querySelector(".nm").textContent = info.name;
+    b.querySelector(".lbl").textContent = n ? `${info.label} · ${T.wordsCount(n)}` : info.label;
+    b.querySelector(".sample").textContent = info.sample;
+    b.addEventListener("click", () => {
+      C.unlock();
+      if (!chosenCount()) { showWords(); return; } // nothing chosen yet: choose some first
+      state.myWords.on = !state.myWords.on;
+      saveMyWords();
+      C.sfx.tone(state.myWords.on ? 660 : 440, 0.08);
+      renderContent();
+    });
+    const edit = document.createElement("button");
+    edit.className = "chunky words-edit";
+    edit.textContent = `✏️ ${T.editWords}`;
+    edit.addEventListener("click", () => { C.unlock(); showWords(); });
+    box.append(b, edit);
+    if (myWordsOn()) {
+      const note = document.createElement("p");
+      note.className = "words-note";
+      note.textContent = T.myWordsOn;
+      box.appendChild(note);
+    }
+  }
+  // The word chooser: every letter, CVC word and sight word as a chip to tick.
+  function showWords() {
+    const lists = window.WORD_LISTS || [];
+    els.wordsGrid.innerHTML = "";
+    ["letter", "cvc", "hfw"].forEach((type) => {
+      const list = lists.find((l) => l.type === type);
+      if (!list) return;
+      const head = document.createElement("h2");
+      head.className = "grid-head";
+      head.textContent = T.wordsSections[type];
+      const grid = document.createElement("div");
+      grid.className = `words-grid ${type}`;
+      list.items.forEach((it) => {
+        const c = document.createElement("button");
+        c.className = "word-chip";
+        const on = state.myWords[type].includes(it.text);
+        c.setAttribute("aria-pressed", String(on));
+        c.textContent = type === "letter" ? `${it.text} ${it.text.toLowerCase()}` : it.text;
+        if (type === "cvc" && it.emoji) c.insertAdjacentHTML("afterbegin", `<span class="em" aria-hidden="true">${it.emoji}</span>`);
+        else if (type === "cvc") c.title = T.wordsNoPic;
+        c.addEventListener("click", () => {
+          const set = state.myWords[type];
+          const i = set.indexOf(it.text);
+          if (i >= 0) set.splice(i, 1); else set.push(it.text);
+          c.setAttribute("aria-pressed", String(i < 0));
+          if (i < 0) { state.myWords.on = true; C.say(it.say || it.text); }
+          C.sfx.tone(i < 0 ? 700 : 420, 0.06);
+          saveMyWords();
+          updateWordsCount();
+        });
+        grid.appendChild(c);
+      });
+      els.wordsGrid.append(head, grid);
+    });
+    updateWordsCount();
+    showScreen("words");
+  }
+  function updateWordsCount() { els.wordsCount.textContent = T.wordsCount(chosenCount()); }
+  els.wordsDoneBtn.addEventListener("click", () => { renderContent(); showScreen("content"); });
+  els.wordsClearBtn.addEventListener("click", () => {
+    state.myWords.letter = []; state.myWords.cvc = []; state.myWords.hfw = []; state.myWords.on = false;
+    saveMyWords();
+    showWords();
+  });
 
   // ---------- 👀 Watch first? (Fun and Challenge, every time PLAY or PLAY AGAIN is pressed) ----------
   // A pop-up with two big buttons: 👀 WATCH FIRST (new games show their tutorial) or 🙈 JUST PLAY.
@@ -1335,6 +1455,7 @@
 
   function contentGo() {
     if (state.pendingMode === "practice") showPractice("practice");
+    else if (state.pendingMode === "versus") { clearRound(); window.Versus.open(); }
     else askWatch(state.pendingMode || "fun");
   }
 
@@ -1479,6 +1600,7 @@
   els.bossBtn.addEventListener("click", () => { state.bossPick = null; chooseContent("boss"); }); // the full run, with a random boss
   els.challengeBtn.addEventListener("click", () => chooseContent("challenge"));
   els.practiceBtn.addEventListener("click", () => chooseContent("practice"));
+  els.versusBtn.addEventListener("click", () => chooseContent("versus")); // ⚔️ two players, side by side (js/versus.js)
   els.contentGoBtn.addEventListener("click", contentGo);
   els.watchYes.addEventListener("click", () => answerWatch(true));
   els.watchNo.addEventListener("click", () => answerWatch(false));
@@ -1558,7 +1680,7 @@
       els.loading.hidden = false;
       return;
     }
-    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = false;
+    els.funBtn.disabled = els.bossBtn.disabled = els.challengeBtn.disabled = els.practiceBtn.disabled = els.tutorialsBtn.disabled = els.versusBtn.disabled = false;
     renderCharBtn();
     // The very first run: choose your character (after that, from the title menu's 👤 button).
     if (window.Mascot && !window.Mascot.chosen()) window.Mascot.openPicker({ onDone: renderCharBtn });
@@ -1576,5 +1698,11 @@
     };
     document.body.appendChild(s);
   });
+  // For js/versus.js: what to play, and the screens.
+  window.FrameAPI = {
+    listsInPlay, allowed, prepItems, showScreen, setTheme, goTitle, renderCharBtn,
+    canSpeak: () => C.canSpeak && state.listening,
+    hideAll: () => { ["title", "settings", "content", "words", "practice", "howto", "play", "results"].forEach((n) => { els[n].hidden = true; }); state.screen = "versus"; updateScrollbar(); },
+  };
   showScreen("title");
 })();

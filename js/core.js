@@ -175,9 +175,13 @@
   function choiceSteps(pool, type, R, N, opts = {}) {
     const o = { ...opts, forceLower: opts.lowercase ? Math.random() < 0.5 : false };
     const used = new Set(), steps = [];
+    // ⭐ MY WORDS (the frame sets Core.focus): the chosen words come round again before any others.
+    const FS = window.Core && window.Core.focus, F = FS && pool.some((it) => FS.has(it.text)) ? FS : null;
     for (let s = 0; s < R; s++) {
       const fresh = pool.filter((it) => !used.has(it.text)), old = pool.filter((it) => used.has(it.text));
-      const c = choiceRows(fresh.length ? [...fresh, ...old] : pool, type, opts.rowsPer || 1, N, o); // the target comes from the front
+      const mine = (a) => (F ? a.filter((it) => F.has(it.text)) : []), rest = (a) => (F ? a.filter((it) => !F.has(it.text)) : a);
+      const order = F ? [...shuffle(mine(fresh)), ...shuffle(mine(old)), ...rest(fresh), ...rest(old)] : fresh.length ? [...fresh, ...old] : pool;
+      const c = choiceRows(order, type, opts.rowsPer || 1, N, o); // the target comes from the front
       used.add(c.target.text);
       steps.push({ ...c, row: c.rows[0] }); // (opts.rowsPer: several rows for that target, in `rows`: Monkey Swing's race sections)
     }

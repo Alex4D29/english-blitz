@@ -7,9 +7,11 @@ window.TEXT = {
   challenge: "ENDLESS\nMODE",           // (was CHALLENGE MODE; the code still says challenge)
   boss: "BOSS\nBATTLE",
   practice: "PICK A GAME",              // (Practice mode in the code)
+  versus: "VERSUS",                    // ⚔️ two players side by side (js/versus.js)
   // One line under each title-menu button
   funDesc: "10 games, no pressure",
   challengeDesc: "4 lives. How far can you go?",
+  versusDesc: "2 players, side by side!",
   bossDesc: "10 games, then beat a boss!",
   practiceDesc: "Play one game you like",
   tutorialsDesc: "Watch how each game works",
@@ -36,6 +38,18 @@ window.TEXT = {
     cvc: { name: "CVC", sample: "cat 🐱", label: "CVC words" },
     hfw: { name: "HFW", sample: "the", label: "Sight words" },
   },
+  // ⭐ MY WORDS (Word of the Week, the teacher's idea): every target comes from the words you choose
+  myWords: { name: "MY WORDS", sample: "⭐", label: "Only the words you choose" },
+  myWordsOn: "Playing MY WORDS: the targets are only your words.",
+  editWords: "CHOOSE WORDS",
+  wordsTitle: "MY WORDS",
+  wordsNote: "Tap to add or remove. Start with a few new ones, then add more week by week!",
+  wordsCount: (n) => (n === 1 ? "1 chosen" : `${n} chosen`),
+  wordsClear: "CLEAR ALL",
+  wordsDone: "DONE",
+  wordsNone: "Choose some words first!",
+  wordsSections: { letter: "ABC + PHONICS (letters)", cvc: "CVC WORDS", hfw: "SIGHT WORDS" },
+  wordsNoPic: "(no picture: used in word games only)",
 
   // 👀 Watch first? pop-up after PLAY in Fun and Challenge.
   askWatch: "WATCH\nFIRST?",

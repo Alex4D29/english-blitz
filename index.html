@@ -17,6 +17,7 @@
     <button class="mode-btn fun" id="funBtn" disabled><span class="ico" aria-hidden="true">🎈</span><span class="mode-txt"><span data-text="fun"></span><span class="mode-desc" data-text="funDesc"></span></span></button>
     <button class="mode-btn challenge" id="challengeBtn" disabled><span class="ico" aria-hidden="true">🔥</span><span class="mode-txt"><span data-text="challenge"></span><span class="mode-desc" data-text="challengeDesc"></span></span></button>
     <button class="mode-btn boss" id="bossBtn" disabled><span class="ico" aria-hidden="true">👑</span><span class="mode-txt"><span data-text="boss"></span><span class="mode-desc" data-text="bossDesc"></span></span></button>
+    <button class="mode-btn versus" id="versusBtn" disabled><span class="ico" aria-hidden="true">⚔️</span><span class="mode-txt"><span data-text="versus"></span><span class="mode-desc" data-text="versusDesc"></span></span></button>
     <button class="mode-btn practice" id="practiceBtn" disabled><span class="ico" aria-hidden="true">🎯</span><span class="mode-txt"><span data-text="practice"></span><span class="mode-desc" data-text="practiceDesc"></span></span></button>
     <button class="mode-btn tutorials" id="tutorialsBtn" disabled><span class="ico" aria-hidden="true">👀</span><span class="mode-txt"><span data-text="tutorials"></span><span class="mode-desc" data-text="tutorialsDesc"></span></span></button>
     <button class="chunky char-btn" id="charBtn"><span class="char-mini" aria-hidden="true"></span><span data-text="character"></span></button>
@@ -30,6 +31,7 @@
   <h1 class="shout" data-text="whatToPlay"></h1>
   <p class="card" data-text="pickContent"></p>
   <div id="contentGrid" role="group"></div>
+  <div id="myWordsBox"></div>
   <div class="buttons">
     <button class="chunky hot" id="contentGoBtn">▶️ <span data-text="play"></span></button>
     <button class="chunky" id="contentBackBtn">⬅️ <span data-text="back"></span></button>
@@ -92,6 +94,18 @@
   <button class="chunky" id="backBtn">⬅️ <span data-text="back"></span></button>
 </section>
 
+<!-- ⭐ MY WORDS: choose the words every game's targets come from (Word of the Week) -->
+<section id="words" class="screen scroll" hidden>
+  <h1 class="shout" data-text="wordsTitle"></h1>
+  <p class="card" data-text="wordsNote"></p>
+  <p class="shout" id="wordsCount"></p>
+  <div id="wordsGrid"></div>
+  <div class="buttons">
+    <button class="chunky hot" id="wordsDoneBtn">✔️ <span data-text="wordsDone"></span></button>
+    <button class="chunky" id="wordsClearBtn">🧹 <span data-text="wordsClear"></span></button>
+  </div>
+</section>
+
 <!-- Play -->
 <div id="play" hidden>
   <header>
@@ -143,6 +157,7 @@
 <script src="js/modes.js"></script>
 <script src="js/mascot.js"></script>
 <script src="js/boss.js"></script>
+<script src="js/versus.js"></script>
 <script src="games/manifest.js"></script>
 <script src="js/frame.js"></script>
 </body>

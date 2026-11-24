@@ -363,6 +363,9 @@
   function mood(d, m) {
     d.classList.remove("cheer", "pull", "eat", "sad", "heave");
     if (m) d.classList.add(m);
+    // A boss character uses its own moods: cheering laughs, sad sulks (Gorilla Boss cries).
+    const b = d.querySelector(".bx-boss");
+    if (b && window.Boss) window.Boss.setMood(b, m === "cheer" ? "laugh" : m === "sad" ? (b.classList.contains("bx-gorilla") ? "cry" : "angry") : null);
   }
 
   // ---------- The picker: "CHOOSE YOUR CHARACTER!" ----------
