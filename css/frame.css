@@ -250,6 +250,7 @@ body.flash #burst { animation-duration: 3s; filter: saturate(1.6) brightness(1.0
 #stamp .shout { animation: stamp .35s cubic-bezier(.2, 1.8, .4, 1) both; transform: rotate(-8deg); }
 #stamp.good .shout { color: var(--good); }
 #stamp.bad .shout  { color: var(--bad); }
+#stamp.nope .shout { color: #ffd400; }   /* 🧸 FUN style: TRY AGAIN! (friendly, not red) */
 @keyframes slam { from { transform: scale(3.2) rotate(-12deg); opacity: 0; } to { transform: scale(1) rotate(-4deg); opacity: 1; } }
 @keyframes pop { from { transform: scale(.3); opacity: 0; } }
 @keyframes stamp { from { transform: scale(2.5) rotate(10deg); opacity: 0; } }
@@ -354,6 +355,13 @@ body.demo #stage::before {
 .ask-buttons .chunky.hot { animation: pulse 1s ease-in-out infinite; } /* the last answer */
 .ask-yes.hot { background: #9c6bff; }
 @media (prefers-reduced-motion: reduce) { .ask-icon, .ask-buttons .chunky.hot { animation: none; } }
+/* 🧸 / 🔥 How do you want to play? (askStyle in frame.js) */
+.style-fun, .style-chal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.style-fun { background: #4dd36b; }
+.style-chal { background: #ff8a1f; }
+.style-name { font-size: clamp(1.6rem, 8vw, 2.2rem); }
+.style-note { font-family: system-ui, sans-serif; font-weight: 700; font-size: clamp(.85rem, 3.6vw, 1rem); line-height: 1.25; }
+.style-toggle { min-width: 8.5em; }
 
 /* ---------- A scroll bar you can see (updateScrollbar in frame.js) ---------- */
 .scrollbar { position: fixed; z-index: 50; top: max(14px, env(safe-area-inset-top)); bottom: max(14px, env(safe-area-inset-bottom)); right: 5px; width: 14px;

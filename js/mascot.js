@@ -320,7 +320,8 @@
   .ms-tile.on { background:#ffe066; box-shadow:0 0 0 4px #fff, 0 0 0 8px #ff8a00, 0 5px 0 #111; }
   .ms-tile.locked { background:#ddd; cursor:default; }
   .ms-tile .hint { font-family:system-ui, sans-serif; font-weight:700; font-size:.62rem; opacity:.8; }
-  .ms-go { width:100%; font-size:clamp(1.4rem, 7vw, 2rem) !important; padding:12px 18px !important; background:#4dd36b !important; }
+  .ms-go { width:100%; font-size:clamp(1.4rem, 7vw, 2rem) !important; padding:12px 18px !important; background:#4dd36b !important; animation:ms-gopulse 1s ease-in-out infinite; }
+  @keyframes ms-gopulse { 50% { scale:1.04; } }
   /* NEW CHARACTER! */
   .ms-new { position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.6); }
   .ms-new-card { position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; padding:18px 22px; background:#fff;
@@ -458,8 +459,8 @@
     const wrap = document.createElement("div");
     wrap.className = "ms-pick";
     wrap.setAttribute("role", "dialog");
-    wrap.innerHTML = `<div class="ms-pick-card card"><h2 class="shout">${T.pickChar || "CHOOSE YOUR\nCHARACTER!"}</h2><div class="ms-hero"></div><div class="ms-grid"></div>` +
-      `<button class="chunky ms-go">${T.letsGo || "LET'S GO!"}</button></div>`;
+    wrap.innerHTML = `<div class="ms-pick-card card"><h2 class="shout">${T.pickChar || "CHOOSE YOUR\nCHARACTER!"}</h2><div class="ms-hero"></div>` +
+      `<button class="chunky ms-go">${T.letsGo || "LET'S GO!"}</button><div class="ms-grid"></div></div>`;   // (LET'S GO above the grid: kids didn't scroll down to find it)
     const hero = wrap.querySelector(".ms-hero"), grid = wrap.querySelector(".ms-grid");
     let sel = current();
     function showHero(id, speak) {

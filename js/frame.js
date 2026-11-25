@@ -31,6 +31,10 @@
   const DEMO_MAX_MS = 24000;    // give up on a demo that never reports (a script that missed)
   const DEMO_POINTER = 4242;    // pointerId of the ghost finger's events
   const TUTORIAL_KEY = "wwe.tutorial";               // localStorage: the last 👀 Watch first? answer
+  const STYLE_KEY = "wwe.style";                     // localStorage (per player): 🧸 "fun" or 🔥 "challenge"
+  const FUN_MIN_MS = 30000;                          // FUN style: no game shorter than this
+  const FUN_RETRY_MIN_MS = 10000;                    // FUN style: a retry gets at least this long
+  const FUN_NOPE_MS = 1400;                          // FUN style: let the game's "nope" play before trying again
   const LISTENING_KEY = "wwe.listening";             // localStorage: listening games on/off (Settings)
   const PRACTICE_SPEED_KEY = "wwe.practice.speed";   // localStorage: the Practice difficulty
   const BOSS_KEY = "wwe.boss.beaten";                // localStorage: the bosses beaten so far (Boss Battle)
@@ -75,6 +79,7 @@
     practice: $("#practice"), howto: $("#howto"), content: $("#content"),
     contentGrid: $("#contentGrid"), contentGoBtn: $("#contentGoBtn"), contentBackBtn: $("#contentBackBtn"),
     askWatch: $("#askWatch"), watchYes: $("#watchYes"), watchNo: $("#watchNo"),
+    askStyle: $("#askStyle"), styleFunBtn: $("#styleFunBtn"), styleChalBtn: $("#styleChalBtn"), styleBtn: $("#styleBtn"),
     funBtn: $("#funBtn"), challengeBtn: $("#challengeBtn"), practiceBtn: $("#practiceBtn"), versusBtn: $("#versusBtn"), adventureBtn: $("#adventureBtn"), coopBtn: $("#coopBtn"),
     bossBtn: $("#bossBtn"),
     settingsBtn: $("#settingsBtn"), loading: $("#loading"),
@@ -116,6 +121,7 @@
     adv: null,                  // 🗺️ Adventure: the level being played { island, level, games, speed, boss } (js/adventure.js)
     boss: null,                 // Boss Battle: { id, phase: levels | showdown | battle, you, them, stage, hp, hearts, last, done, scened }
     listening: C.storage.get(LISTENING_KEY, true) !== false, // listening games on (Settings)
+    style: null,                // 🧸 "fun" / 🔥 "challenge" play style (the player's; asked on startup)
     phase: "idle",              // idle | transition | playing | feedback | over | paused
     round: 0,
     lives: 0,
@@ -579,7 +585,7 @@
     later(() => {
       document.body.classList.remove("flash");
       els.banner.hidden = true;
-      if (demo) runDemo(game, list); else startGame(game, list);
+      if (demo) runDemo(game, list); else startGame(game, list, choice.timeLeft ? { timeLeft: choice.timeLeft } : {});
     }, t);
   }
 
@@ -1080,7 +1086,10 @@
     // (and a showdown game can have its own too: `showdownDuration`, e.g. Archery: kids wait for the power bar)
     const bossDur = !demo && bossFight() && ((state.boss.phase === "battle" && game.bossDuration) || (state.boss.phase === "showdown" && game.showdownDuration));
     const paceMs = Math.round((bossDur || game.duration || BASE_MS) / speed);
-    const timeLimit = demo ? Math.max(paceMs, 20000) : Math.max(paceMs, warmupMsFor(state.round));
+    let timeLimit = demo ? Math.max(paceMs, 20000) : Math.max(paceMs, warmupMsFor(state.round));
+    // 🧸 FUN play style (the teacher's toddler mode): about 3× the time, never under 30 s (speed-ups still shorten it a
+    // little in Endless, with the 30 s floor); a retry after a wrong answer gets the time that was left (`timeLeft`).
+    if (!demo && funStyle()) timeLimit = opts.timeLeft || Math.max(timeLimit, paceMs * 3, FUN_MIN_MS);
     state.reported = false;
     state.gameActive = true;
     state.phase = demo ? "demo" : "playing";
@@ -1272,6 +1281,9 @@
 
   function report(token, won, timedOut = false) {
     if (token !== state.token || state.reported || !state.current) return;
+    // 🧸 FUN play style: a wrong answer doesn't lose. The game's own silly "nope" plays, then the same game starts again
+    // (fresh, with the time that was left); only running out of time loses.
+    if (!won && !timedOut && !state.current.demo && funStyle()) return funRetry(token);
     state.reported = true;
     state.phase = "feedback";
     cancelAnimationFrame(state.timerRaf);
@@ -1294,7 +1306,8 @@
       b.last = { phase: b.phase, won };
       if (b.phase === "showdown") { if (won) b.you++; else b.them++; }
       else if (won) { b.hp--; b.stage++; }
-      else if (itemsHere() && window.Items.useAuto("shield")) b.last.shielded = true; // 🛡️ the shield takes the hit (no heart-lost scene) else b.hearts--;
+      else if (itemsHere() && window.Items.useAuto("shield")) b.last.shielded = true; // 🛡️ the shield takes the hit (no heart-lost scene)
+      else b.hearts--; // (this was once swallowed by the comment above, so a lost stage never cost a heart: the teacher noticed)
       if (state.seat) { if (timedOut) state.seat.progress(1); state.seat.result(won); }
     }
     if (timedOut) {
@@ -1497,6 +1510,10 @@
   // ---------- What to play: tick letters, phonics, CVC words and/or sight words ----------
   // Shown after a mode button. ?list= skips it and plays just that list.
   function chooseContent(modeId) {
+    // The first time a player picks a mode, they choose their character first (Versus and Team Up have their own).
+    if (!["versus", "coop"].includes(modeId) && window.Mascot && !window.Mascot.chosen()) {
+      return window.Mascot.openPicker({ onDone: () => { renderCharBtn(); chooseContent(modeId); } });
+    }
     state.pendingMode = modeId;
     if (listParam) return contentGo();
     clearRound();
@@ -1848,6 +1865,9 @@
     musicVol.disabled = !musicOn;
     listeningBtn.setAttribute("aria-pressed", String(state.listening));
     listeningBtn.textContent = state.listening ? T.on : T.off;
+    loadStyle();
+    els.styleBtn.textContent = state.style === "challenge" ? `🔥 ${T.styleChallenge}` : `🧸 ${T.styleFun}`;
+    els.styleBtn.setAttribute("aria-pressed", String(state.style !== "challenge"));
     if (window.Players) window.Players.renderManager(els.playersBox, renderCharBtn);
     const io = !window.Items || window.Items.on();
     els.itemsBtn.setAttribute("aria-pressed", String(io)); els.itemsBtn.textContent = io ? T.on : T.off;
@@ -1860,6 +1880,12 @@
     renderSettings();
   });
   musicVol.addEventListener("input", () => { if (window.Music) Music.setVolume(Number(musicVol.value) / 100); });
+  els.styleBtn.addEventListener("click", () => {   // 🧸 FUN ⇄ 🔥 CHALLENGE (the active player's)
+    C.unlock();
+    setStyle(state.style === "challenge" ? "fun" : "challenge");
+    C.sfx.tone(state.style === "fun" ? 660 : 880, 0.08);
+    renderSettings();
+  });
   listeningBtn.addEventListener("click", () => {
     state.listening = !state.listening;
     C.storage.set(LISTENING_KEY, state.listening);
@@ -1885,6 +1911,53 @@
     const mini = els.charBtn.querySelector(".char-mini");
     mini.innerHTML = "";
     mini.appendChild(window.Mascot.el(38));
+  }
+  // ---------- 🧸 FUN / 🔥 CHALLENGE play style (the teacher's idea; per player, asked on startup and in Settings) ----------
+  function funStyle() { return state.style === "fun"; }
+  function funRetry(token) {
+    const c = state.current;
+    if (c.retrying) return;
+    c.retrying = true;
+    const now = performance.now();
+    const left = Math.max(FUN_RETRY_MIN_MS, c.timeLimit - elapsedOf(c, now));
+    c.frozenAt = now; cancelAnimationFrame(state.timerRaf);   // the clock waits while the "nope" plays
+    els.game.classList.add("locked");
+    hideCoach();
+    later(() => {
+      if (token !== state.token) return;
+      shout(els.stamp, T.oneMore, "nope");   // TRY AGAIN!
+      later(() => { els.stamp.hidden = true; }, 900);
+      state.replay = { game: c.game, list: c.list, quick: true, timeLeft: left };
+      endGame(); state.round--;
+      later(nextRound, 900);
+    }, FUN_NOPE_MS);
+  }
+  function loadStyle() {
+    const s = C.storage.get(STYLE_KEY, null);
+    state.style = s === "fun" || s === "challenge" ? s : null;
+  }
+  function setStyle(s) {
+    state.style = s;
+    C.storage.set(STYLE_KEY, s);
+  }
+  // HOW DO YOU WANT TO PLAY? 🧸 FUN (recommended for younger players) or 🔥 CHALLENGE; the player's last choice pulses.
+  function askStyle(onDone) {
+    loadStyle();
+    els.styleFunBtn.classList.toggle("hot", state.style !== "challenge");
+    els.styleChalBtn.classList.toggle("hot", state.style === "challenge");
+    els.askStyle.hidden = false;
+    restartAnim(els.askStyle.querySelector(".ask-card"));
+    C.say(T.spoken.askStyle);
+    const pick = (s) => {
+      if (els.askStyle.hidden) return;
+      els.askStyle.hidden = true;
+      setStyle(s);
+      C.sfx.tone(s === "fun" ? 660 : 880, 0.1, "triangle", 0.1);
+      els.styleFunBtn.onclick = els.styleChalBtn.onclick = null;
+      if (onDone) onDone();
+    };
+    els.styleFunBtn.onclick = () => { C.unlock(); pick("fun"); };
+    els.styleChalBtn.onclick = () => { C.unlock(); pick("challenge"); };
   }
   // 🐢 💡 These are built into a game when it starts, so using one mid-game restarts the same game with it (no
   // penalty; quick: no ROUND banner). Between games they're saved for the next one.
@@ -1912,10 +1985,12 @@
     instant(id) { if (id === "heart" && state.mode && state.mode.lives) { state.lives = Math.min(state.lives + 1, state.mode.lives + 2); renderHud(); } }, // ❤️
   });
   els.playerBtn.addEventListener("click", () => { C.unlock(); window.Players.openPicker({ onDone: playerReady }); });
-  // After WHO'S PLAYING?: their character on the menu; a brand-new player picks one first.
+  // After WHO'S PLAYING?: their character on the menu, and HOW DO YOU WANT TO PLAY? (every startup and every switch).
+  // (A brand-new player picks a character the first time they choose a game mode: chooseContent. The teacher moved it
+  // there: at startup it was one screen too many.)
   function playerReady() {
     renderCharBtn();
-    if (window.Mascot && !window.Mascot.chosen()) window.Mascot.openPicker({ onDone: renderCharBtn });
+    askStyle();
   }
   els.charBtn.addEventListener("click", () => { C.unlock(); window.Mascot.openPicker({ onDone: renderCharBtn }); });
   els.resetCharsBtn.addEventListener("click", () => { // Settings: start the characters over (unlocks and the choice)

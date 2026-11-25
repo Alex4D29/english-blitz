@@ -80,6 +80,12 @@
   <h1 class="shout" data-text="settings"></h1>
   <div class="card set-card">
     <div class="set-row">
+      <span class="set-ico" aria-hidden="true">🧸</span>
+      <span class="set-name" data-text="styleLabel"></span>
+      <button class="set-toggle style-toggle" id="styleBtn"></button>
+    </div>
+    <p class="set-note" data-text="styleNote"></p>
+    <div class="set-row">
       <span class="set-ico" aria-hidden="true">🎵</span>
       <span class="set-name" data-text="musicLabel"></span>
       <button class="set-toggle" id="musicBtn" aria-pressed="true"></button>
@@ -150,6 +156,17 @@
 </div>
 
 <!-- 👀 Watch first? Pops up after PLAY / PLAY AGAIN in Fun and Challenge (new games show a tutorial first) -->
+<!-- 🧸 / 🔥 How do you want to play? (on startup, after WHO'S PLAYING?; per player) -->
+<div id="askStyle" class="ask" hidden role="dialog" aria-modal="true" aria-labelledby="styleTitle">
+  <div class="ask-card card">
+    <h2 class="shout" id="styleTitle" data-text="askStyle"></h2>
+    <div class="ask-buttons">
+      <button class="chunky style-fun" id="styleFunBtn"><span class="style-name">🧸 <span data-text="styleFun"></span></span><span class="style-note" data-text="styleFunNote"></span></button>
+      <button class="chunky style-chal" id="styleChalBtn"><span class="style-name">🔥 <span data-text="styleChallenge"></span></span><span class="style-note" data-text="styleChallengeNote"></span></button>
+    </div>
+  </div>
+</div>
+
 <div id="askWatch" class="ask" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
   <div class="ask-card card">
     <div class="ask-icon" aria-hidden="true">👀</div>

@@ -75,6 +75,16 @@ window.TEXT = {
       { name: "_a_", vowel: "a" }, { name: "_e_", vowel: "e" }, { name: "_i_", vowel: "i" }, { name: "_o_", vowel: "o" }, { name: "_u_", vowel: "u" }] },
   ],
 
+  // 🧸 / 🔥 How do you want to play? (on startup and in Settings; saved per player): FUN = toddler-friendly
+  // (lots of time, a wrong answer just tries again), CHALLENGE = the full game.
+  askStyle: "HOW DO YOU\nWANT TO PLAY?",
+  styleFun: "FUN",
+  styleFunNote: "Lots of time, and no wrong answers: just try again! Recommended for younger players.",
+  styleChallenge: "CHALLENGE",
+  styleChallengeNote: "Beat the clock! Wrong answers count.",
+  styleLabel: "Play style",
+  styleNote: "FUN: about 3 times longer for each game, and a wrong answer just starts the game again (only running out of time loses). Recommended for younger players. CHALLENGE: the normal game. Saved for each player.",
+  oneMore: "TRY\nAGAIN!",   // FUN style: after a wrong answer, before the same game starts again
   // 👀 Watch first? pop-up after PLAY in Fun and Challenge.
   askWatch: "WATCH\nFIRST?",
   watchYes: "WATCH FIRST",
@@ -158,6 +168,7 @@ window.TEXT = {
     watch: "Watch me!",
     yourTurn: "Your turn!",
     askWatch: "Do you want to watch first?",
+    askStyle: "How do you want to play? Fun, or challenge?",
     cheer: "Hooray!",            // the victory cheer at the end of every run
     stars: { 1: "Good try!", 2: "Great job!", 3: "Amazing!" },
     advRetry: "So close! Try again!",

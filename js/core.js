@@ -613,7 +613,7 @@
   // PLAYER SAVES (js/players.js; the teacher: up to 10 children share one iPad): these keys are kept per
   // player (`key@p3`), everything else (settings, MY WORDS…) belongs to the iPad. storage.player is the
   // active save's id; the frame and games don't need to know.
-  const PER_PLAYER = ["wwe.char", "wwe.chars", "wwe.played", "wwe.boss.beaten", "wwe.challenge.best", "wwe.adventure", "wwe.items"];
+  const PER_PLAYER = ["wwe.char", "wwe.chars", "wwe.played", "wwe.boss.beaten", "wwe.challenge.best", "wwe.adventure", "wwe.items", "wwe.style"];
   const keyOf = (key) => (storage.player && PER_PLAYER.includes(key) ? `${key}@${storage.player}` : key);
   const storage = {
     player: null,
