@@ -76,4 +76,9 @@ window.GAME_FILES = [
   "peekaboo-park",
   "alien-twins",
   "glove-hunt",
+  "ice-sculptor",
+  "gem-miner",
+  "cartoon-saw",
+  "laser-rescue",
+  "pumpkin-carver",
 ];
