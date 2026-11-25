@@ -1,8 +1,8 @@
 // SKATEBOARD DASH — a runner (Claude's idea, named by the teacher). Your character skates along a street that
-// scrolls by; the card shows one target. Ramps roll in from the right, all alike, each with a sign: a ramp with the
-// right answer, stay down: you ride up it and do a trick (RAD!); a wrong one hides a banana peel, so tap to JUMP over
-// it. Ride 4 ramps to win; slip on a peel and you tumble (WHOOPS!), ✕; 3 tumbles lose. A missed ramp just rolls
-// by (more come). About every other thing is right (choiceRows rows strung together: phonics, a different picture
+// scrolls by; the card shows one target. Ramps roll in from the right, all alike, each with a sign: TAP to jump at a
+// ramp with the right answer and you launch off it and do a trick (RAD!); jump at a wrong one and you land on the
+// banana peel hiding behind it and tumble (WHOOPS!), ✕; stay down and a ramp just rolls by (the teacher's way round:
+// "jump at the right one"). 4 tricks win; 3 tumbles lose. About every other thing is right (choiceRows rows strung together: phonics, a different picture
 // each time).
 (function () {
   const TEXT = {
@@ -11,16 +11,16 @@
     howTo: { en: {
       steps: [
         ["👀", "Look at the card."],
-        ["🛹", "Things roll toward you. A RAMP with the card's answer: stay down and ride it!"],
-        ["🍌", "A ramp with a wrong answer hides a banana peel: TAP to jump over it!"],
+        ["🛹", "Ramps roll toward you. TAP to JUMP off the ramp with the card's answer: do a trick!"],
+        ["🍌", "Don't jump at the wrong ramps: a banana peel is hiding behind them!"],
       ],
-      tips: ["Ride 4 ramps to win. Slip on 3 peels and it's over.", "Missed a ramp? Don't worry, more are coming.", "Tap the card to hear it again."],
+      tips: ["4 tricks win. Slip on 3 peels and it's over.", "Missed a ramp? Don't worry, more are coming.", "Tap the card to hear it again."],
     } },
     instruction: { en: "SKATE!" },
     cardLabel: "The card. Tap to hear it again.",
     rad: ["RAD!", "SICK TRICK!", "AWESOME!", "WOW!"],
     whoops: "WHOOPS!",
-    hop: "NICE JUMP!",
+    jumpIt: "JUMP!",
   };
   const GOAL = 4, MISSES = 3;
 
@@ -178,7 +178,7 @@
         road.style.backgroundPositionX = `${-scroll}px`;
         city.style.backgroundPositionX = `${-scroll * 0.3}px, ${45 - scroll * 0.3}px`;
         // You: jumping, or fallen over for a moment.
-        if (jumpT >= 0) { jumpT += dt * 1000; air = Math.sin(Math.min(1, jumpT / jumpMs) * Math.PI) * jumpH(); if (jumpT >= jumpMs) { jumpT = -1; air = 0; } }
+        if (jumpT >= 0) { jumpT += dt * 1000; air = Math.sin(Math.min(1, jumpT / jumpMs) * Math.PI) * jumpH(); if (jumpT >= jumpMs) { jumpT = -1; air = 0; if (slipOn) { const s = slipOn; slipOn = null; tumble(s); } } }
         if (fallen > 0) fallen -= dt;
         me.style.transform = `translate(${mx - mz / 2}px, ${gy - mz * 1.2 - air}px) rotate(${fallen > 0 ? -70 : air > 0 ? -12 : 0}deg)`;
         for (let i = things.length - 1; i >= 0; i--) {
@@ -190,17 +190,20 @@
         }
         if (!ctx.ended || things.length) ctx.raf(frame);
       }
-      // A thing reaches you: on the ground, a ramp is a trick and a peel is a tumble; in the air, it passes under.
+      // A ramp reaches you (the teacher's way round: JUMP at the right ramp to launch off it and do a trick; jump at a
+      // wrong one and you land on the banana peel hiding behind it; stay down and a wrong ramp just rolls by, and a
+      // right one you didn't jump at goes by too, no harm done).
+      let slipOn = null;
       function judge(t) {
         t.judged = true;
-        if (done || ctx.ended) return;
-        const onGround = air < mz * 0.25 && fallen <= 0;
-        if (t.o.right && onGround) trick(t);
-        else if (!t.o.right && onGround) tumble(t);
-        else if (!t.o.right) word(TEXT.hop, false, mx + mz, gy - mz * 2, true);
+        if (done || ctx.ended || fallen > 0) return;
+        const jumped = jumpT >= 0;
+        if (t.o.right && jumped) trick(t);
+        else if (!t.o.right && jumped) slipOn = t;   // (the slip happens when you land)
+        else if (t.o.right) word(TEXT.jumpIt, false, mx + mz, gy - mz * 2, true);
       }
       function trick(t) {
-        jumpT = 0;   // up the ramp
+        jumpT = 0;   // launched off the ramp
         me.classList.remove("trick"); void me.offsetWidth; me.classList.add("trick");
         [523, 659, 784].forEach((f, k) => tone(f, 0.08, "square", 0.07, k * 0.07));
         word(TEXT.rad[hits % TEXT.rad.length], false, mx + mz, gy - mz * 2.2);
@@ -211,12 +214,14 @@
       }
       function tumble(t) {
         fallen = 0.9;
-        // The banana peel that was hiding on the wrong ramp flies up.
+        // The banana peel that was hiding behind the wrong ramp, right where you landed, flies up.
         const peel = document.createElement("div");
         peel.className = "skd-peel"; peel.textContent = "🍌";
-        t.el.appendChild(peel);
+        peel.style.cssText = `position:absolute; left:${mx - iz / 2}px; top:${gy - iz * 0.6}px; width:${iz}px; right:auto; bottom:auto; --iz:${iz}px`;
+        fx.appendChild(peel);
         peel.animate([{ transform: "translateY(0) rotate(0)" }, { transform: `translateY(${-iz}px) rotate(300deg)` }, { transform: `translateY(${-iz * 0.3}px) rotate(400deg)`, opacity: 0 }], { duration: 700, fill: "forwards" });
-        ctx.later(() => t.el.classList.add("gone"), 500);
+        ctx.later(() => peel.remove(), 750);
+        t.el.classList.add("gone");
         noise(0.15, "lowpass", 700, 200, 0.4); sweep(700, 200, 0.4, "sawtooth", 0.07);   // whoops… thud
         word(TEXT.whoops, true, mx + mz, gy - mz * 2);
         if (t.o.kind === "pic") ctx.say(t.o.spoken);
@@ -243,11 +248,11 @@
       ctx.later(() => { started = true; nextAt = performance.now(); }, (rev || 0) + 200);
       ctx.raf(frame);
 
-      // Tutorial: jump over each peel as it comes; ride the ramps.
+      // Tutorial: jump at each right ramp as it comes; let the wrong ones roll by.
       ctx.tutorial(C.target, async (f) => {
         await f.point(card, 800);
         while (!done) {
-          const ok = await f.until(() => things.some((t) => !t.judged && !t.o.right && t.x - mx < iz * 1.6 && t.x - mx > iz * 0.6), 9000);
+          const ok = await f.until(() => things.some((t) => !t.judged && t.o.right && t.x - mx < iz * 1.6 && t.x - mx > iz * 0.6), 9000);
           if (!ok || done) break;
           await f.tapNow(street);
           await f.until(() => jumpT < 0, 2000);

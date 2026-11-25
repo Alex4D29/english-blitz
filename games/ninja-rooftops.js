@@ -2,7 +2,8 @@
 // the rooftops at night; the card shows one target. Paper lanterns float in from the right up high, each with a
 // sign. Tap to JUMP and grab the right ones (GOT IT!); stay down and the wrong ones float over your head. Jump into a
 // wrong one and it bursts in your face (POOF!), ✕. Grab 4 to win; 3 poofs lose. A missed lantern just floats by.
-// (The opposite of Skateboard Dash, where you jump to AVOID the wrong ones.)
+// Gaps in the rooftops come by between lanterns now and then (the teacher: a fun extra challenge, no answer): tap to
+// jump them; fall in and you scramble back out, which only costs time.
 (function () {
   const TEXT = {
     name: { en: "Ninja Rooftops" },
@@ -12,13 +13,16 @@
         ["👀", "Look at the card."],
         ["🏮", "Lanterns float toward you, up high. One matches the card? TAP to jump and grab it!"],
         ["🙅", "A wrong one? Stay down and let it float over you."],
+        ["🕳️", "A gap in the roofs? TAP to jump it!"],
       ],
-      tips: ["Grab 4 lanterns to win. Jump into 3 wrong ones and it's over.", "Missed one? More are coming.", "Tap the card to hear it again."],
+      tips: ["Fall in a gap and you have to climb out: it costs time.","Grab 4 lanterns to win. Jump into 3 wrong ones and it's over.", "Missed one? More are coming.", "Tap the card to hear it again."],
     } },
     instruction: { en: "JUMP AND\nGRAB!" },
     cardLabel: "The card. Tap to hear it again.",
     got: ["GOT IT!", "HI-YAH!", "NINJA!", "SWISH!"],
     poof: "POOF!",
+    whoa: "WHOAAA!",
+    leap: "NINJA LEAP!",
   };
   const GOAL = 4, MISSES = 3;
 
@@ -42,6 +46,11 @@
   .nin-roof { position:absolute; left:0; right:0; top:var(--gy); bottom:0; border-top:5px solid #111;
     background:repeating-linear-gradient(90deg, #c0392b 0 30px, #a52a1f 30px 34px), #c0392b; background-size:34px 100%; }
   .nin-roof::before { content:""; position:absolute; left:0; right:0; top:0; height:14px; background:#7a1f16; border-bottom:3px solid #111; }
+  /* A gap between the rooftops (--gw): a dark alley with nothing in it, just jump it (the teacher: a fun extra challenge) */
+  .nin-gap { position:absolute; left:0; top:calc(var(--gy) - 2px); bottom:0; width:var(--gw); z-index:2; background:linear-gradient(180deg, #0d0a24, #000);
+    border-left:5px solid #111; border-right:5px solid #111; box-sizing:border-box; pointer-events:none; }
+  .nin-gap::before, .nin-gap::after { content:""; position:absolute; top:0; width:6px; height:100%; background:#7a1f16; }
+  .nin-gap::before { left:-5px; } .nin-gap::after { right:-5px; }
   /* You (--nmz), with a red ninja headband */
   .nin-me { position:absolute; left:0; top:0; width:var(--nmz); height:var(--nmz); z-index:4; pointer-events:none; }
   .nin-band { position:absolute; left:4%; right:4%; top:8%; height:12%; background:#e8173c; border:3px solid #111; z-index:6; border-radius:4px; }
@@ -139,7 +148,7 @@
 
       let air = 0, jumpT = -1;
       function jump() {
-        if (done || ctx.ended || jumpT >= 0) return;
+        if (done || ctx.ended || jumpT >= 0 || fallT > 0) return;
         jumpT = 0;
         sweep(400, 1000, 0.2, "triangle", 0.07);   // hup!
       }
@@ -160,6 +169,26 @@
         sg.style.fontSize = `${o.kind === "word" ? Math.min(iz * 0.36, (iz * 1.2) / ([...o.text].length * 0.62)) : iz * 0.4}px`;
         night.insertBefore(el, me);
         things.push({ o, el, x: W + iz, judged: false });
+        // Now and then a gap in the rooftops comes half-way between this lantern and the next (never with a lantern).
+        spawned++;
+        if (spawned >= 2 && !gapAt && Math.random() < 0.45) gapAt = performance.now() + gap * 500;
+      }
+
+      // ---------- Gaps in the rooftops ----------
+      const gaps = [];
+      let spawned = 0, gapAt = 0, gw = 60, fallT = 0;
+      function spawnGap() {
+        const el = document.createElement("div");
+        el.className = "nin-gap";
+        night.insertBefore(el, things.length ? things[0].el : me);
+        gaps.push({ el, x: W + gw, fell: false });
+      }
+      function fall(g) {
+        g.fell = true;
+        fallT = 1.1;
+        sweep(900, 150, 0.6, "triangle", 0.08);   // whee-ooo
+        word(TEXT.whoa, true, mx + mz, gy - mz * 1.6);
+        if (window.Mascot) window.Mascot.mood(fig, "sad");
       }
 
       let hits = 0, missN = 0, done = false, started = false, last = null, nextAt = 0, scroll = 0;
@@ -168,15 +197,37 @@
         last = ts;
         const now = performance.now();
         const v = (W + iz - mx) / cross;
-        if (started && !done) { if (now >= nextAt) { spawn(); nextAt = now + gap * 1000; } scroll += v * dt; }
+        gw = Math.max(40, Math.min(v * 0.32, mz * 1.1));
+        night.style.setProperty("--gw", `${gw}px`);
+        // Fallen into a gap: everything waits while you scramble out (it only costs time).
+        const moving = started && !done && fallT <= 0;
+        if (fallT > 0) {
+          fallT -= dt;
+          if (fallT <= 0) { if (window.Mascot) window.Mascot.mood(fig, null); jumpT = 0; sweep(300, 900, 0.2, "triangle", 0.07); }   // …and hop back up and out
+          else nextAt += dt * 1000;
+        }
+        if (moving) {
+          if (now >= nextAt) { spawn(); nextAt = now + gap * 1000; }
+          if (gapAt && now >= gapAt) { gapAt = 0; spawnGap(); }
+          scroll += v * dt;
+        } else if (gapAt) gapAt += dt * 1000;
         roof.style.backgroundPositionX = `${-scroll}px`;
         far.style.backgroundPositionX = `${-scroll * 0.3}px, ${60 - scroll * 0.3}px`;
         if (jumpT >= 0) { jumpT += dt * 1000; air = Math.sin(Math.min(1, jumpT / jumpMs) * Math.PI) * jumpH(); if (jumpT >= jumpMs) { jumpT = -1; air = 0; } }
-        const run = jumpT < 0 && !done ? Math.abs(Math.sin(now / 90)) * mz * 0.06 : 0;   // a little running bounce
-        me.style.transform = `translate(${mx - mz / 2}px, ${gy - mz - air - run}px) rotate(${air > 0 ? -10 : 0}deg)`;
+        const run = jumpT < 0 && moving ? Math.abs(Math.sin(now / 90)) * mz * 0.06 : 0;   // a little running bounce
+        const drop = fallT > 0 ? Math.min(1, (1.1 - fallT) / 0.3) * mz * 0.9 : 0;   // down into the gap
+        me.style.transform = `translate(${mx - mz / 2}px, ${gy - mz - air - run + drop}px) rotate(${air > 0 ? -10 : 0}deg)`;
+        for (let i = gaps.length - 1; i >= 0; i--) {
+          const g = gaps[i];
+          if (moving) g.x -= v * dt;
+          g.el.style.transform = `translateX(${g.x - gw / 2}px)`;
+          if (!g.fell && jumpT < 0 && fallT <= 0 && moving && Math.abs(g.x - mx) < gw / 2 - mz * 0.1) fall(g);
+          if (!g.fell && g.x < mx - gw && !g.jumped) { g.jumped = true; word(TEXT.leap, false, mx + mz * 0.6, gy - mz * 1.8); }
+          if (g.x < -gw * 2) { g.el.remove(); gaps.splice(i, 1); }
+        }
         for (let i = things.length - 1; i >= 0; i--) {
           const t = things[i];
-          if (started && !done) t.x -= v * dt;
+          if (moving) t.x -= v * dt;
           t.el.style.transform = `translate(${t.x - iz / 2}px, ${lanY()}px)`;
           if (!t.judged && t.x <= mx + iz * 0.15) judge(t);
           if (t.x < -iz * 2) { t.el.remove(); things.splice(i, 1); }
@@ -242,7 +293,9 @@
       ctx.tutorial(C.target, async (f) => {
         await f.point(card, 800);
         while (!done) {
-          const ok = await f.until(() => jumpT < 0 && things.some((t) => !t.judged && t.o.right && t.x - mx < iz * 1.3 && t.x - mx > iz * 0.6), 9000);
+          const lead = () => ((W + iz - mx) / (2.8 / pace)) * (jumpMs / 2000);   // (how far a gap travels in half a jump)
+          const ok = await f.until(() => jumpT < 0 && (things.some((t) => !t.judged && t.o.right && t.x - mx < iz * 1.3 && t.x - mx > iz * 0.6) ||
+            gaps.some((g) => !g.fell && g.x - mx > 0 && g.x - mx < lead())), 9000);
           if (!ok || done) break;
           await f.tapNow(night);
           await f.until(() => jumpT < 0, 2000);

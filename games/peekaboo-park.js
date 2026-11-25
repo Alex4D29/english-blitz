@@ -27,9 +27,9 @@
   .pbp-cell { overflow:visible; }
   /* The animal (an emoji, as a prop) peeking up from behind; the card sits on its tummy */
   .pbp-ani { position:absolute; left:50%; bottom:22%; transform:translate(-50%, 40%) scale(.6); font-size:calc(var(--cz) * .56); line-height:1; z-index:2; transition:transform .3s cubic-bezier(.2,1.6,.4,1); }
-  .pbp-cell.open .pbp-ani, .pbp-cell.matched .pbp-ani, .pbp-cell.hint .pbp-ani { transform:translate(-50%, -34%) scale(1); }
+  .pbp-cell.open .pbp-ani, .pbp-cell.matched .pbp-ani, .pbp-cell.hint .pbp-ani { transform:translate(-50%, -62%) scale(1); }
   .pbp-cell.matched .pbp-ani { animation:pbp-dance .3s ease-in-out infinite alternate; }
-  .pbp-cell .fc-face { top:66%; }
+  .pbp-cell .fc-face { top:40%; z-index:7; }   /* (held up above the squashed bush, in front of it: the teacher found the answers half hidden) */
   /* The bush: round leafy bumps */
   .pbp-bush { position:absolute; left:0; right:0; bottom:0; height:62%; z-index:6; transition:transform .3s; transform-origin:50% 100%;
     background:radial-gradient(circle at 25% 45%, #3fa13a 0 26%, transparent 27%), radial-gradient(circle at 50% 30%, #4cbf45 0 30%, transparent 31%), radial-gradient(circle at 75% 45%, #3fa13a 0 26%, transparent 27%),

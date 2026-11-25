@@ -36,8 +36,19 @@
   .png-ice { position:relative; flex:1; min-height:0; width:100%; max-width:640px; overflow:hidden; border:5px solid #111; border-radius:16px; box-shadow:0 7px 0 #111;
     background:linear-gradient(180deg, #bfe9ff 0 18%, #e9f8ff 18%); touch-action:none; cursor:pointer; }
   .png-hills { position:absolute; left:0; right:0; top:4%; height:18%; background:radial-gradient(ellipse 60px 40px at 50% 100%, #fff 0 98%, transparent 100%) 0 100% / 120px 100% repeat-x; opacity:.9; }
-  .png-lane { position:absolute; left:0; right:0; height:var(--lh); margin-top:calc(var(--lh) / -2); background:repeating-linear-gradient(90deg, rgba(120,190,230,.25) 0 40px, transparent 40px 80px);
+  .png-lane { position:absolute; left:0; right:0; height:var(--lh); margin-top:calc(var(--lh) / -2); background:linear-gradient(90deg, rgba(120,190,230,.25) 0 40px, transparent 40px 80px) 0 0 / 80px 100% repeat-x;
     border-top:3px dashed rgba(120,170,210,.7); border-bottom:3px dashed rgba(120,170,210,.7); }
+  /* Things on the ice that whizz past (the teacher: it has to look like it's sliding, not lying there): snowy pine
+     trees along the back, sparkles and cracks on the ice; all scrolled in the frame loop */
+  .png-trees { position:absolute; left:0; right:0; top:10%; height:13%; pointer-events:none;
+    background:conic-gradient(from 150deg at 50% 0, #2e8b57 0 60deg, transparent 0) 0 0 / 46px 100% repeat-x,
+      conic-gradient(from 150deg at 50% 0, #3fa36b 0 60deg, transparent 0) 23px 30% / 70px 70% repeat-x; }
+  .png-bits { position:absolute; left:0; right:0; top:24%; bottom:0; pointer-events:none;
+    background:radial-gradient(circle, #fff 0 3px, transparent 4px) 0 0 / 97px 61px repeat,
+      radial-gradient(circle, #9fd3f0 0 2px, transparent 3px) 40px 30px / 143px 83px repeat,
+      linear-gradient(160deg, transparent 47%, rgba(110,165,205,.4) 47% 53%, transparent 53%) 70px 10px / 60px 22px no-repeat;
+    background-repeat:repeat, repeat, no-repeat; }
+  .png-streak { position:absolute; height:4px; border-radius:99px; background:rgba(255,255,255,.95); pointer-events:none; z-index:3; }
   /* The penguin (--pz): lying on its tummy, sliding (black back, white tummy, orange beak and feet, googly eyes) */
   .png-pen { position:absolute; left:0; top:0; width:calc(var(--pz) * 1.4); height:var(--pz); z-index:4; pointer-events:none; transition:none; }
   .png-pin { position:absolute; inset:0; }
@@ -119,7 +130,7 @@
       top.append(card, pips);
       const ice = document.createElement("div");
       ice.className = "png-ice";
-      ice.innerHTML = '<div class="png-hills"></div><div class="png-lane a"></div><div class="png-lane b"></div>';
+      ice.innerHTML = '<div class="png-hills"></div><div class="png-trees"></div><div class="png-bits"></div><div class="png-lane a"></div><div class="png-lane b"></div>';
       const pen = document.createElement("div");
       pen.className = "png-pen";
       pen.innerHTML = '<div class="png-pin"><div class="png-spray"></div><div class="png-feet"></div><div class="png-back"></div><div class="png-belly"></div><div class="png-flip"></div><div class="png-head"></div>' +
@@ -131,6 +142,7 @@
       ctx.root.appendChild(wrap);
       const hitPips = pips.querySelector(".hits").children, missPips = pips.children[1].children;
       const lanes = ice.querySelectorAll(".png-lane");
+      const bits = ice.querySelector(".png-bits"), trees = ice.querySelector(".png-trees"), hills = ice.querySelector(".png-hills");
 
       let W = 0, H = 0, pz = 60, fz = 70, px = 0, laneY = [0, 0];
       function layout() {
@@ -182,13 +194,30 @@
         fish.push({ o, el, x: W + fz, lane: l, judged: false });
       }
 
-      let hits = 0, missN = 0, done = false, started = false, last = null, nextAt = 0, spin = 0;
+      let hits = 0, missN = 0, done = false, started = false, last = null, nextAt = 0, spin = 0, scroll = 0, streakAt = 0;
       function frame(ts) {
         const dt = last == null ? 0 : Math.min(50, ts - last) / 1000;
         last = ts;
         const now = performance.now();
         const v = (W + fz - px) / cross;
         if (started && !done && now >= nextAt) { spawn(); nextAt = now + gap * 1000; }
+        // The world whizzes past (the ice at the fish's speed, the trees a bit slower, the hills slower still).
+        if (started && !done) scroll += v * dt;
+        lanes.forEach((l) => { l.style.backgroundPositionX = `${-scroll}px`; });
+        bits.style.backgroundPositionX = `${-scroll}px, ${40 - scroll}px, ${70 - scroll}px`;
+        trees.style.backgroundPositionX = `${-scroll * 0.6}px, ${23 - scroll * 0.5}px`;
+        hills.style.backgroundPositionX = `${-scroll * 0.2}px`;
+        // Speed lines streaming off behind the penguin.
+        if (started && !done && !reduceMotion && now >= streakAt) {
+          streakAt = now + 110;
+          const s = document.createElement("div");
+          s.className = "png-streak";
+          const sw = pz * (0.5 + Math.random() * 0.6);
+          s.style.cssText = `left:${px - pz * 0.7}px; top:${(py || 0) + pz * (0.3 + Math.random() * 0.6)}px; width:${sw}px`;
+          ice.insertBefore(s, pen);
+          s.animate([{ transform: "translateX(0)", opacity: 0.9 }, { transform: `translateX(${-W * 0.35}px)`, opacity: 0 }], { duration: 450, easing: "linear", fill: "forwards" });
+          ctx.later(() => s.remove(), 470);
+        }
         // The penguin glides to its lane.
         const want = laneY[lane] - pz / 2;
         py = py == null ? want : py + (want - py) * Math.min(1, dt * 12);
