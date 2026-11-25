@@ -69,4 +69,7 @@ window.GAME_FILES = [
   "post-office",
   "lunch-lady",
   "recycling-robot",
+  "skateboard-dash",
+  "ninja-rooftops",
+  "penguin-slide",
 ];
