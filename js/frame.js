@@ -1186,6 +1186,8 @@
       choiceSteps: (R, N, opts = {}) => C.choiceSteps(items, list.type, R, N, { canSpeak: C.canSpeak && state.listening, ...opts }),
       // N pairs to join with a line (capital → lowercase, letter → picture, word → picture). See Core.matchPairs.
       matchPairs: (N) => C.matchPairs(items, list.type, N),
+      // Two groups to sort into (b vs d, B-pictures vs V-pictures, -at vs -ig, t… vs w…), about n items. See Core.sortSets.
+      sortSets: (n) => C.sortSets(items, list.type, n),
       // R words (or letter runs) with one letter missing and N letters to choose from (the gap games). See Core.gapSteps.
       gapSteps: (R, N, opts = {}) => C.gapSteps(items, list.type, R, N, { slow: speed < 1.5, ...opts }),
       // Phonics: pictures that start with a letter, and wrong pictures from other letters.

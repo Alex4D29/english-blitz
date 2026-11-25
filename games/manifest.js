@@ -66,4 +66,7 @@ window.GAME_FILES = [
   "spaghetti-slurp",
   "plug-it-in",
   "flying-kites",
+  "post-office",
+  "lunch-lady",
+  "recycling-robot",
 ];

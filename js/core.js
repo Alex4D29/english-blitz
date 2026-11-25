@@ -214,6 +214,47 @@
     take([...pickOptions(pool, first, N + 8), ...shuffle(pool.slice())], emo);
     return picked.map((o) => ({ item: o, a: { text: o.text, kind: "word", spoken: o.say || o.text }, b: { text: o.emoji, kind: "pic", spoken: o.say || o.text }, say: o.say || o.text }));
   }
+  // ---------- Two groups to sort (the quick-sort games: Post Office, Lunch Lady, Recycling Robot) ----------
+  // { bins: [bin, bin], items } with about n items, half for each bin, shuffled. A bin is { text, kind, say };
+  // an item is { text, kind, spoken, bin (0 or 1), pic? }. The two groups are ones that get mixed up:
+  //   letter:  two look-alike letters (B and D), the items both cases of each
+  //   phonics: two letters (sound-alikes first: B and V, L and R), the items pictures that start with each
+  //   cvc:     two word families (-at and -ig), the items words (with their picture when there is one)
+  //   hfw:     two first letters (t… and w…), the items sight words
+  function sortSets(pool, type, n) {
+    const half = Math.max(2, Math.floor(n / 2));
+    const letterName = (it) => it.say || it.text.toUpperCase();
+    const pack = (bins, groups) => {
+      const k = Math.min(half, groups[0].length, groups[1].length);
+      const items = shuffle([...groups[0].slice(0, k).map((x) => ({ ...x, bin: 0 })), ...groups[1].slice(0, k).map((x) => ({ ...x, bin: 1 }))]);
+      return { bins, items };
+    };
+    if (type === "phonics" || type === "letter") {
+      const ok = (o) => (type === "phonics" ? startPics(o).length >= Math.min(half, 2) : true);
+      const a = pool.find(ok) || pool[0];
+      const notIL = (o) => [o.text, a.text].map((x) => x.toUpperCase()).sort().join("") !== "IL";
+      const cands = type === "letter" ? [...lowerLookalikes(pool, a), ...pickOptions(pool, a, 8)] : [...pickOptions(pool, a, 8), ...shuffle(pool.slice())];
+      const b = cands.find((o) => o !== a && o.text.toLowerCase() !== a.text.toLowerCase() && notIL(o) && ok(o)) || pool.find((o) => o !== a && ok(o));
+      const bins = [a, b].map((o) => ({ text: o.text.toUpperCase(), kind: "letter", say: letterName(o) }));
+      if (type === "letter") {
+        const forms = (o) => [o.text.toUpperCase(), o.text.toLowerCase(), o.text.toLowerCase(), o.text.toUpperCase()].map((t) => ({ text: t, kind: "letter", spoken: letterName(o) }));
+        return pack(bins, [forms(a), forms(b)]);
+      }
+      const pics = (o) => shuffle(startPics(o)).map((p) => ({ text: p.emoji, kind: "pic", spoken: p.word }));
+      return pack(bins, [pics(a), pics(b)]);
+    }
+    // cvc: word families by their ending (c-at, h-at, m-at…); hfw: by first letter. The pool's front item picks the first group.
+    const keyOf = type === "cvc" ? (o) => o.text.slice(1) : (o) => o.text[0].toLowerCase();
+    const fams = {};
+    pool.forEach((o) => { (fams[keyOf(o)] = fams[keyOf(o)] || []).push(o); });
+    const big = (k) => fams[k] && fams[k].length >= 2;
+    const k1 = big(keyOf(pool[0])) ? keyOf(pool[0]) : Object.keys(fams).sort((x, y) => fams[y].length - fams[x].length)[0];
+    const k2 = shuffle(Object.keys(fams).filter((k) => k !== k1 && big(k))).sort((x, y) => Math.min(fams[y].length, half) - Math.min(fams[x].length, half))[0];
+    const label = (k) => (type === "cvc" ? `-${k}` : k);
+    const bins = [k1, k2].map((k) => ({ text: label(k), kind: "word", say: type === "cvc" ? k : letterName({ text: k }) }));
+    const words = (k) => shuffle(fams[k].slice()).map((o) => ({ text: o.text, kind: "word", spoken: o.say || o.text, pic: o.emoji }));
+    return pack(bins, [words(k1), words(k2)]);
+  }
   // R one-row steps, each with a DIFFERENT target (rhythm games: "A"… tap a… "B"… tap b…). Each step is
   // what choiceRows(…, 1, N) gives (cardText, prompt, answer, target, listen) plus `row`. ABC games stay
   // all same-case or all capital → lowercase for the whole round.
@@ -527,7 +568,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, matchPairs, soundsLike, gapSteps,
+    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, matchPairs, sortSets, soundsLike, gapSteps,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,
