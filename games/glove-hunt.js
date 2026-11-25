@@ -23,9 +23,14 @@
   const COLS = ["#ff5a6e", "#3d8bfd", "#ffd400", "#4dd36b"];
 
   const CSS = `
-  .glv-stage { background:linear-gradient(180deg, #dff4ff 0 var(--mh), #e8d2a8 var(--mh)); }
-  /* The many-handed monster (top strip, --mh tall) */
-  .glv-mon { position:absolute; left:50%; top:4px; width:calc(var(--mh) * 1.6); height:calc(var(--mh) - 8px); transform:translateX(-50%); z-index:1; }
+  /* A snowy field (the teacher found the 2ﾃ・ grid too like the other flip games): the monster stands in the middle and
+     the mittens lie scattered round it in a ring, at little tilts; snow falls */
+  .glv-stage { background:radial-gradient(circle, #fff 0 2px, transparent 3px) 0 0 / 37px 41px, radial-gradient(circle, #fff 0 1.5px, transparent 2.5px) 13px 20px / 53px 47px,
+    radial-gradient(ellipse 70% 30% at 50% 100%, #fff 0 99%, transparent 100%), linear-gradient(180deg, #a9dcff, #e6f6ff 60%, #fff); animation:glv-snow 6s linear infinite; }
+  .glv-stage .fc-grid { display:block; left:0 !important; top:0 !important; width:100%; height:100%; }
+  .glv-stage .glv-cell { position:absolute; margin:calc(var(--cz) / -2) 0 0 calc(var(--cz) / -2); }
+  /* The many-handed monster (--mh), in the middle */
+  .glv-mon { position:absolute; left:50%; top:50%; width:calc(var(--mh) * 1.6); height:var(--mh); transform:translate(-50%, -50%); z-index:1; }
   .glv-mon > * { position:absolute; box-sizing:border-box; }
   .glv-body { left:34%; right:34%; top:6%; bottom:0; background:#9c6bff; border:4px solid #111; border-radius:50% 50% 30% 30%; z-index:2; }
   .glv-eye { top:18%; width:16%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:3; overflow:hidden; }
@@ -49,10 +54,11 @@
   .glv-back::after { content:""; position:absolute; left:-24%; top:30%; width:34%; height:30%; background:#a76ef0; border:4px solid #111; border-radius:50%; }   /* thumb */
   .glv-cell.open .glv-mit, .glv-cell.matched .glv-mit, .glv-cell.hint .glv-mit { transform:rotateY(180deg); opacity:.25; }
   .glv-cell.matched .glv-mit { opacity:0; }
+  @keyframes glv-snow { to { background-position:0 41px, 13px 67px, 0 0, 0 0; } }
   @keyframes glv-roll { from { transform:translate(-25%, -15%); } to { transform:translate(25%, 15%); } }
   @keyframes glv-shiver { from { translate:-3px 0; } to { translate:3px 0; } }
   @keyframes glv-wave { from { rotate:calc(var(--a) - 6deg); } to { rotate:calc(var(--a) + 6deg); } }
-  @media (prefers-reduced-motion: reduce) { .glv-eye i, .glv-mon.cold, .glv-arm { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .glv-eye i, .glv-mon.cold, .glv-arm, .glv-stage { animation:none !important; } }
   `;
   function injectCss() { if (document.getElementById("glv-css")) return; const s = document.createElement("style"); s.id = "glv-css"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -77,7 +83,6 @@
       const api = window.FlipCards.start(ctx, {
         cls: "glv",
         text: TEXT,
-        topPad: (H) => H * 0.32,
         scene: (stage) => {
           mon = document.createElement("div");
           mon.className = "glv-mon";
@@ -89,8 +94,6 @@
           const order = [];
           for (let k = 0; k < NH / 2; k++) order.push(k, NH - 1 - k);
           hands = order.map((k) => hands[k]);
-          const size = () => stage.style.setProperty("--mh", `${Math.round(stage.clientHeight * 0.32)}px`);
-          size(); new ResizeObserver(size).observe(stage);
         },
         cell: () => '<div class="glv-mit"><div class="glv-back"></div></div>',
         onOpen: () => tone(700, 0.05, "triangle", 0.05),
@@ -118,7 +121,25 @@
         },
         onWin: () => { [523, 659, 784, 1047].forEach((f, k) => tone(f, 0.12, "triangle", 0.1, 0.4 + k * 0.08)); },
       });
-      return () => api.cleanup();
+      // The ring: mittens round the monster on an ellipse, each at a little tilt (never more than 10ﾂｰ: b/d/p/q).
+      const tilt = api.cells.map(() => (Math.random() - 0.5) * 20);
+      function ring() {
+        const st = api.stage, W = st.clientWidth, H = st.clientHeight, n = api.cells.length;
+        const rx = W * 0.39, ry = H * 0.36;
+        const cz = Math.max(56, Math.min((2 * Math.PI * Math.sqrt((rx * rx + ry * ry) / 2)) / n * 0.72, H * 0.25, W * 0.2, 120));
+        st.style.setProperty("--cz", `${cz}px`);
+        st.style.setProperty("--mh", `${Math.round(Math.min(H * 0.4, W * 0.28))}px`);
+        api.cells.forEach((c, k) => {
+          const a = (-Math.PI / 2) + (2 * Math.PI * (k + 0.5)) / n;
+          c.el.style.left = `${W / 2 + Math.cos(a) * rx}px`; c.el.style.top = `${H / 2 + Math.sin(a) * ry}px`;
+          c.el.style.rotate = `${tilt[k].toFixed(1)}deg`;
+          c.el.querySelector(".fc-face").style.fontSize = `${c.h.kind === "pic" ? cz * 0.36 : Math.min(cz * 0.32, (cz * 0.86) / ([...c.h.text].length * 0.62))}px`;
+        });
+      }
+      ring();
+      const ro = new ResizeObserver(() => ring());
+      ro.observe(api.stage);
+      return () => { ro.disconnect(); api.cleanup(); };
     },
   });
 })();
