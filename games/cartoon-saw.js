@@ -19,6 +19,7 @@
     instruction: { en: "CATCH THE\nBURGLAR!" },
     cut: ["GOTCHA!", "WHOOPS-A-DAISY!", "BYE BYE!"],
     nope: "CRASH!",
+    ooh: "OOH! MONEY!",
     win: "CAUGHT HIM!",
   };
 
@@ -28,9 +29,16 @@
     repeating-linear-gradient(0deg, transparent 0 34px, rgba(0,0,0,.12) 34px 36px); border-top:5px solid #111; }
   .saw-door { position:absolute; inset:0; border-radius:50%; background:repeating-linear-gradient(90deg, #d9a066 0 20%, #c08850 20% 22%); border:4px dashed rgba(0,0,0,.35); }
   .saw-hole { position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, #000 0 55%, #2a1a10 70%); border:4px solid #111; opacity:0; }
-  .saw-piece.free .saw-hole, .saw-piece.dud .saw-hole { opacity:1; }
-  .saw-piece.free .saw-door, .saw-piece.dud .saw-door { animation:saw-drop .5s ease-in forwards; }
-  .saw-piece.free .co-lbl, .saw-piece.dud .co-lbl { animation:saw-drop .5s ease-in forwards; }
+  /* The right one, once cut, stays in place (cut all round, wobbling, a coin on it) until he steps on it: then it springs */
+  .saw-piece.sprung .saw-hole, .saw-piece.dud .saw-hole { opacity:1; }
+  .saw-piece.sprung .saw-door, .saw-piece.dud .saw-door { animation:saw-drop .5s ease-in forwards; }
+  .saw-piece.sprung .co-lbl, .saw-piece.dud .co-lbl { animation:saw-drop .5s ease-in forwards; }
+  .saw-piece.free:not(.sprung) .saw-door { border:4px solid #111; box-shadow:0 0 0 3px #ffd400; animation:saw-wobble .18s ease-in-out infinite alternate; }
+  .saw-coin { position:absolute; left:50%; top:4%; transform:translate(-50%, -50%); font-size:calc(var(--pr) * .5); line-height:1; z-index:6; animation:saw-glint .5s ease-in-out infinite alternate; }
+  .saw-piece.sprung .saw-coin { display:none; }
+  .saw-bad.rush .saw-feet::before, .saw-bad.rush .saw-feet::after { animation-duration:.1s; }
+  @keyframes saw-wobble { from { rotate:-2deg; } to { rotate:2deg; } }
+  @keyframes saw-glint { from { scale:1; filter:brightness(1); } to { scale:1.2; filter:brightness(1.4); } }
   /* The burglar (--bz): grey, a black mask, a striped top, a swag bag, tiptoeing */
   .saw-bad { position:absolute; left:0; top:0; width:var(--bz); height:var(--bz); z-index:7; pointer-events:none; }
   .saw-bad > * { position:absolute; box-sizing:border-box; }
@@ -69,7 +77,8 @@
       injectCss();
       const { tone, sweep, noise } = ctx.sfx;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      let bad = null, bx = 0, dir = 1, falling = false, gone = false, caught = 0;
+      let bad = null, bx = 0, dir = 1, caught = 0, mode = "walk", target = null, laughing = false;   // mode: walk | rush (to the coin) | drop | gone
+      const WALK = 0.12, RUSH = 0.55, DROP_MS = 900;   // (walking speeds: × the floor width per second)
       const bz = () => Math.max(60, Math.min(api.H * 0.28, api.R * 1.7, 130));
       // His path runs across the tops of the trapdoors (feet on the door, clear of its label), weaving between them.
       function yAt(x) {
@@ -92,41 +101,79 @@
         spots: (n, W, H) => [...Array(n)].map((_, i) => ({ x: W * (i + 0.5) / n, y: H * (n <= 3 ? 0.66 : (i % 2 ? 0.78 : 0.56)) })),
         piece: () => '<div class="saw-hole"></div><div class="saw-door"></div>',
         onRight: (p) => {
-          // He tiptoes over and drops through the hole: a long falling whistle.
-          falling = true;
+          // The cut trapdoor stays put with a coin on it. He spots the coin (OOH! MONEY!), scurries over along his
+          // path (hopping any open holes), steps on it, and only then does it drop: a long falling whistle. (The teacher
+          // saw him slide into a hole far away from him; now he really walks there. The engine waits: the return value.)
           caught++;
-          const z = bz(), from = bx;
-          bad.querySelector(".saw-say").classList.remove("on");
-          bad.animate([{ transform: `translate(${from - z / 2}px, ${yAt(from) - z}px)` }, { transform: `translate(${p.x - z / 2}px, ${p.y - z}px)`, offset: 0.4 },
-            { transform: `translate(${p.x - z / 2}px, ${p.y - z * 0.2}px) scale(.3)`, opacity: 0 }], { duration: reduceMotion ? 1 : 1100, easing: "ease-in", fill: "forwards" });
-          ctx.later(() => sweep(1800, 300, 0.8, "sine", 0.07), 450);
-          ctx.later(() => noise(0.15, "lowpass", 400, 200, 0.4), 1300);   // thud, far below
-          if (caught >= 3) { gone = true; return; }
-          // …then climbs back out, grumpy, for the next round.
-          ctx.later(() => { bad.getAnimations().forEach((a) => a.cancel()); bx = p.x; falling = false; tone(220, 0.1, "square", 0.08); }, 1700);
+          mode = "rush"; target = p;
+          const coin = document.createElement("div");
+          coin.className = "saw-coin"; coin.textContent = "🪙";
+          p.el.appendChild(coin);
+          tone(1319, 0.06, "triangle", 0.07); tone(1760, 0.1, "triangle", 0.07, 0.07);   // ting!
+          const say = bad.querySelector(".saw-say");
+          say.textContent = TEXT.ooh; say.classList.add("on");
+          tauntAt = performance.now() + 99999;
+          const walkMs = reduceMotion ? 0 : (Math.abs(p.x - bx) / (api.W * RUSH)) * 1000;
+          return walkMs + DROP_MS;
         },
         onWrong: (p) => {
           noise(0.4, "lowpass", 900, 200, 0.5); ctx.later(() => noise(0.2, "lowpass", 500, 200, 0.4), 300);   // CRASH… crash
-          bad.classList.add("laugh");
+          laughing = true;
           ctx.later(() => [0, 0.15, 0.3].forEach((t) => tone(300, 0.1, "square", 0.07, t)), 300);   // ha ha ha
-          ctx.later(() => bad.classList.remove("laugh"), 1200);
+          ctx.later(() => { laughing = false; }, 1200);
         },
       });
+      // He steps on the cut trapdoor: it springs and he drops through. Then (unless that was the third time) he climbs
+      // back out after the next pieces are dealt.
+      function spring() {
+        const p = target, z = bz();
+        mode = "drop";
+        p.el.classList.add("sprung");
+        bad.classList.remove("rush", "hop");
+        bad.querySelector(".saw-say").classList.remove("on");
+        bad.animate([{ transform: `translate(${p.x - z / 2}px, ${yAt(p.x) - z}px)` }, { transform: `translate(${p.x - z / 2}px, ${yAt(p.x) - z * 1.15}px)`, offset: 0.15 },
+          { transform: `translate(${p.x - z / 2}px, ${p.y - z * 0.2}px) scale(.3)`, opacity: 0 }], { duration: reduceMotion ? 1 : DROP_MS - 100, easing: "ease-in", fill: "forwards" });
+        sweep(1800, 300, 0.8, "sine", 0.07);
+        ctx.later(() => noise(0.15, "lowpass", 400, 200, 0.4), DROP_MS + 300);   // thud, far below
+        if (caught >= 3) { mode = "gone"; return; }
+        ctx.later(() => { bad.getAnimations().forEach((a) => a.cancel()); bx = p.x; mode = "walk"; tauntAt = performance.now() + 1500; tone(220, 0.1, "square", 0.08); }, DROP_MS + 1500);
+      }
+      // Open holes (a wrong one that crashed in): he hops right over them, laughing. Lift in px at x.
+      function holeLift(x, z) {
+        let lift = 0;
+        for (const p of api.pieces) {
+          if (p.state !== "dud" && !p.el.classList.contains("sprung")) continue;
+          const d = Math.abs(x - p.x) / (api.R * 1.3);
+          if (d < 1) lift = Math.max(lift, Math.cos((d * Math.PI) / 2) * z * 0.8);
+        }
+        return lift;
+      }
       // He tiptoes back and forth along the top of the floor.
       let last = null;
       function walk(ts) {
         const dt = last == null ? 0 : Math.min(50, ts - last) / 1000;
         last = ts;
-        if (!falling && !gone && bad) {
+        if ((mode === "walk" || mode === "rush") && bad) {
           const z = bz();
-          bx += dir * api.W * 0.12 * dt;
-          if (bx > api.W - z) { bx = api.W - z; dir = -1; } else if (bx < z) { bx = z; dir = 1; }
+          if (mode === "rush") {   // scurrying over to the coin
+            const dx = target.x - bx, step = api.W * RUSH * dt;
+            if (dx) dir = Math.sign(dx);
+            bad.classList.add("rush");
+            if (reduceMotion || Math.abs(dx) <= step) bx = target.x; else bx += dir * step;
+          } else {
+            bx += dir * api.W * WALK * dt;
+            if (bx > api.W - z) { bx = api.W - z; dir = -1; } else if (bx < z) { bx = z; dir = 1; }
+          }
+          const lift = holeLift(bx, z);
+          bad.classList.toggle("hop", lift > 2);
+          bad.classList.toggle("laugh", lift > 2 || laughing);
           bad.style.setProperty("--bz", `${z}px`);
-          bad.style.transform = `translate(${bx - z / 2}px, ${yAt(bx) - z}px)`;
+          bad.style.transform = `translate(${bx - z / 2}px, ${yAt(bx) - z - lift}px)`;
           bad.querySelector(".saw-feet").style.scale = `${dir} 1`;
+          if (mode === "rush" && bx === target.x) spring();
           // a taunt now and then
           const now = performance.now(), say = bad.querySelector(".saw-say");
-          if (now > tauntAt) { tauntAt = now + 3200; say.textContent = TAUNTS[tauntI++ % TAUNTS.length]; say.classList.add("on"); ctx.later(() => say.classList.remove("on"), 1400); }
+          if (mode === "walk" && now > tauntAt) { tauntAt = now + 3200; say.textContent = TAUNTS[tauntI++ % TAUNTS.length]; say.classList.add("on"); ctx.later(() => say.classList.remove("on"), 1400); }
         }
         if (!ctx.ended) ctx.raf(walk);
       }

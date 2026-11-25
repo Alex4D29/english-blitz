@@ -175,12 +175,15 @@
         hits++;
         word(skin.text.cut[(hits - 1) % skin.text.cut.length], false, p.x, p.y - api.R - 10);
         [523, 659, 784].forEach((f, k) => tone(f, 0.09, "triangle", 0.09, k * 0.07));
-        if (skin.onRight) skin.onRight(p, api);
+        // (onRight may return extra ms its celebration needs, e.g. Cartoon Saw's burglar walking over to the hole: the
+        // clock waits for it, the beat comes that much later, and the last one is reported when it's over)
+        const extra = (skin.onRight && +skin.onRight(p, api)) || 0;
         ctx.say(p.o.kind === "pic" ? p.o.spoken : st.answer);
+        if (extra && hits < GOAL) ctx.pauseTimer(extra);
         if (hits >= GOAL) {
           done = true;
-          ctx.win();
-          ctx.later(() => { word(skin.text.win, false, api.W / 2, api.H * 0.18); ctx.confetti(fx, api.W / 2, api.H * 0.4, { count: 100 }); if (skin.onWin) skin.onWin(api); }, 700);
+          if (extra) { ctx.freezeTimer(); ctx.later(() => ctx.win(), extra); } else ctx.win();
+          ctx.later(() => { word(skin.text.win, false, api.W / 2, api.H * 0.18); ctx.confetti(fx, api.W / 2, api.H * 0.4, { count: 100 }); if (skin.onWin) skin.onWin(api); }, 700 + extra);
           return;
         }
         // The beat: the clock stops, the card pops to the next target, new pieces.
@@ -193,7 +196,7 @@
           deal();
           ctx.say(st.prompt);
           ctx.later(() => { busy = false; }, 300);
-        }, 1300);
+        }, 1300 + extra);
       } else {
         p.state = "dud";
         p.el.classList.add("dud");
@@ -241,7 +244,7 @@
       const around = (p, k) => () => { const rr = ctx.root.getBoundingClientRect(), sr = stage.getBoundingClientRect(), a = (k / 12) * Math.PI * 2;
         return { x: sr.left - rr.left + p.x + Math.cos(a) * api.R, y: sr.top - rr.top + p.y + Math.sin(a) * api.R }; };
       for (let n = 0; n < GOAL && !done; n++) {
-        await f.until(() => !busy && si === n, 5000);
+        await f.until(() => !busy && si === n, 9000);   // (a skin's celebration can hold up the next step: Cartoon Saw)
         await f.point(card, n ? 450 : 900);
         const p = api.pieces.find((x) => x.o.right);
         await f.path([...Array(13)].map((_, k) => around(p, k)), 70);
