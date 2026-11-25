@@ -22,12 +22,13 @@
     zap: "ZAP!",
   };
   const MISSES = 3;
-  // The gadgets: a colour and what they do when they wake up.
+  // The gadgets (the teacher asked for each to be a different thing): a TV, a lamp that lights up, a fan that
+  // starts blowing, and (with 4) a toaster that pops up toast. A colour, its drawing, and what puffs out when it's on.
   const GADGETS = [
-    { kind: "tv", c: "#3d8bfd", fx: ["🌈", "⭐"] },
-    { kind: "lamp", c: "#ffd400", fx: ["💡", "✨"] },
-    { kind: "fan", c: "#4dd36b", fx: ["🌀", "💨"] },
-    { kind: "radio", c: "#ff6fb0", fx: ["🎵", "🎶"] },
+    { kind: "tv", c: "#3d8bfd", fx: ["🌈", "⭐"], html: '<div class="plg-box"></div>' },
+    { kind: "lamp", c: "#ffd400", fx: ["✨", "💡"], html: '<div class="plg-glow"></div><div class="plg-pole"></div><div class="plg-base"></div><div class="plg-shade"></div><div class="plg-bulb"></div>' },
+    { kind: "fan", c: "#4dd36b", fx: ["💨", "🍃"], html: '<div class="plg-stand"></div><div class="plg-base"></div><div class="plg-cage"><div class="plg-blades"></div></div><div class="plg-wind"></div>' },
+    { kind: "toaster", c: "#ff6fb0", fx: ["🍞", "✨"], html: '<div class="plg-toast a"></div><div class="plg-toast b"></div><div class="plg-box"></div>' },
   ];
 
   const CSS = `
@@ -57,8 +58,41 @@
   .plg-gad.on .plg-eye::after { transform:scaleY(0); }
   .plg-gad:not(.on) .plg-eye::after { transform:scaleY(.62); }
   .plg-gad.on { animation:plg-jig .25s ease-in-out infinite alternate; }
-  .plg-gad.smoke .plg-box { filter:brightness(.6); }
-  .plg-gad.sel .plg-box, .plg-sock.sel .plg-plate { box-shadow:0 0 0 5px #fff, 0 0 0 10px #ffd400; }
+  .plg-gad.smoke { filter:brightness(.6); }
+  .plg-gad.sel .plg-scr, .plg-sock.sel .plg-plate { box-shadow:0 0 0 5px #fff, 0 0 0 10px #ffd400; }
+  /* The lamp: a shade with the label and the eyes, a bulb, a pole and a base; on, the bulb glows and a cone of light shines down */
+  .k-lamp .plg-shade { left:8%; right:8%; top:2%; height:56%; background:var(--c); border:4px solid #111; clip-path:polygon(22% 0, 78% 0, 100% 100%, 0 100%); }
+  .k-lamp .plg-scr { left:24%; right:24%; top:22%; bottom:48%; }
+  .k-lamp .plg-eye { top:-6%; } .k-lamp .plg-eye.l { left:24%; width:22%; } .k-lamp .plg-eye.r { right:24%; width:18%; }
+  .k-lamp .plg-bulb { left:40%; right:40%; top:56%; height:14%; background:#e0e0e0; border:3px solid #111; border-radius:0 0 50% 50%; }
+  .k-lamp .plg-pole { left:46%; right:46%; top:60%; bottom:10%; background:#555; border:3px solid #111; }
+  .k-lamp .plg-base { left:22%; right:22%; bottom:0; height:12%; background:#555; border:3px solid #111; border-radius:50% 50% 8px 8px; }
+  .k-lamp .plg-glow { left:-10%; right:-10%; top:56%; bottom:-6%; background:linear-gradient(180deg, rgba(255,240,120,.85), rgba(255,240,120,0)); clip-path:polygon(38% 0, 62% 0, 100% 100%, 0 100%); opacity:0; transition:opacity .25s; }
+  .k-lamp.on .plg-glow { opacity:1; }
+  .k-lamp.on .plg-bulb { background:#fff6b0; box-shadow:0 0 22px 10px #ffe066; }
+  /* The fan: a round cage of blades on a stand, the label on its base; on, the blades whizz round and wind blows */
+  .k-fan .plg-cage { left:10%; right:10%; top:0; height:66%; border:4px solid #111; border-radius:50%; background:repeating-radial-gradient(circle, transparent 0 9%, rgba(0,0,0,.25) 9% 11%), rgba(255,255,255,.6); overflow:hidden; }
+  .k-fan .plg-blades { position:absolute; inset:8%; border-radius:50%; background:conic-gradient(var(--c) 0 40deg, transparent 40deg 120deg, var(--c) 120deg 160deg, transparent 160deg 240deg, var(--c) 240deg 280deg, transparent 280deg);
+    box-shadow:inset 0 0 0 calc(var(--gz) * .12) transparent; }
+  .k-fan .plg-blades::after { content:""; position:absolute; left:38%; top:38%; width:24%; height:24%; border-radius:50%; background:#555; border:3px solid #111; }
+  .k-fan.on .plg-blades { animation:plg-whirr .18s linear infinite; }
+  .k-fan .plg-stand { left:44%; right:44%; top:60%; bottom:22%; background:#555; border:3px solid #111; }
+  .k-fan .plg-base { left:8%; right:8%; bottom:0; height:26%; background:var(--c); border:4px solid #111; border-radius:10px; }
+  .k-fan .plg-scr { left:14%; right:14%; bottom:3%; top:auto; height:20%; }
+  .k-fan .plg-eye { top:16%; z-index:4; } .k-fan .plg-eye.l { left:22%; width:20%; } .k-fan .plg-eye.r { right:22%; width:17%; }
+  .k-fan .plg-eye::after { background:#e8e8e8; }
+  .k-fan .plg-wind { left:96%; top:10%; width:60%; height:50%; opacity:0; background:repeating-linear-gradient(0deg, transparent 0 18%, rgba(255,255,255,.95) 18% 24%); border-radius:0 50% 50% 0; }
+  .k-fan.on .plg-wind { animation:plg-blow .4s linear infinite; }
+  /* The toaster: a rounded box with two slots, the label on its front; on, two slices of toast pop up */
+  .k-toaster .plg-box { top:30%; border-radius:30% 30% 14px 14px / 40% 40% 14px 14px; }
+  .k-toaster .plg-box::before { content:""; position:absolute; left:16%; right:16%; top:8%; height:8%; background:repeating-linear-gradient(90deg, #111 0 44%, transparent 44% 56%, #111 56%); border-radius:4px; }
+  .k-toaster .plg-scr { top:50%; bottom:10%; left:18%; right:18%; }
+  .k-toaster .plg-eye { top:24%; } .k-toaster .plg-eye.l { left:22%; } .k-toaster .plg-eye.r { right:22%; }
+  .k-toaster .plg-toast { top:22%; width:26%; height:30%; background:#e0a050; border:3px solid #111; border-radius:30% 30% 4px 4px; box-shadow:inset 0 0 0 4px #f6d08a; transition:transform .25s cubic-bezier(.2,1.8,.4,1); }
+  .k-toaster .plg-toast.a { left:20%; } .k-toaster .plg-toast.b { right:20%; }
+  .k-toaster.on .plg-toast { transform:translateY(-90%) rotate(-8deg); } .k-toaster.on .plg-toast.b { transform:translateY(-110%) rotate(10deg); }
+  @keyframes plg-whirr { to { transform:rotate(360deg); } }
+  @keyframes plg-blow { from { opacity:.9; transform:translateX(0); } to { opacity:0; transform:translateX(40%); } }
   .plg-gad.right .plg-scr, .plg-sock.right .plg-lbl { box-shadow:0 0 0 4px #fff, 0 0 0 8px #00b86b; }
   .plg-gad.done, .plg-sock.done { pointer-events:none; }
   /* A wall socket (--sz) with its half on a label above */
@@ -76,7 +110,7 @@
   @keyframes plg-roll { from { transform:translate(-25%, -15%); } to { transform:translate(25%, 15%); } }
   @keyframes plg-jig { from { rotate:-4deg; } to { rotate:4deg; } }
   @keyframes plg-word { from { opacity:1; scale:.5; } 25% { scale:1.15; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
-  @media (prefers-reduced-motion: reduce) { .plg-eye i, .plg-gad.on, .plg-word { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .plg-eye i, .plg-gad.on, .plg-word, .k-fan.on .plg-blades, .k-fan.on .plg-wind { animation:none !important; } }
   `;
   function injectCss() { if (document.getElementById("plg-css")) return; const s = document.createElement("style"); s.id = "plg-css"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -98,7 +132,7 @@
       const { tone, sweep, noise } = ctx.sfx;
       const N = speed >= 1.5 ? 4 : 3;
       const P = ctx.matchPairs(N);
-      const looks = ctx.shuffle(GADGETS.slice());
+      const looks = ctx.shuffle(GADGETS.slice(0, N));   // (always a TV, a lamp and a fan; the toaster joins with 4)
 
       const wrap = document.createElement("div");
       wrap.className = "plg";
@@ -117,10 +151,10 @@
       const gads = P.map((p, i) => {
         const look = looks[i % looks.length];
         const el = document.createElement("div");
-        el.className = "plg-gad";
+        el.className = `plg-gad k-${look.kind}`;
         el.style.setProperty("--c", look.c);
         el.setAttribute("aria-label", TEXT.gadgetLabel(p.a.spoken));
-        el.innerHTML = '<div class="plg-box"></div><div class="plg-scr"></div><div class="plg-eye l"><i></i></div><div class="plg-eye r"><i></i></div>';
+        el.innerHTML = look.html + '<div class="plg-scr"></div><div class="plg-eye l"><i></i></div><div class="plg-eye r"><i></i></div>';
         el.querySelector(".plg-scr").textContent = p.a.text;
         room.insertBefore(el, svg);
         return { el, p, look, side: "a", x: 0, y: 0, done: false };
@@ -143,7 +177,9 @@
         sz = Math.max(56, Math.min(row * 0.9, W * 0.22, 110));
         room.style.setProperty("--gz", `${gz}px`); room.style.setProperty("--sz", `${sz}px`);
         gads.forEach((g, i) => { g.x = W * 0.2; g.y = row * (i + 0.5); g.el.style.left = `${g.x}px`; g.el.style.top = `${g.y}px`;
-          g.el.querySelector(".plg-scr").style.fontSize = `${g.p.a.kind === "word" ? Math.min(gz * 0.28, (gz * 0.66) / ([...g.p.a.text].length * 0.62)) : gz * 0.32}px`; });
+          // (the label area is smaller on the lamp's shade and the fan's base than on the TV's screen)
+          const k = g.look.kind === "tv" ? 1 : g.look.kind === "toaster" ? 0.85 : 0.62;
+          g.el.querySelector(".plg-scr").style.fontSize = `${g.p.a.kind === "word" ? Math.min(gz * 0.28 * k, (gz * 0.66 * k) / ([...g.p.a.text].length * 0.62)) : gz * 0.32 * k}px`; });
         socks.forEach((s, i) => { s.x = W * 0.85; s.y = row * (i + 0.5); s.el.style.left = `${s.x}px`; s.el.style.top = `${s.y}px`;
           s.el.querySelector(".plg-lbl").style.fontSize = `${s.p.b.kind === "pic" ? sz * 0.34 : Math.min(sz * 0.3, (sz * 0.9) / ([...s.p.b.text].length * 0.62))}px`; });
         cables.forEach(drawCable);

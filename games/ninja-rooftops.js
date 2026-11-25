@@ -63,7 +63,7 @@
     text-shadow:0 4px 0 #111; white-space:nowrap; animation:nin-word 1s ease-out forwards; }
   .nin-word.bad { color:#fff; }
   @keyframes nin-flap { from { transform:rotate(-14deg); } to { transform:rotate(14deg); } }
-  @keyframes nin-sway { from { rotate:-6deg; } to { rotate:6deg; } }
+  @keyframes nin-sway { from { translate:0 -4px; } to { translate:0 4px; } }   /* (no rotate: the lantern is placed with a transform, so a rotation would pivot far away) */
   @keyframes nin-word { from { opacity:1; scale:.5; } 25% { scale:1.15; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
   @media (prefers-reduced-motion: reduce) { .nin-band::after, .nin-lan, .nin-word { animation:none !important; } }
   `;

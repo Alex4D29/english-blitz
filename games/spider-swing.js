@@ -52,7 +52,11 @@
   /* A hanging sign (--az): a ring on a wire from the top, the answer on a round board */
   .ssw-sign { position:absolute; width:var(--az); height:var(--az); margin:calc(var(--az) / -2) 0 0 calc(var(--az) / -2); padding:0; border:0; background:none; font:inherit;
     cursor:pointer; touch-action:manipulation; z-index:3; animation:ssw-in .35s cubic-bezier(.2,1.6,.4,1) both; }
-  .ssw-sign .wire { position:absolute; left:50%; bottom:92%; width:3px; height:2000px; margin-left:-1.5px; background:rgba(255,255,255,.55); }
+  .ssw-sign .pole { position:absolute; left:50%; top:96%; width:8%; height:44%; margin-left:-4%; background:#8a96a6; border:3px solid #111; border-top:0; }
+  /* A sign's own tall building (from the street up to just under the pole), with lit windows and a roof ledge */
+  .ssw-tower { position:absolute; bottom:var(--sh); z-index:1; border:4px solid #111; border-bottom:0; border-radius:4px 4px 0 0; }
+  .ssw-tower::before { content:""; position:absolute; left:-8%; right:-8%; top:-4px; height:10px; background:#2a1d4a; border:3px solid #111; border-radius:3px; }
+  .ssw-tower::after { content:""; position:absolute; inset:14px 12% 8px; background:radial-gradient(circle, #ffe066 0 30%, transparent 34%) 0 0 / 34% 46px; opacity:.85; }
   .ssw-sign .ring { position:absolute; left:50%; top:-14%; width:24%; height:24%; margin-left:-12%; border:4px solid #c9d1d9; border-radius:50%; box-shadow:0 0 0 2px #111; }
   .ssw-sign .bd { position:absolute; inset:0; border-radius:50%; background:#fff; border:5px solid #111; box-shadow:0 5px 0 #111, inset 0 0 0 5px #c38bff;
     display:flex; align-items:center; justify-content:center; font-size:calc(var(--az) * .42); line-height:1; color:#111; white-space:nowrap; }
@@ -89,7 +93,8 @@
   .ssw-spi.yay .ssw-in { animation:ssw-hop .3s ease-in-out infinite alternate; }
   /* The burglar (--vz): a grumpy grey monster in a black mask and a striped top, with a swag bag */
   .ssw-bad { position:absolute; left:0; top:0; width:var(--vz); height:var(--vz); z-index:3; pointer-events:none; }
-  .ssw-bad > * { position:absolute; box-sizing:border-box; }
+  .ssw-bin { position:absolute; inset:0; transform-origin:50% 100%; }
+  .ssw-bin > * { position:absolute; box-sizing:border-box; }   /* (the burglar's parts: animations go on this inner layer, not on .ssw-bad, which is placed with a transform) */
   .ssw-bbody { left:12%; right:12%; top:16%; bottom:4%; border:4px solid #111; border-radius:46% 46% 30% 30%; background:linear-gradient(180deg, #9aa3b5 0 46%, #fff 46% 54%, #111 54% 62%, #fff 62% 70%, #111 70% 78%, #fff 78% 86%, #111 86%); }
   .ssw-mask { left:16%; right:16%; top:28%; height:16%; background:#111; border-radius:40%; z-index:2; }
   .ssw-beye { top:30%; width:18%; aspect-ratio:1; background:#fff; border-radius:50%; z-index:3; }
@@ -101,7 +106,8 @@
   .ssw-bad.webbed .ssw-wrap { opacity:1; }
   .ssw-wrap { inset:-6%; z-index:5; opacity:0; transition:opacity .3s; border-radius:40%;
     background:repeating-linear-gradient(35deg, transparent 0 12%, rgba(255,255,255,.95) 12% 15%), repeating-linear-gradient(-35deg, transparent 0 12%, rgba(255,255,255,.95) 12% 15%), rgba(255,255,255,.25); }
-  .ssw-bad.webbed { animation:ssw-wobble .15s ease-in-out infinite alternate; }
+  .ssw-bad.webbed .ssw-bin { animation:ssw-struggle .5s ease-in-out infinite alternate; }   /* (a slow wriggle: the fast wobble looked like a glitch) */
+  @keyframes ssw-struggle { from { rotate:-5deg; scale:1 1; } to { rotate:5deg; scale:1.04 .97; } }
   .ssw-fx { position:absolute; inset:0; pointer-events:none; z-index:8; overflow:visible; }
   .ssw-word { position:absolute; transform:translate(-50%, -50%) rotate(-8deg); font-size:2rem; color:#fff; -webkit-text-stroke:2px #111; paint-order:stroke fill;
     text-shadow:0 4px 0 #111; white-space:nowrap; animation:ssw-word 1s ease-out forwards; }
@@ -202,7 +208,14 @@
 
       // ---------- The signs ----------
       let signs = [];
-      const place = (s) => { s.el.style.left = `${s.x}px`; s.el.style.top = `${s.y}px`; };
+      const place = (s) => {
+        s.el.style.left = `${s.x}px`; s.el.style.top = `${s.y}px`;
+        if (s.tower) {   // (the roof is just below the sign's pole)
+          const w = az * 1.5;
+          s.tower.style.left = `${s.x - w / 2}px`; s.tower.style.width = `${w}px`;
+          s.tower.style.top = `${s.y + az * 0.5 + az * 0.4}px`;
+        }
+      };
       // A new pair (or three) of signs ahead of x: one high and near, one lower and further (shuffled).
       function deal(x) {
         card.firstChild.textContent = st.cardText;
@@ -215,10 +228,16 @@
           b.className = "ssw-sign live";
           b.style.animationDelay = `${i * 0.08}s`;
           b.setAttribute("aria-label", TEXT.signLabel(o.spoken || o.text));
-          b.innerHTML = '<span class="wire"></span><span class="ring"></span><span class="bd"></span>';
+          b.innerHTML = '<span class="pole"></span><span class="ring"></span><span class="bd"></span>';
           b.querySelector(".bd").textContent = o.text;
           if (o.kind === "word") b.querySelector(".bd").style.fontSize = `${Math.min(az * 0.36, (az * 0.86) / ([...o.text].length * 0.6))}px`;
-          const s = { el: b, o, x: x + W * spots[i][0], y: H * spots[i][1], dead: false };
+          // Each sign stands on a pole on the roof of its own tall building (the teacher: not floating in the sky).
+          const tower = document.createElement("div");
+          tower.className = "ssw-tower";
+          tower.style.background = ["#4a3478", "#3e2c66", "#55408a"][i % 3];
+          const street = world.querySelector(".ssw-street");
+          world.insertBefore(tower, street.nextSibling);
+          const s = { el: b, o, x: x + W * spots[i][0], y: H * spots[i][1], dead: false, tower };
           b.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); pick(s); });
           world.appendChild(b);
           place(s);
@@ -325,8 +344,8 @@
       function spawnBad() {
         bad = document.createElement("div");
         bad.className = "ssw-bad";
-        bad.innerHTML = '<div class="ssw-bbody"></div><div class="ssw-mask"></div><div class="ssw-beye l"></div><div class="ssw-beye r"></div><div class="ssw-bbrow l"></div><div class="ssw-bbrow r"></div>' +
-          '<div class="ssw-bmouth"></div><div class="ssw-bag">💰</div><div class="ssw-wrap"></div>';
+        bad.innerHTML = '<div class="ssw-bin"><div class="ssw-bbody"></div><div class="ssw-mask"></div><div class="ssw-beye l"></div><div class="ssw-beye r"></div><div class="ssw-bbrow l"></div><div class="ssw-bbrow r"></div>' +
+          '<div class="ssw-bmouth"></div><div class="ssw-bag">💰</div><div class="ssw-wrap"></div></div>';
         bad.bx = Math.max(...signs.map((s) => s.x)) + W * 0.3;
         world.appendChild(bad);
         placeBad();

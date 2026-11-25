@@ -48,6 +48,7 @@
   .kit-dia::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent 48%, #111 48% 52%, transparent 52%), linear-gradient(transparent 40%, #111 40% 44%, transparent 44%); }
   .kit-edge { left:12%; right:12%; top:6%; height:76%; clip-path:polygon(50% 0, 100% 42%, 50% 100%, 0 42%, 0 42%, 4% 42%, 50% 6%, 96% 42%, 50% 94%, 4% 42%, 0 42%); background:#111; }
   .kit-lbl { left:50%; top:40%; transform:translate(-50%, -50%); padding:1px 6px; background:#fff; border:3px solid #111; border-radius:9px; font-weight:900; color:#111; line-height:1.1; white-space:nowrap; z-index:2; }
+  .kit-knot { left:50%; top:66%; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border-radius:50%; background:#111; z-index:3; }   /* where the string ties on */
   .kit-tail { left:46%; top:80%; width:8%; height:34%; border-left:3px solid #111; transform-origin:0 0; animation:kit-tail .5s ease-in-out infinite alternate; }
   .kit-tail::before, .kit-tail::after { content:""; position:absolute; left:-9px; width:16px; height:10px; background:radial-gradient(circle, #ffd400 0 30%, transparent 32%), var(--c);
     clip-path:polygon(0 0, 50% 50%, 0 100%, 100% 0, 50% 50%, 100% 100%); }
@@ -136,7 +137,7 @@
         el.style.setProperty("--c", KITES[i % KITES.length]);
         el.style.animationDelay = `${-i * 0.5}s`;
         el.setAttribute("aria-label", TEXT.kiteLabel(p.b.spoken));
-        el.innerHTML = '<div class="kit-tail"></div><div class="kit-dia"></div><div class="kit-lbl"></div>';
+        el.innerHTML = '<div class="kit-tail"></div><div class="kit-dia"></div><div class="kit-lbl"></div><i class="kit-knot"></i>';
         el.querySelector(".kit-lbl").textContent = p.b.text;
         sky.insertBefore(el, svg);
         return { el, p, side: "b", x: 0, y: 0, done: false };
@@ -156,7 +157,15 @@
         strings.forEach(drawString);
       }
       const handOf = (d) => ({ x: d.x, y: d.y - dz * 0.1 });
-      const kiteOf = (k) => ({ x: k.x, y: k.y + kz * 0.38 });
+      const kiteOf = (k) => knotOf(k);
+      // The knot where the string ties on (the bottom of the diamond, where the sticks meet), read from the page so
+      // it follows the kite's bobbing, tilting and soaring.
+      function knotOf(k) {
+        const n = k.el.querySelector(".kit-knot");
+        if (!n || !n.isConnected) return { x: k.x, y: k.y + kz * 0.3 };
+        const r = n.getBoundingClientRect(), sr = sky.getBoundingClientRect();
+        return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 };
+      }
 
       // ---------- Strings (SVG) ----------
       const strings = [];
@@ -235,8 +244,7 @@
         const t0 = performance.now();
         (function tug() {
           if (!s.g.isConnected) return;
-          const r = k.el.getBoundingClientRect(), sr = sky.getBoundingClientRect();
-          s.b = { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height * 0.82 };
+          s.b = knotOf(k);   // (tied to the knot on the kite, wherever it bobs and soars: the teacher saw strings floating)
           drawString(s);
           if (performance.now() - t0 < 60000) ctx.raf(tug);
         })();
@@ -247,6 +255,7 @@
       function crash(d, k, s) {
         busy = true;
         k.el.classList.add("crash"); d.el.classList.add("sad");
+        (function follow() { if (!s.g.isConnected) return; s.b = knotOf(k); drawString(s); ctx.raf(follow); })();   // (the tangled string goes down with the kite)
         sweep(1200, 200, 0.6, "sawtooth", 0.06); ctx.later(() => noise(0.15, "lowpass", 600, 200, 0.4), 500);   // wheee… crunch
         word(TEXT.tangle, true, (s.a.x + s.b.x) / 2, (s.a.y + s.b.y) / 2);
         missPips[missN].classList.add("x");

@@ -40,7 +40,8 @@
     border-top:3px dashed rgba(120,170,210,.7); border-bottom:3px dashed rgba(120,170,210,.7); }
   /* The penguin (--pz): lying on its tummy, sliding (black back, white tummy, orange beak and feet, googly eyes) */
   .png-pen { position:absolute; left:0; top:0; width:calc(var(--pz) * 1.4); height:var(--pz); z-index:4; pointer-events:none; transition:none; }
-  .png-pen > * { position:absolute; box-sizing:border-box; }
+  .png-pin { position:absolute; inset:0; }
+  .png-pin > * { position:absolute; box-sizing:border-box; }   /* (animations on this inner layer: .png-pen is placed with a transform) */
   .png-back { left:4%; right:10%; top:22%; bottom:8%; background:#222; border:4px solid #111; border-radius:50% 60% 50% 46%; }
   .png-belly { left:12%; right:22%; top:50%; bottom:10%; background:#fff; border-radius:50%; z-index:1; }
   .png-head { right:0; top:6%; width:46%; height:72%; background:#222; border:4px solid #111; border-radius:50%; z-index:2; }
@@ -53,7 +54,7 @@
   .png-feet { left:-6%; top:40%; width:16%; height:30%; background:#ff8a1f; border:3px solid #111; border-radius:50% 10% 10% 50%; }
   .png-flip { left:30%; top:26%; width:30%; height:18%; background:#222; border:3px solid #111; border-radius:99px; z-index:2; transform-origin:0 50%; animation:png-flap .3s ease-in-out infinite alternate; }
   .png-spray { left:-30%; top:60%; width:30%; height:40%; background:radial-gradient(circle, #fff 0 30%, transparent 32%) 0 0 / 33% 50%; opacity:.9; animation:png-spray .2s linear infinite; }
-  .png-pen.spin { animation:png-spin .6s ease-in-out; }
+  .png-pen.spin .png-pin { animation:png-spin .6s ease-in-out; }
   /* A fish (--fz) with a sign; a wrong one becomes a boot when caught */
   .png-fish { position:absolute; left:0; top:0; width:var(--fz); height:var(--fz); z-index:3; pointer-events:none; }
   .png-body { position:absolute; left:6%; right:24%; top:24%; bottom:24%; background:#ff8fb8; border:4px solid #111; border-radius:50%; }
@@ -73,7 +74,7 @@
   @keyframes png-spray { to { background-position:-20px 0; } }
   @keyframes png-spin { to { rotate:360deg; } }
   @keyframes png-word { from { opacity:1; scale:.5; } 25% { scale:1.15; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
-  @media (prefers-reduced-motion: reduce) { .png-eye i, .png-flip, .png-spray, .png-pen.spin, .png-word { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .png-eye i, .png-flip, .png-spray, .png-pen.spin .png-pin, .png-word { animation:none !important; } }
   `;
   function injectCss() { if (document.getElementById("png-css")) return; const s = document.createElement("style"); s.id = "png-css"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -121,8 +122,8 @@
       ice.innerHTML = '<div class="png-hills"></div><div class="png-lane a"></div><div class="png-lane b"></div>';
       const pen = document.createElement("div");
       pen.className = "png-pen";
-      pen.innerHTML = '<div class="png-spray"></div><div class="png-feet"></div><div class="png-back"></div><div class="png-belly"></div><div class="png-flip"></div><div class="png-head"></div>' +
-        '<div class="png-face"></div><div class="png-eye l"><i></i></div><div class="png-eye r"><i></i></div><div class="png-beak"></div>';
+      pen.innerHTML = '<div class="png-pin"><div class="png-spray"></div><div class="png-feet"></div><div class="png-back"></div><div class="png-belly"></div><div class="png-flip"></div><div class="png-head"></div>' +
+        '<div class="png-face"></div><div class="png-eye l"><i></i></div><div class="png-eye r"><i></i></div><div class="png-beak"></div></div>';
       const fx = document.createElement("div");
       fx.className = "png-fx";
       ice.append(pen, fx);

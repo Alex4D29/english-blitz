@@ -35,8 +35,12 @@
   .pst-room::before { content:"📮"; position:absolute; left:5%; top:5%; font-size:2rem; }
   .pst-belt { position:absolute; left:50%; top:0; width:var(--pz); height:62%; margin-left:calc(var(--pz) / -2); background:repeating-linear-gradient(0deg, #444 0 16px, #555 16px 32px);
     border-left:5px solid #111; border-right:5px solid #111; animation:pst-belt .6s linear infinite; }
-  .pst-arrow { position:absolute; top:44%; font-size:2.4rem; color:rgba(0,0,0,.25); font-weight:900; animation:pst-nudge .6s ease-in-out infinite alternate; }
-  .pst-arrow.l { left:24%; } .pst-arrow.r { right:24%; animation-direction:alternate-reverse; }
+  /* Big bouncing arrows from the parcel down to each van, in the van's colour (the teacher: make it clearer the parcels go in the vans) */
+  .pst-arrow { position:absolute; top:50%; z-index:2; font-size:clamp(2.6rem, 9vw, 4rem); line-height:1; font-weight:900; color:var(--c); -webkit-text-stroke:3px #111; paint-order:stroke fill;
+    text-shadow:0 4px 0 rgba(0,0,0,.3); animation:pst-point .55s ease-in-out infinite alternate; pointer-events:none; }
+  .pst-arrow.l { left:22%; --dx:-10px; } .pst-arrow.r { right:22%; --dx:10px; }
+  .pst-arrow.hide { opacity:0; transition:opacity .2s; }
+  @keyframes pst-point { from { translate:0 0; } to { translate:var(--dx) 10px; } }
   /* A parcel (--pz): a brown box with tape and a label */
   .pst-parcel { position:absolute; left:50%; top:0; width:var(--pz); height:calc(var(--pz) * .86); margin-left:calc(var(--pz) / -2); z-index:4; pointer-events:none;
     background:linear-gradient(90deg, transparent 44%, #e0b86a 44% 56%, transparent 56%), #c98a4b; border:4px solid #111; border-radius:8px; box-shadow:0 5px 0 rgba(0,0,0,.3);
@@ -47,18 +51,31 @@
   .pst-van { position:absolute; bottom:4%; width:var(--vz); height:calc(var(--vz) * .7); z-index:3; cursor:pointer; touch-action:none; }
   .pst-van > * { position:absolute; box-sizing:border-box; pointer-events:none; }
   .pst-van.l { left:3%; } .pst-van.r { right:3%; }
-  .pst-body { left:0; right:22%; top:0; bottom:18%; background:var(--c); border:4px solid #111; border-radius:10px 4px 6px 6px; }
-  .pst-cab { right:0; width:28%; top:22%; bottom:18%; background:var(--c); border:4px solid #111; border-radius:4px 16px 6px 4px; }
-  .pst-van.l .pst-body { left:22%; right:0; border-radius:4px 10px 6px 6px; } .pst-van.l .pst-cab { left:0; right:auto; border-radius:16px 4px 4px 6px; }
-  .pst-win { right:4%; width:18%; top:30%; height:24%; background:#bfe9ff; border:3px solid #111; border-radius:4px 10px 4px 4px; z-index:2; }
-  .pst-van.l .pst-win { left:4%; right:auto; border-radius:10px 4px 4px 4px; }
-  .pst-eye { top:36%; width:9%; aspect-ratio:1; background:#111; border-radius:50%; z-index:3; } .pst-eye.a { right:13%; } .pst-eye.b { right:7%; }
-  .pst-van.l .pst-eye.a { left:7%; right:auto; } .pst-van.l .pst-eye.b { left:13%; right:auto; }
+  .pst-body { left:0; right:30%; top:0; bottom:18%; background:var(--c); border:4px solid #111; border-radius:10px 4px 6px 6px; }
+  .pst-cab { right:0; width:36%; top:14%; bottom:18%; background:var(--c); border:4px solid #111; border-radius:4px 22px 8px 4px; }
+  .pst-van.l .pst-body { left:30%; right:0; border-radius:4px 10px 6px 6px; } .pst-van.l .pst-cab { left:0; right:auto; border-radius:22px 4px 4px 8px; }
+  /* The van's silly face on its cab: googly eyes in the windscreen, a big toothy grin, eyebrows that only show when it's cross */
+  .pst-win { right:3%; width:30%; top:20%; height:30%; background:#bfe9ff; border:3px solid #111; border-radius:6px 16px 6px 6px; z-index:2; }
+  .pst-van.l .pst-win { left:3%; right:auto; border-radius:16px 6px 6px 6px; }
+  .pst-eye { top:22%; width:13%; aspect-ratio:1; background:#fff; border:3px solid #111; border-radius:50%; z-index:3; overflow:hidden; }
+  .pst-eye.a { right:18%; } .pst-eye.b { right:4%; width:11%; top:25%; }
+  .pst-van.l .pst-eye.a { left:4%; right:auto; width:11%; top:25%; } .pst-van.l .pst-eye.b { left:18%; right:auto; width:13%; top:22%; }
+  .pst-eye i { position:absolute; left:28%; top:30%; width:46%; aspect-ratio:1; background:#111; border-radius:50%; animation:pst-roll 1.1s ease-in-out infinite alternate; }
+  .pst-grin { right:6%; width:24%; top:56%; height:14%; z-index:3; background:#5a0f1e; border:3px solid #111; border-radius:10% 10% 50% 50% / 14% 14% 86% 86%; overflow:hidden; }
+  .pst-van.l .pst-grin { left:6%; right:auto; }
+  .pst-grin::before { content:""; position:absolute; left:8%; right:8%; top:0; height:34%; background:repeating-linear-gradient(90deg, #fff 0 22%, #ddd 22% 25%); }
+  .pst-brow { top:16%; width:13%; height:5%; background:#111; border-radius:99px; z-index:4; opacity:0; transition:opacity .1s; }
+  .pst-brow.a { right:18%; transform:rotate(18deg); } .pst-brow.b { right:4%; transform:rotate(-18deg); }
+  .pst-van.l .pst-brow.a { left:4%; right:auto; transform:rotate(18deg); } .pst-van.l .pst-brow.b { left:18%; right:auto; transform:rotate(-18deg); }
+  .pst-van.honk .pst-brow { opacity:1; }
+  .pst-van.honk .pst-grin { border-radius:50%; width:14%; right:11%; } .pst-van.l.honk .pst-grin { left:11%; }
+  .pst-van.hop .pst-eye i { height:18%; top:44%; border-radius:99px; animation:none; }   /* happy squinty eyes */
+  @keyframes pst-roll { from { transform:translate(-25%, -15%); } to { transform:translate(25%, 15%); } }
   .pst-wheel { bottom:0; width:24%; aspect-ratio:1; background:radial-gradient(circle, #bbb 0 25%, #222 27%); border:3px solid #111; border-radius:50%; }
   .pst-wheel.a { left:10%; } .pst-wheel.b { right:10%; }
-  .pst-tag { left:22%; right:30%; top:12%; bottom:30%; background:#fff; border:3px solid #111; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  .pst-tag { left:8%; right:38%; top:12%; bottom:30%; background:#fff; border:3px solid #111; border-radius:8px; display:flex; align-items:center; justify-content:center;
     font-weight:900; color:#111; line-height:1; white-space:nowrap; z-index:2; }
-  .pst-van.l .pst-tag { left:30%; right:6%; }
+  .pst-van.l .pst-tag { left:38%; right:8%; }
   .pst-van.hop { animation:pst-hop .25s ease-in-out 2 alternate; }
   .pst-van.honk { animation:pst-shake .08s linear 6 alternate; }
   .pst-van.go { transition:transform 1s ease-in; }
@@ -99,13 +116,14 @@
       wrap.innerHTML = `<div class="pst-top"><span class="pst-left">📦 <b>${queue.length}</b></span><div class="pst-pips">${'<span class="pst-pip"></span>'.repeat(MISSES)}</div></div>`;
       const room = document.createElement("div");
       room.className = "pst-room";
-      room.innerHTML = '<div class="pst-belt"></div><div class="pst-arrow l">◀</div><div class="pst-arrow r">▶</div>';
+      room.innerHTML = '<div class="pst-belt"></div><div class="pst-arrow l" style="--c:#e8173c">⬋</div><div class="pst-arrow r" style="--c:#3d8bfd">⬊</div>';
       const vans = G.bins.map((b, i) => {
         const el = document.createElement("div");
         el.className = `pst-van ${i ? "r" : "l"}`;
         el.style.setProperty("--c", i ? "#3d8bfd" : "#e8173c");
         el.setAttribute("aria-label", TEXT.vanLabel(b.say));
-        el.innerHTML = '<div class="pst-body"></div><div class="pst-cab"></div><div class="pst-win"></div><div class="pst-eye a"></div><div class="pst-eye b"></div><div class="pst-wheel a"></div><div class="pst-wheel b"></div><div class="pst-tag"></div>';
+        el.innerHTML = '<div class="pst-body"></div><div class="pst-cab"></div><div class="pst-win"></div><div class="pst-eye a"><i></i></div><div class="pst-eye b"><i></i></div>' +
+          '<div class="pst-brow a"></div><div class="pst-brow b"></div><div class="pst-grin"></div><div class="pst-wheel a"></div><div class="pst-wheel b"></div><div class="pst-tag"></div>';
         el.querySelector(".pst-tag").textContent = b.text;
         room.appendChild(el);
         el.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); send(i); });

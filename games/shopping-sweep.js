@@ -58,13 +58,13 @@
   .shs-goal { position:absolute; width:var(--t); height:var(--t); border-radius:50%; border:4px solid #ff4fa0; box-sizing:border-box; pointer-events:none; z-index:1; animation:shs-ping .6s ease-in-out infinite alternate; }
   /* Your trolley (--t): a wire basket on wheels, you riding in it */
   .shs-me { position:absolute; left:0; top:0; width:var(--t); height:var(--t); z-index:4; pointer-events:none; }
+  .shs-in { position:absolute; inset:0; transform-origin:50% 90%; }   /* (spins and tips go on this inner layer: .shs-me is placed with a transform) */
   .shs-me .ms { position:absolute; left:16%; top:-30%; }
   .shs-cart { position:absolute; left:6%; right:6%; top:38%; height:44%; border:3px solid #111; border-radius:3px 3px 10px 10px; z-index:2;
     background:repeating-linear-gradient(90deg, rgba(150,160,175,.9) 0 3px, transparent 3px 9px), repeating-linear-gradient(0deg, rgba(150,160,175,.9) 0 3px, transparent 3px 9px), rgba(255,255,255,.35); }
   .shs-cart::before { content:""; position:absolute; right:-18%; top:-16%; width:22%; height:12%; background:#e8173c; border:2px solid #111; border-radius:99px; }   /* handle */
   .shs-cart::after { content:""; position:absolute; left:6%; right:6%; bottom:-28%; height:24%; background:radial-gradient(circle, #111 0 40%, transparent 42%) 0 0 / 25% 100%; }   /* wheels */
-  .shs-me.spin { animation:shs-spin .7s ease-in-out; }
-  .shs-me.tip { transform-origin:50% 90%; }
+  .shs-me.spin .shs-in { animation:shs-spin .7s ease-in-out; }
   /* The shop-floor robot (--t) */
   .shs-bot { position:absolute; left:0; top:0; width:var(--t); height:var(--t); z-index:3; pointer-events:none; }
   .shs-bot > * { position:absolute; box-sizing:border-box; }
@@ -84,7 +84,7 @@
   @keyframes shs-spin { to { rotate:720deg; } }
   @keyframes shs-blink { 50% { background:#ffd400; } }
   @keyframes shs-word { from { opacity:1; scale:.5; } 25% { scale:1.15; } 75% { opacity:1; } to { opacity:0; translate:0 -40px; } }
-  @media (prefers-reduced-motion: reduce) { .shs-goal, .shs-blight, .shs-me.spin, .shs-word { animation:none !important; } }
+  @media (prefers-reduced-motion: reduce) { .shs-goal, .shs-blight, .shs-me.spin .shs-in, .shs-word { animation:none !important; } }
   `;
   function injectCss() { if (document.getElementById("shs-css")) return; const s = document.createElement("style"); s.id = "shs-css"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -192,8 +192,11 @@
       const me = document.createElement("div");
       me.className = "shs-me";
       const fig = window.Mascot ? window.Mascot.el("calc(var(--t) * .68)") : document.createElement("div");
-      me.append(fig);
-      me.insertAdjacentHTML("beforeend", '<div class="shs-cart"></div>');
+      const meIn = document.createElement("div");
+      meIn.className = "shs-in";
+      meIn.append(fig);
+      meIn.insertAdjacentHTML("beforeend", '<div class="shs-cart"></div>');
+      me.append(meIn);
       const bot = document.createElement("div");
       bot.className = "shs-bot";
       bot.innerHTML = '<div class="shs-bwheel l"></div><div class="shs-bwheel r"></div><div class="shs-bbody"></div><div class="shs-bhead"></div><div class="shs-blight"></div>' +
@@ -311,7 +314,7 @@
         ctx.lose();
         goalEl.hidden = true;
         if (window.Mascot) window.Mascot.mood(fig, "sad");
-        me.animate([{ rotate: "0deg" }, { rotate: "80deg" }], { duration: 300, fill: "forwards" });
+        meIn.animate([{ rotate: "0deg" }, { rotate: "80deg" }], { duration: 300, fill: "forwards" });   // (tips over on the inner layer, round its own wheels)
         tone(300, 0.1, "square", 0.1); tone(200, 0.1, "square", 0.1, 0.12); tone(120, 0.25, "square", 0.1, 0.24);
         word(TEXT.gotcha, true, (rob.x + 0.5) * T, rob.y * T);
         ctx.later(showAnswer, 500);
