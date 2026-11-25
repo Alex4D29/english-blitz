@@ -1,6 +1,7 @@
 // CARTOON SAW — a carve-it-out game (the teacher's idea: "more uses of tracing"; the shared engine is js/carve.js). A
-// sneaky burglar monster tiptoes back and forth across a wooden floor that has round trapdoor spots, each with a
-// sign. Saw round the spot that matches the card: the burglar steps onto it and drops through the hole with a long
+// sneaky burglar monster tiptoes back and forth right across the tops of round trapdoor spots in a wooden floor
+// (the teacher: it wasn't clear we had to catch him while he walked along the wall), each spot with a sign, taunting
+// you (CAN'T CATCH ME!). Saw round the spot that matches the card: the burglar steps onto it and drops through the hole with a long
 // falling whistle, then climbs back out, grumpy (the last time, he's gone for good: BYE BYE!). Saw the wrong spot
 // and it crashes down into the basement on its own (CRASH!) and the burglar laughs.
 (function () {
@@ -9,13 +10,13 @@
     icon: "🪚",
     howTo: { en: {
       steps: [
-        ["🦹", "A sneaky burglar is tiptoeing across the floor!"],
-        ["🪚", "Saw a circle round the spot with the same thing as the card."],
+        ["🦹", "A sneaky burglar is tiptoeing over the trapdoors. Catch him!"],
+        ["🪚", "Saw a circle round the trapdoor with the same thing as the card."],
         ["🕳️", "He falls through! Catch him 3 times to win."],
       ],
       tips: ["Saw round the dotted circle: the dashes light up as you cut.", "The wrong spot crashes down and he laughs. Two of those and it's over.", "Tap the card to hear it again."],
     } },
-    instruction: { en: "SAW THE\nFLOOR!" },
+    instruction: { en: "CATCH THE\nBURGLAR!" },
     cut: ["GOTCHA!", "WHOOPS-A-DAISY!", "BYE BYE!"],
     nope: "CRASH!",
     win: "CAUGHT HIM!",
@@ -44,6 +45,9 @@
   .saw-feet { left:24%; right:24%; bottom:0; height:12%; }
   .saw-feet::before, .saw-feet::after { content:""; position:absolute; bottom:0; width:40%; height:100%; background:#333; border:3px solid #111; border-radius:50% 50% 20% 20%; animation:saw-tip .3s ease-in-out infinite alternate; }
   .saw-feet::before { left:0; } .saw-feet::after { right:0; animation-delay:-.15s; }
+  .saw-say { position:absolute; left:50%; bottom:100%; transform:translateX(-30%); padding:1px 8px; background:#fff; border:3px solid #111; border-radius:10px; font-weight:900; font-size:calc(var(--bz) * .2);
+    color:#111; white-space:nowrap; opacity:0; transition:opacity .2s; }
+  .saw-say.on { opacity:1; }
   @keyframes saw-drop { to { transform:translateY(60%) scale(.5); opacity:0; } }
   @keyframes saw-tip { to { translate:0 -40%; } }
   @media (prefers-reduced-motion: reduce) { .saw-feet::before, .saw-feet::after { animation:none !important; } }
@@ -66,13 +70,23 @@
       const { tone, sweep, noise } = ctx.sfx;
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       let bad = null, bx = 0, dir = 1, falling = false, gone = false, caught = 0;
-      const bz = () => Math.max(50, Math.min(api.H * 0.2, 90));
+      const bz = () => Math.max(60, Math.min(api.H * 0.28, api.R * 1.7, 130));
+      // His path runs across the tops of the trapdoors (feet on the door, clear of its label), weaving between them.
+      function yAt(x) {
+        const pts = api.pieces.map((p) => ({ x: p.x, y: p.y - api.R * 0.45 })).sort((a, b) => a.x - b.x);
+        if (!pts.length) return api.H * 0.5;
+        if (x <= pts[0].x) return pts[0].y;
+        for (let i = 1; i < pts.length; i++) if (x <= pts[i].x) { const a = pts[i - 1], b = pts[i]; return a.y + (b.y - a.y) * (x - a.x) / (b.x - a.x); }
+        return pts[pts.length - 1].y;
+      }
+      const TAUNTS = ["CAN'T CATCH ME!", "HEE HEE!", "NYAH NYAH!"];
+      let tauntAt = 0, tauntI = 0;
       const api = window.CarveOut.start(ctx, {
         cls: "saw", tool: "🪚", sound: "saw", text: TEXT,
         scene: (stage) => {
           bad = document.createElement("div");
           bad.className = "saw-bad";
-          bad.innerHTML = '<div class="saw-feet"></div><div class="saw-bbody"></div><div class="saw-mask"></div><div class="saw-eye l"></div><div class="saw-eye r"></div><div class="saw-mouth"></div><div class="saw-bag">💰</div>';
+          bad.innerHTML = '<div class="saw-feet"></div><div class="saw-bbody"></div><div class="saw-mask"></div><div class="saw-eye l"></div><div class="saw-eye r"></div><div class="saw-mouth"></div><div class="saw-bag">💰</div><div class="saw-say"></div>';
           stage.appendChild(bad);
         },
         spots: (n, W, H) => [...Array(n)].map((_, i) => ({ x: W * (i + 0.5) / n, y: H * (n <= 3 ? 0.66 : (i % 2 ? 0.78 : 0.56)) })),
@@ -82,7 +96,8 @@
           falling = true;
           caught++;
           const z = bz(), from = bx;
-          bad.animate([{ transform: `translate(${from - z / 2}px, ${api.H * 0.24 - z + 6}px)` }, { transform: `translate(${p.x - z / 2}px, ${p.y - z}px)`, offset: 0.4 },
+          bad.querySelector(".saw-say").classList.remove("on");
+          bad.animate([{ transform: `translate(${from - z / 2}px, ${yAt(from) - z}px)` }, { transform: `translate(${p.x - z / 2}px, ${p.y - z}px)`, offset: 0.4 },
             { transform: `translate(${p.x - z / 2}px, ${p.y - z * 0.2}px) scale(.3)`, opacity: 0 }], { duration: reduceMotion ? 1 : 1100, easing: "ease-in", fill: "forwards" });
           ctx.later(() => sweep(1800, 300, 0.8, "sine", 0.07), 450);
           ctx.later(() => noise(0.15, "lowpass", 400, 200, 0.4), 1300);   // thud, far below
@@ -107,7 +122,11 @@
           bx += dir * api.W * 0.12 * dt;
           if (bx > api.W - z) { bx = api.W - z; dir = -1; } else if (bx < z) { bx = z; dir = 1; }
           bad.style.setProperty("--bz", `${z}px`);
-          bad.style.transform = `translate(${bx - z / 2}px, ${api.H * 0.24 - z + 6}px) scaleX(${dir})`;
+          bad.style.transform = `translate(${bx - z / 2}px, ${yAt(bx) - z}px)`;
+          bad.querySelector(".saw-feet").style.scale = `${dir} 1`;
+          // a taunt now and then
+          const now = performance.now(), say = bad.querySelector(".saw-say");
+          if (now > tauntAt) { tauntAt = now + 3200; say.textContent = TAUNTS[tauntI++ % TAUNTS.length]; say.classList.add("on"); ctx.later(() => say.classList.remove("on"), 1400); }
         }
         if (!ctx.ended) ctx.raf(walk);
       }
