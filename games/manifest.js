@@ -81,4 +81,6 @@ window.GAME_FILES = [
   "cartoon-saw",
   "laser-rescue",
   "pumpkin-carver",
+  "party-cake",
+  "egg-catcher",
 ];
