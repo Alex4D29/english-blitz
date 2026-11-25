@@ -209,6 +209,10 @@
         return { item: o, a: { text: o.text.toUpperCase(), kind: "letter", spoken: letterName(o) }, b: { text: p.emoji, kind: "pic", spoken: p.word }, say: `${letterName(o)} for ${p.word}` };
       });
     }
+    if (type === "hfw") { // (the flip-card games: a sight word matches the same word; look-alike words together)
+      take([...pickOptions(pool, first, N + 8), ...shuffle(pool.slice())], (o) => !picked.some((p) => p.text === o.text || soundsLike(p.text, o.text)));
+      return picked.map((o) => { const w = { text: o.text, kind: "word", spoken: o.say || o.text }; return { item: o, a: w, b: { ...w }, say: w.spoken }; });
+    }
     // cvc (words and their pictures)
     const emo = (o) => o.emoji && !picked.some((p) => p.emoji === o.emoji);
     take([...pickOptions(pool, first, N + 8), ...shuffle(pool.slice())], emo);

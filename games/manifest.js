@@ -72,4 +72,8 @@ window.GAME_FILES = [
   "skateboard-dash",
   "ninja-rooftops",
   "penguin-slide",
+  "magic-hats",
+  "peekaboo-park",
+  "alien-twins",
+  "glove-hunt",
 ];
