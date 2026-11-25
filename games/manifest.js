@@ -62,4 +62,5 @@ window.GAME_FILES = [
   "dangerous-dentist",
   "scratch-sniff",
   "shopping-sweep",
+  "spider-swing",
 ];

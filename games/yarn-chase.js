@@ -153,6 +153,7 @@
       const S = ctx.choiceSteps(GOAL, N, { lowercase: true });
       let si = 0, C = S[0];
       const LANES = speed >= 1.5 ? 3 : 2;
+      const PIC = S.some((s) => s.row.some((o) => o.kind === "pic"));   // pictures (phonics, CVC): bigger, slower balls
 
       // ---------- DOM ----------
       const wrap = document.createElement("div");
@@ -202,7 +203,8 @@
         W = room.clientWidth; H = room.clientHeight;
         cz = Math.max(80, Math.min(W * 0.3, H * 0.3, 150));
         home = { x: W / 2, y: H - cz * 0.5 - 4 };
-        bz = Math.max(56, Math.min(W * 0.2, H * (LANES === 3 ? 0.15 : 0.19), 110));
+        // (pictures get bigger balls: the teacher found phonics pictures small and fast to see)
+        bz = Math.max(56, Math.min(W * (PIC ? 0.25 : 0.2), H * (LANES === 3 ? (PIC ? 0.18 : 0.15) : (PIC ? 0.23 : 0.19)), PIC ? 140 : 110));
         const yTop = H * 0.24 + bz * 0.6, yBot = H - cz - bz * 0.45;
         laneY = [...Array(LANES)].map((_, i) => yTop + (LANES === 1 ? 0 : (yBot - yTop) * i / (LANES - 1)));
         room.style.setProperty("--bz", `${bz}px`);
@@ -245,7 +247,7 @@
       }
       function sizeLabel(b) {
         const len = Math.max(1, [...b.o.text].length);
-        b.label.style.fontSize = b.o.kind === "word" ? `${Math.min(bz * 0.34, (bz * 1.15) / (len * 0.62))}px` : `${bz * 0.4}px`;
+        b.label.style.fontSize = b.o.kind === "word" ? `${Math.min(bz * 0.34, (bz * 1.15) / (len * 0.62))}px` : `${bz * (b.o.kind === "pic" ? 0.5 : 0.4)}px`;
         b.y = laneY[b.lane] || b.y;
       }
       function place(b) {
@@ -254,14 +256,14 @@
       }
 
       // ---------- Loop ----------
-      const cross = 3.4 / pace;    // seconds to roll across
+      const cross = (PIC ? 4.6 : 3.4) / pace;    // seconds to roll across (slower with pictures, so there's time to see them)
       let last = null, nextSpawn = 0;
       function frame(ts) {
         if (ctx.ended && !balls.length) return;
         const dt = last == null ? 0 : Math.min(50, ts - last) / 1000;
         last = ts;
         const now = performance.now();
-        if (!done && now >= nextSpawn && started) { spawn(false); nextSpawn = now + 700 / pace; }
+        if (!done && now >= nextSpawn && started) { spawn(false); nextSpawn = now + (PIC ? 950 : 700) / pace; }
         for (let i = balls.length - 1; i >= 0; i--) {
           const b = balls[i];
           if (b.state === "roll") {

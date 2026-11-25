@@ -1,6 +1,6 @@
 // TEST YOUR STRENGTH — a power-bar game (js/power.js), fairground hammer style. The card at the top
 // shows the target (letter; phonics letter; CVC word; HFW 🔊) and the voice says it. A macho purple
-// monster (tank top, big arms, googly eyes) holds a giant mallet beside a tall striker tower. The tower
+// monster (bare muscles: pecs and a silly six-pack, big arms, googly eyes) holds a giant mallet beside a tall striker tower. The tower
 // has three bands with options: bottom (green), middle (yellow) and top (red), like the power bar, and a
 // bell on top. Charge the power bar (press and hold, or tap, tap): the monster raises the mallet, then
 // slams it down, and the puck shoots up to the band for that power. One hit decides. Right: DING! (the
@@ -59,10 +59,14 @@
   /* The macho monster: purple, a tank top, big arms, a giant mallet. Anchor: feet. --mz is its height */
   .ts-mon { position:absolute; left:0; top:0; width:calc(var(--mz) * .9); height:var(--mz); margin:calc(var(--mz) * -1) 0 0 calc(var(--mz) * -.45); z-index:5; pointer-events:none; }
   .ts-body { position:absolute; left:14%; right:14%; top:14%; bottom:0; background:#9c6bff; border:5px solid #111; border-radius:44% 44% 30% 30%; }
-  /* A red tank top with a white trim and a big yellow star (a plain white one read as an empty space) */
-  .ts-top { position:absolute; left:22%; right:22%; top:46%; bottom:6%; background:#e8173c; border:4px solid #111; border-radius:10px 10px 20px 20px;
-    box-shadow:inset 0 5px 0 #fff; display:flex; align-items:center; justify-content:center; }
-  .ts-top::after { content:"★"; color:#ffd400; font-size:calc(var(--mz) * .2); line-height:1; -webkit-text-stroke:2px #111; }
+  /* Bare muscles (the teacher found the tank top a bit weird): two big pecs, a silly bumpy six-pack, a belly button */
+  .ts-top { position:absolute; left:24%; right:24%; top:49%; bottom:9%; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1.3fr 1fr 1fr 1fr; gap:4% 6%; }
+  .ts-top i { background:#b894ff; border:3px solid #111; border-radius:40%; box-shadow:inset -3px -3px 0 rgba(0,0,0,.12); }
+  .ts-top i.pec { border-radius:30% 30% 50% 50%; }
+  .ts-top::after { content:""; position:absolute; left:50%; bottom:-9%; width:9%; aspect-ratio:1; transform:translateX(-50%); background:#5a3a9e; border-radius:50%; }   /* belly button */
+  .ts-mon.flex .ts-top i { animation:ts-ripple .15s ease-in-out infinite alternate; }
+  .ts-mon.flex .ts-top i:nth-child(odd) { animation-delay:-.07s; }
+  @keyframes ts-ripple { to { transform:scale(1.12); } }
   /* The fist that grips the mallet (drawn over the handle) */
   .ts-fist { position:absolute; left:73%; top:45%; width:15%; aspect-ratio:1; background:#7d4fe0; border:4px solid #111; border-radius:45%; z-index:5;
     background-image:repeating-linear-gradient(90deg, transparent 0 22%, rgba(0,0,0,.45) 22% 28%); }   /* darker, with knuckles, so it reads as a hand */
@@ -174,7 +178,7 @@
       const puck = tower.querySelector(".ts-puck"), bell = tower.querySelector(".ts-bell");
       const mon = document.createElement("div");
       mon.className = "ts-mon";
-      mon.innerHTML = '<div class="ts-body"></div><div class="ts-top"></div><div class="ts-arm l"></div><div class="ts-arm r"></div><div class="ts-brow l"></div><div class="ts-brow r"></div>' +
+      mon.innerHTML = '<div class="ts-body"></div><div class="ts-top"><i class="pec"></i><i class="pec"></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ts-arm l"></div><div class="ts-arm r"></div><div class="ts-brow l"></div><div class="ts-brow r"></div>' +
         '<div class="ts-eye l"><i></i></div><div class="ts-eye r"><i></i></div><div class="ts-mouth"></div><div class="ts-mallet"></div><div class="ts-fist"></div>';
       fair.appendChild(mon);
       // Gorilla Boss watches from his champion's podium, up above you.

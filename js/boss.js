@@ -232,9 +232,11 @@
       radial-gradient(circle at 75% 70%, #6b4320 0 9%, transparent 10%), radial-gradient(circle at 22% 78%, #6b4320 0 8%, transparent 9%), radial-gradient(circle at 52% 88%, #6b4320 0 10%, transparent 11%); }
   .bx-gorilla.muddy .bx-mud { display:block; }
   /* Kitty Boss: a huge, fluffy, spoiled ginger kitten with a jewelled collar (the teacher's idea) */
-  .bx-kitty .bx-tail { position:absolute; right:0; top:34%; width:30%; height:50%; z-index:0; border:calc(var(--bs) * .07) solid #111; border-color:#111 #111 transparent transparent;
-    border-radius:50%; transform-origin:0 100%; animation:bx-swish .8s ease-in-out infinite alternate; }
-  .bx-kitty .bx-tail::after { content:""; position:absolute; inset:calc(var(--bs) * -.045); border:calc(var(--bs) * .035) solid #ffa94d; border-color:#ffa94d #ffa94d transparent transparent; border-radius:50%; }
+  /* (the tail grows out from behind the body's lower right and curls up; it swishes from where it joins, so it
+     never floats: the teacher spotted it hanging in the air) */
+  .bx-kitty .bx-tail { position:absolute; left:60%; top:42%; width:36%; height:46%; z-index:0; border:calc(var(--bs) * .07) solid #111; border-color:transparent #111 #111 transparent;
+    border-radius:50%; transform-origin:15% 85%; animation:bx-swish .8s ease-in-out infinite alternate; }
+  .bx-kitty .bx-tail::after { content:""; position:absolute; inset:calc(var(--bs) * -.045); border:calc(var(--bs) * .035) solid #ffa94d; border-color:transparent #ffa94d #ffa94d transparent; border-radius:50%; }
   .bx-kitty .bx-body { position:absolute; left:20%; right:20%; top:50%; bottom:0; background:#ffa94d; border:var(--bw) solid #111; border-radius:46% 46% 30% 30%; }
   .bx-kitty .bx-body::after { content:""; position:absolute; left:26%; right:26%; top:18%; bottom:8%; background:#fff3dc; border-radius:50%; }   /* fluffy tummy */
   .bx-kitty .bx-paw { position:absolute; bottom:0; width:16%; height:11%; z-index:2; background:#fff3dc; border:var(--bw) solid #111; border-radius:50% 50% 40% 40%; }
