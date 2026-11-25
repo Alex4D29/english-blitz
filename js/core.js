@@ -180,6 +180,40 @@
     }
     return out;
   }
+  // ---------- Matching pairs (the draw-a-line games: Spaghetti Slurp, Plug It In, Flying Kites) ----------
+  // N pairs to join up, look-alikes together on purpose (that's the point of matching). Each pair is
+  // { item, a, b, say }: `a` goes on the left, `b` on the right ({ text, kind, spoken }), `say` is spoken on a match.
+  //   letter:  capital → lowercase (b, d, p together; never I with l)
+  //   phonics: letter → a picture that starts with it (one picture each, no emoji twice)
+  //   cvc:     word → its picture
+  function matchPairs(pool, type, N) {
+    const letterName = (it) => it.say || it.text.toUpperCase();
+    const picked = [];
+    const take = (cands, ok) => { for (const o of cands) { if (picked.length >= N) break; if (!picked.includes(o) && ok(o)) picked.push(o); } };
+    const first = type === "phonics" ? pool.find((it) => startPics(it).length) : type === "cvc" ? pool.find((it) => it.emoji) : pool[0];
+    if (!first) return [];
+    picked.push(first);
+    if (type === "letter") {
+      const notIL = (o) => !picked.some((p) => [o.text, p.text].map((x) => x.toUpperCase()).sort().join("") === "IL");
+      const uniq = (o) => !picked.some((p) => p.text.toLowerCase() === o.text.toLowerCase());
+      take([...lowerLookalikes(pool, first), ...pickOptions(pool, first, N + 6), ...shuffle(pool.slice())], (o) => notIL(o) && uniq(o));
+      return picked.map((o) => ({ item: o, a: { text: o.text.toUpperCase(), kind: "letter", spoken: letterName(o) }, b: { text: o.text.toLowerCase(), kind: "letter", spoken: letterName(o) },
+        say: o.word ? `${letterName(o)} for ${o.word}` : letterName(o) }));
+    }
+    if (type === "phonics") {
+      take([...pickOptions(pool, first, N + 6), ...shuffle(pool.slice())], (o) => startPics(o).length > 0);
+      const used = new Set();
+      return picked.map((o) => {
+        const p = shuffle(startPics(o)).find((x) => !used.has(x.emoji)) || startPics(o)[0];
+        used.add(p.emoji);
+        return { item: o, a: { text: o.text.toUpperCase(), kind: "letter", spoken: letterName(o) }, b: { text: p.emoji, kind: "pic", spoken: p.word }, say: `${letterName(o)} for ${p.word}` };
+      });
+    }
+    // cvc (words and their pictures)
+    const emo = (o) => o.emoji && !picked.some((p) => p.emoji === o.emoji);
+    take([...pickOptions(pool, first, N + 8), ...shuffle(pool.slice())], emo);
+    return picked.map((o) => ({ item: o, a: { text: o.text, kind: "word", spoken: o.say || o.text }, b: { text: o.emoji, kind: "pic", spoken: o.say || o.text }, say: o.say || o.text }));
+  }
   // R one-row steps, each with a DIFFERENT target (rhythm games: "A"… tap a… "B"… tap b…). Each step is
   // what choiceRows(…, 1, N) gives (cardText, prompt, answer, target, listen) plus `row`. ABC games stay
   // all same-case or all capital → lowercase for the whole round.
@@ -493,7 +527,7 @@
   window.Core = {
     MICROGAMES,
     shuffle, pick, pickOptions,
-    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, soundsLike, gapSteps,
+    startPics, phonicsSet, lowerLookalikes, choiceRows, choiceSteps, matchPairs, soundsLike, gapSteps,
     unlock, audioCtx: () => actx, sfx,
     canSpeak, say, stopSpeech, isSpeaking,
     confetti,

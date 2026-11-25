@@ -62,7 +62,7 @@
     "monster-boxing": "sporty", "archery": "march", "monster-golf": "chill", "strength-test": "sporty", "maze-run": "sneaky", "dance-off": "bouncy", "shield-breaker": "march", "bongo-bash": "bouncy",
     "boss-banana": "pirate", "boss-baby": "spooky", "boss-robot": "march", "boss-gorilla": "sporty", "boss-kitty": "bouncy", "yarn-chase": "sneaky", "tickle-tummy": "bouncy", "fossil-dig": "chill", "robot-repair": "march", "burger-stack": "bouncy", "rocket-fix": "march", "bridge-builder": "chill", "cookie-cutter": "bouncy", "chicken-banana": "bouncy", "six-seven-seesaw": "bouncy", "tug-of-war": "sporty", "lake-leap": "chill", "baseball-bash": "sporty", "chicken-choir": "bouncy", "polly-crackers": "pirate",
     "smelly-socks": "bouncy", "bubblegum-blow": "chill", "conga-line": "bouncy", "doorbell-dash": "march", "belly-flop": "sporty", "dangerous-dentist": "spooky",
-    "scratch-sniff": "chill", "shopping-sweep": "sneaky", "spider-swing": "sneaky",
+    "scratch-sniff": "chill", "shopping-sweep": "sneaky", "spider-swing": "sneaky", "spaghetti-slurp": "bouncy", "plug-it-in": "march", "flying-kites": "chill",
   };
 
   // ---------- The menu theme (hand-written) ----------

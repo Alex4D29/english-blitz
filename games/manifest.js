@@ -63,4 +63,7 @@ window.GAME_FILES = [
   "scratch-sniff",
   "shopping-sweep",
   "spider-swing",
+  "spaghetti-slurp",
+  "plug-it-in",
+  "flying-kites",
 ];
