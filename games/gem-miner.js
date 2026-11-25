@@ -19,6 +19,13 @@
     nope: "COUGH COUGH!",
     win: "RICH!",
   };
+  // Each room of the mine a different rock (you walk through the hole into the next one)
+  const ROOMS = [
+    "radial-gradient(circle at 20% 30%, #8a7766 0 8%, transparent 9%), radial-gradient(circle at 70% 60%, #7a6858 0 10%, transparent 11%), radial-gradient(circle at 45% 85%, #8a7766 0 7%, transparent 8%), linear-gradient(180deg, #5a4a3e, #6e5c4e)",
+    "radial-gradient(circle at 30% 20%, #6a7a8e 0 9%, transparent 10%), radial-gradient(circle at 75% 70%, #5a6a7e 0 11%, transparent 12%), radial-gradient(circle at 15% 80%, #6a7a8e 0 6%, transparent 7%), linear-gradient(180deg, #3e4a5e, #52607a)",
+    "radial-gradient(circle at 25% 65%, #8e6a7a 0 8%, transparent 9%), radial-gradient(circle at 80% 25%, #7e5a6a 0 10%, transparent 11%), radial-gradient(circle at 55% 40%, #8e6a7a 0 6%, transparent 7%), linear-gradient(180deg, #5e3e4e, #7a5262)",
+    "radial-gradient(circle at 60% 20%, #7a8e6a 0 9%, transparent 10%), radial-gradient(circle at 20% 50%, #6a7e5a 0 10%, transparent 11%), radial-gradient(circle at 85% 80%, #7a8e6a 0 7%, transparent 8%), linear-gradient(180deg, #3e5a3e, #527a52)",
+  ];
   const GEMS = ["#ff4f6d", "#4dd3ff", "#4dd36b", "#c38bff", "#ffd400", "#ff8a1f"];
 
   const CSS = `
@@ -58,6 +65,14 @@
   .gem-miner.yay { animation:gem-hop .2s ease-in-out 4 alternate; } .gem-miner.yay .gem-marm { rotate:-25deg; }
   .gem-miner.cough .gem-mhead { background:#c9b9a0; } .gem-miner.cough { animation:gem-shake .08s linear 8 alternate; }
   .gem-miner.cough .gem-mmouth { left:40%; right:40%; border-radius:50%; }
+  /* The hole a gem leaves (a tunnel to the next room), the walk, and the whoosh to dark between rooms */
+  .gem-hole { position:absolute; width:calc(var(--hr) * 2); height:calc(var(--hr) * 2); margin:calc(var(--hr) * -1) 0 0 calc(var(--hr) * -1); z-index:1; pointer-events:none; border-radius:46% 54% 50% 50%;
+    background:radial-gradient(circle at 50% 55%, #000 0 55%, #1a120c 75%); border:5px solid #3e3128; box-shadow:inset 0 10px 0 rgba(0,0,0,.5); animation:gem-open .35s cubic-bezier(.2,1.6,.4,1) .2s both; }
+  .gem-miner.walk .gem-mleg.l { animation:gem-step .14s ease-in-out infinite alternate; } .gem-miner.walk .gem-mleg.r { animation:gem-step .14s ease-in-out infinite alternate-reverse; }
+  .gem-dark { position:absolute; inset:0; z-index:7; pointer-events:none; background:#000; opacity:0; transition:opacity .2s; }
+  .gem-dark.on { opacity:1; }
+  @keyframes gem-open { from { scale:0; } }
+  @keyframes gem-step { to { translate:0 -25%; } }
   @keyframes gem-look { from { transform:translate(-30%, 0); } to { transform:translate(40%, 10%); } }
   @keyframes gem-hop { to { translate:0 -10%; } }
   @keyframes gem-shake { from { translate:-3px 0; } to { translate:3px 0; } }
@@ -80,7 +95,9 @@
     start(ctx) {
       injectCss();
       const { tone, noise } = ctx.sfx;
-      let cart = null, miner = null, lastChop = 0;
+      let cart = null, miner = null, lastChop = 0, dark = null, walk = null, nextRoom = false, room = 0, found = 0;
+      const holes = [];
+      const last = () => ++found >= 3;   // (the carve engine's GOAL)
       const mood = (m, ms) => { miner.classList.remove("yay", "cough"); void miner.offsetWidth; miner.classList.add(m); ctx.later(() => miner.classList.remove(m), ms); };
       const api = window.CarveOut.start(ctx, {
         cls: "gem", tool: "⛏️", sound: "drill", text: TEXT,
@@ -90,6 +107,7 @@
           miner.innerHTML = '<div class="gem-mleg l"></div><div class="gem-mleg r"></div><div class="gem-mbody"></div><div class="gem-mhead"></div><div class="gem-mhat"></div>' +
             '<div class="gem-meye l"><i></i></div><div class="gem-meye r"><i></i></div><div class="gem-mmouth"></div><div class="gem-marm"><div class="gem-pick"></div></div>';
           stage.appendChild(miner);
+          dark = document.createElement("div"); dark.className = "gem-dark"; stage.appendChild(dark);
           const size = () => stage.style.setProperty("--bz", `${Math.round(Math.max(54, Math.min(stage.clientHeight * 0.24, stage.clientWidth * 0.16, 110)))}px`);
           size(); new ResizeObserver(size).observe(stage);
         },
@@ -107,6 +125,34 @@
           [1568, 2093].forEach((f, k) => tone(f, 0.1, "sine", 0.07, k * 0.08));   // bling
           api.pop("✨", p.x, p.y, 30, 0, -60);
           ctx.later(() => { cart.classList.remove("got"); void cart.offsetWidth; cart.classList.add("got"); noise(0.08, "lowpass", 600, 300, 0.3); }, 850);
+          // The gem leaves a hole in the wall (the teacher: like Bunny Burrow): the miner walks over and squeezes through
+          // into the next room (a whoosh to dark; the next room comes in with the next pieces, in onStep).
+          const hole = document.createElement("div");
+          hole.className = "gem-hole";
+          hole.style.left = `${p.x}px`; hole.style.top = `${p.y}px`; hole.style.setProperty("--hr", `${api.R * 0.9}px`);
+          api.stage.insertBefore(hole, api.stage.firstChild.nextSibling);
+          holes.push(hole);
+          ctx.later(() => {
+            const sr = api.stage.getBoundingClientRect(), mr = miner.getBoundingClientRect();
+            const dx = p.x - (mr.left - sr.left + mr.width / 2), dy = p.y + api.R * 0.45 - (mr.bottom - sr.top);
+            miner.classList.add("walk");
+            walk = miner.animate([{ translate: "0 0", scale: "1", opacity: 1 }, { translate: `${dx}px ${dy}px`, scale: "1", opacity: 1, offset: 0.7 }, { translate: `${dx}px ${dy - 6}px`, scale: ".25", opacity: 0 }],
+              { duration: 850, easing: "ease-in-out", fill: "forwards" });
+          }, 300);
+          if (last()) return;   // (the last gem: the game's won, no next room)
+          ctx.later(() => { dark.classList.add("on"); sweep(800, 200, 0.4, "sine", 0.06); }, 1080);   // whoosh
+          nextRoom = true;
+        },
+        onStep: (api) => {
+          if (!nextRoom) return;
+          nextRoom = false;
+          room++;
+          api.stage.style.background = ROOMS[room % ROOMS.length];
+          holes.forEach((h) => h.remove()); holes.length = 0;
+          if (walk) { walk.cancel(); walk = null; }
+          miner.classList.remove("walk");
+          miner.animate([{ translate: "-120% 0" }, { translate: "0 0" }], { duration: 450, easing: "ease-out" });   // in he comes
+          ctx.later(() => dark.classList.remove("on"), 60);
         },
         onWrong: (p, api) => {
           noise(0.5, "lowpass", 400, 200, 0.4);   // crumble
