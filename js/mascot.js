@@ -22,11 +22,11 @@
     { id: "dinosaur", name: "Dinosaur", letter: "D", word: "dinosaur", color: "#3fb54a" },
     { id: "elephant", name: "Elephant", letter: "E", word: "elephant", color: "#9aa3b5" },
     { id: "flower", name: "Flower", letter: "F", word: "flower", color: "#ff6fb0" },
-    // Unlockables (the teacher's plan; P to Z come later). Fun mode: your score out of 10.
-    { id: "guitar", name: "Guitar", letter: "G", word: "guitar", color: "#d9822b", unlock: "fun", at: 3, hint: "Score 3 in Fun mode!" },
-    { id: "helicopter", name: "Helicopter", letter: "H", word: "helicopter", color: "#2f8fe0", unlock: "fun", at: 5, hint: "Score 5 in Fun mode!" },
-    { id: "iguana", name: "Iguana", letter: "I", word: "iguana", color: "#5cc94a", unlock: "fun", at: 7, hint: "Score 7 in Fun mode!" },
-    { id: "jellybaby", name: "Jelly Baby", letter: "J", word: "jelly baby", color: "#ff4fa0", unlock: "fun", at: 10, hint: "Score 10/10 in Fun mode!" },
+    // Unlockables (the teacher's plan; P to Z come later). Quick Play (the "fun" mode): your score out of 10.
+    { id: "guitar", name: "Guitar", letter: "G", word: "guitar", color: "#d9822b", unlock: "fun", at: 3, hint: "Score 3 in Quick Play!" },
+    { id: "helicopter", name: "Helicopter", letter: "H", word: "helicopter", color: "#2f8fe0", unlock: "fun", at: 5, hint: "Score 5 in Quick Play!" },
+    { id: "iguana", name: "Iguana", letter: "I", word: "iguana", color: "#5cc94a", unlock: "fun", at: 7, hint: "Score 7 in Quick Play!" },
+    { id: "jellybaby", name: "Jelly Baby", letter: "J", word: "jelly baby", color: "#ff4fa0", unlock: "fun", at: 10, hint: "Score 10/10 in Quick Play!" },
     // Endless mode: games cleared in one run.
     { id: "lion", name: "Lion", letter: "L", word: "lion", color: "#ffc233", unlock: "endless", at: 5, hint: "Clear 5 in Endless mode!" },
     { id: "monkey", name: "Monkey", letter: "M", word: "monkey", color: "#a8652f", unlock: "endless", at: 10, hint: "Clear 10 in Endless mode!" },

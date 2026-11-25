@@ -3,7 +3,7 @@
 // Static markup gets its text from `data-text="key"` (and aria labels from `data-label="key"`).
 window.TEXT = {
   title: "ENGLISH\nBLITZ!",            // working title — rename freely
-  fun: "FUN\nMODE",
+  fun: "QUICK\nPLAY",                   // (was FUN MODE: renamed when FUN became the easy play style; the code still says fun)
   challenge: "ENDLESS\nMODE",           // (was CHALLENGE MODE; the code still says challenge)
   boss: "BOSS\nBATTLE",
   practice: "PICK A GAME",              // (Practice mode in the code)
