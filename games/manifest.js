@@ -83,4 +83,5 @@ window.GAME_FILES = [
   "pumpkin-carver",
   "party-cake",
   "egg-catcher",
+  "chicken-flap",
 ];

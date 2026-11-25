@@ -98,15 +98,16 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 1700);
   }
-  function roll() {
-    const ids = Object.keys(ITEMS), total = ids.reduce((n, id) => n + ITEMS[id].w, 0);
+  function roll(skip = []) {
+    const ids = Object.keys(ITEMS).filter((id) => !skip.includes(id)), total = ids.reduce((n, id) => n + ITEMS[id].w, 0);
     let r = Math.random() * total;
     for (const id of ids) { r -= ITEMS[id].w; if (r <= 0) return id; }
     return ids[0];
   }
 
   // ---------- ❓ The item box: tap (or wait), it spins, lands on an item ----------
-  function box(onDone) {
+  // (skip: item ids that can't come out here, e.g. ❤️ and 🔄 in Boss Battle, which has no hearts to add)
+  function box(onDone, skip = []) {
     injectCss();
     const w = document.createElement("div");
     w.className = "it-box";
@@ -121,7 +122,7 @@
       opened = true;
       hint.textContent = "";
       cube.classList.add("spin");
-      const ids = Object.keys(ITEMS), got = roll();
+      const ids = Object.keys(ITEMS).filter((id) => !skip.includes(id)), got = roll(skip);
       let n = 0;
       (function spin() {
         cube.textContent = ITEMS[ids[n % ids.length]].icon;

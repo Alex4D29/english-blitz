@@ -250,8 +250,11 @@
     const types = game.contentTypes || [];
     return listsInPlay().filter((l) => types.includes(l.type));
   }
-  // 🎁 Items are on in Endless (Challenge in the code) and Adventure (levels and island bosses: the item shop) when switched on in Settings.
-  const itemsHere = () => !!state.mode && (state.mode.id === "challenge" || !!state.adv) && !!window.Items && window.Items.on();
+  // 🎁 Items are on in Endless (Challenge in the code), Boss Battle (an item box every 3 wins) and Adventure (levels and
+  // island bosses: the item shop) when switched on in Settings.
+  const itemsHere = () => !!state.mode && (state.mode.id === "challenge" || state.mode.id === "boss" || !!state.adv) && !!window.Items && window.Items.on();
+  // ❓ How often the item box comes (in points / games won), by mode. Adventure has the shop instead.
+  const boxEvery = () => (state.adv ? 0 : state.mode.id === "challenge" ? 5 : state.mode.id === "boss" ? 3 : 0);
   const isPractice = () => !!state.mode && state.mode.id === "practice";
   const isBoss = () => !!state.mode && state.mode.id === "boss" && !!state.boss;
   const bossFight = () => isBoss() && state.boss.phase !== "levels"; // the showdown or the final battle
@@ -521,7 +524,8 @@
     if (itemsHere() && state.mode.lives && state.lives <= 0 && window.Items.useAuto("cont")) { state.lives = 1; renderHud(); }
     if (isOver()) return finishRun();
     // ❓ The item box, between rounds.
-    if (state.pendingBox) { state.pendingBox = false; window.Items.box(() => { if (state.screen === "play") nextRound(); }); return; }
+    // (Boss Battle has no hearts to add or continue, so no ❤️ or 🔄 there.)
+    if (state.pendingBox) { state.pendingBox = false; window.Items.box(() => { if (state.screen === "play") nextRound(); }, state.mode.lives ? [] : ["heart", "cont"]); return; }
 
     const choice = chooseRound();
     if (!choice) {
@@ -1319,8 +1323,9 @@
     let loseLife = !won && state.mode.lives > 0;
     if (loseLife && itemsHere() && window.Items.useAuto("shield")) loseLife = false; // 🛡️ the shield takes the hit
     if (loseLife) state.lives--;
-    // ❓ An item box every 5 points in Endless (it opens before the next round).
-    if (won && itemsHere() && state.mode.id === "challenge" && state.results.filter((r) => r.won).length % 5 === 0 && !window.Items.full()) state.pendingBox = true;
+    // ❓ An item box every 5 points in Endless, every 3 wins in Boss Battle (the teacher's idea, so winning more
+    // pays; it opens before the next round, after any boss cut-scenes).
+    if (won && itemsHere() && boxEvery() && state.results.filter((r) => r.won).length % boxEvery() === 0 && !window.Items.full()) state.pendingBox = true;
     if (won) C.sfx.happy(); else C.sfx.buzz();
     vibrate(won ? 30 : [60, 40, 60]);
     renderHud(loseLife);
