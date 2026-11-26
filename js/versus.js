@@ -123,6 +123,8 @@
   .vt-btn { min-width:64px; height:60px; padding:0 8px; border:5px solid #111; border-radius:16px; box-shadow:0 5px 0 #111; background:#fff; font:inherit; font-size:1.8rem; line-height:1;
     color:#111; cursor:pointer; touch-action:manipulation; }
   .vt-btn.bad { background:#ff5a6e; color:#fff; }
+  .vf-field { border:0; background:none; overflow:visible; }
+  .vf-game { position:absolute; inset:0; }
   .vt-pad.dizzy { filter:grayscale(1) brightness(.8); animation:vs-dizzy .3s linear infinite; }
   .vt-pad.wait { pointer-events:none; opacity:.6; }
   @keyframes vs-dizzy { 25% { transform:rotate(-1.5deg); } 75% { transform:rotate(1.5deg); } }
@@ -444,6 +446,7 @@
     if (window.Music) Music.play(game.id);
     match.result = null; // (a fresh round: also for the shared games, which return early)
     if (match.coop) { // 🤝 Team Up: take turns on the shared games; split the answers on Train Builder and the gap games; else both finish
+      if (game.id === "chicken-banana") { fusion(game, list, alive); return; } // (one shared stage, a dancer each)
       if (COOP_TURNS[game.id]) { race(game, list, alive, COOP_TURNS[game.id]()); return; }
       if (game.id === "train-builder" || SPLIT_GAP.includes(game.id)) { split(game, list, alive); return; }
     } else {
@@ -1225,6 +1228,75 @@
     })();
   }
 
+  // TEAM UP · CHICKEN BANANA (the teacher's idea): ONE shared stage across the top, player 1 is the chicken and
+  // player 2 is the banana; each has their own answer buttons below. The move only counts when BOTH tap the
+  // right answer before the ring lands. The game itself (games/chicken-banana.js) runs in the top half with
+  // `ctx.coop` pointing at the two button areas; this scene only supplies the clock and the pads.
+  function fusion(game, list, alive) {
+    const items = F().prepItems(list);
+    const sides = root.querySelector(".vs-sides");
+    sides.classList.add("shared");
+    const box = el("div", "vs-shared", `<div class="vt-field vf-field"><div class="vf-game"></div></div>` +
+      `<div class="vt-pads"><div class="vt-pad l" style="--pc:${COLORS[0]}"><div class="who">${TEXT.p(1)} 🐔</div><div class="btns"></div></div>` +
+      `<div class="vt-pad r" style="--pc:${COLORS[1]}"><div class="who">${TEXT.p(2)} 🍌</div><div class="btns"></div></div></div>`);
+    sides.appendChild(box);
+    match.shared = box;
+    const gameEl = box.querySelector(".vf-game");
+    const btns = [...box.querySelectorAll(".vt-pad .btns")];
+    const paceMs = game.duration || 16000;
+    const t0 = performance.now() + 400;
+    let over = false, frozenAt = 0, paused = 0, pauseFrom = 0, pauseTo = 0, timedOut = false;
+    const timeoutFns = [];
+    const elapsed = (now) => {
+      let p = paused;
+      if (pauseTo) p += Math.max(0, Math.min(now, pauseTo) - pauseFrom);
+      return Math.max(0, now - t0 - p);
+    };
+    const done = (ok) => {
+      if (over || !alive()) return;
+      over = true;
+      later(() => teamRound(ok), 1800);
+    };
+    const ctx = {
+      root: gameEl, items: items.slice(), list: { id: list.id, type: list.type },
+      speed: 1, timeLimit: paceMs, paceMs, demo: false, boss: null,
+      hint: () => {}, tutorial: () => {}, reveal: () => 0, nightTheme: () => {},
+      audio: C().audioCtx(), canSpeak: F().canSpeak(),
+      get ended() { return !alive() || over; },
+      say: (t) => { if (alive()) C().say(t); },
+      sfx: C().sfx,
+      win: () => done(true),
+      lose: () => done(false),
+      onTimeout: (fn) => timeoutFns.push(fn),
+      onEnd: () => {},
+      timeFrac: () => Math.max(0, Math.min(1, elapsed(frozenAt || performance.now()) / paceMs)),
+      pauseTimer: (ms) => {
+        if (over || frozenAt) return;
+        const now = performance.now();
+        if (pauseTo) paused += Math.max(0, Math.min(now, pauseTo) - pauseFrom);
+        pauseFrom = now; pauseTo = now + ms;
+      },
+      freezeTimer: () => { if (!frozenAt) frozenAt = performance.now(); },
+      later: (fn, ms) => later(() => { if (alive()) fn(); }, ms),
+      raf: (fn) => requestAnimationFrame((ts) => { if (alive()) fn(ts); }),
+      confetti: C().confetti, shuffle: C().shuffle, pick: C().pick,
+      pickOptions: (t, n) => C().pickOptions(items, t, n),
+      lowerLookalikes: (t) => C().lowerLookalikes(items, t),
+      choiceRows: (R, N, o = {}) => C().choiceRows(items, list.type, R, N, { canSpeak: F().canSpeak(), ...o }),
+      choiceSteps: (R, N, o = {}) => C().choiceSteps(items, list.type, R, N, { canSpeak: F().canSpeak(), ...o }),
+      gapSteps: (R, N, o = {}) => C().gapSteps(items, list.type, R, N, { slow: true, ...o }),
+      phonics: { pics: C().startPics, set: (t, a, b) => C().phonicsSet(items, t, a, b) },
+      coop: { pads: btns, colors: COLORS, who: (i) => (i === 0 ? "🐔" : "🍌") },
+    };
+    try { match.sharedCleanup = game.start(ctx) || null; } catch (err) { console.error("versus coop chicken-banana start:", err); later(nextRound, 300); return; }
+    // The game keeps its own beat; this only catches running out of time (the game then fuses on its own).
+    (function tick() {
+      if (!alive() || over) return;
+      if (!timedOut && elapsed(frozenAt || performance.now()) >= paceMs) { timedOut = true; timeoutFns.forEach((fn) => { try { fn(); } catch (err) { console.error(err); } }); return; }
+      match.sharedRaf = requestAnimationFrame(tick);
+    })();
+  }
+
   // ---------- Shared-screen versus games (the teacher's idea) ----------
   // TUG OF WAR: one rope across the top of the screen, player 1's character on the left and player 2's on the
   // right, the card in the middle; each player has their own answer buttons in their half below. Both get the
@@ -1453,6 +1525,7 @@
     if (!match) return;
     cancelAnimationFrame(match.raf);
     cancelAnimationFrame(match.sharedRaf);
+    if (match.sharedCleanup) { try { match.sharedCleanup(); } catch (err) { console.error("versus cleanup:", err); } match.sharedCleanup = null; }
     if (match.shared) { match.shared.remove(); match.shared = null; }
     const sidesEl = root && root.querySelector(".vs-sides");
     if (sidesEl) sidesEl.classList.remove("shared");

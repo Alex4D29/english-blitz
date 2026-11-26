@@ -101,6 +101,9 @@
     text-shadow:0 4px 0 #111; white-space:nowrap; animation:cb-word .8s ease-out forwards; }
   .cb-word.bad { color:#ff7a9a; } .cb-word.big { font-size:2.8rem; animation-duration:1.6s; }
   /* The answers */
+  /* Team Up (co-op): one shared stage across the top, each player's own buttons below (js/versus.js) */
+  .cb.coop { padding-bottom:0; } .cb.coop .cb-stage { max-width:none; } .cb.coop .cb-opts { display:none; }
+  .cb-tag { position:absolute; left:50%; top:-16%; transform:translateX(-50%); padding:1px 10px; border-radius:99px; border:3px solid #111; color:#fff; font-size:.85rem; white-space:nowrap; z-index:4; }
   .cb-opts { flex:none; display:flex; gap:10px; justify-content:center; width:100%; padding:0 10px; }
   .cb-opt { flex:1; max-width:120px; height:var(--bh); border:5px solid #111; border-radius:16px; box-shadow:0 6px 0 #111; background:#fff; color:#111; font:inherit; font-size:calc(var(--bh) * .5);
     line-height:1; cursor:pointer; touch-action:manipulation; white-space:nowrap; overflow:hidden; }
@@ -143,8 +146,9 @@
       const RING_MS = Math.round(Math.min(2600 / pace, (ctx.paceMs * 0.85 - 700) / MOVES));
       const WINDOW = 0.3;                         // the last 30% of the shrink is PERFECT
 
+      const coop = ctx.coop || null; // Team Up: one shared stage; each player taps their own buttons (both must be right)
       const wrap = document.createElement("div");
-      wrap.className = "cb";
+      wrap.className = "cb" + (coop ? " coop" : "");
       wrap.innerHTML = `<div class="cb-pips">${'<span class="cb-pip"></span>'.repeat(MOVES)}</div>` +
         '<div class="cb-stage"><div class="cb-floor"></div><button class="cb-card"><span class="ct"></span></button><div class="cb-target"></div><div class="cb-ring"></div>' +
         '<div class="cb-dancer cb-ch l"><div class="in"><div class="wing l"></div><div class="wing r"></div><div class="leg l"></div><div class="leg r"></div><div class="bod"></div><div class="comb"></div><div class="eye l"><i></i></div><div class="eye r"><i></i></div><div class="beak"></div></div></div>' +
@@ -154,6 +158,7 @@
       const stage = wrap.querySelector(".cb-stage"), card = wrap.querySelector(".cb-card"), ring = wrap.querySelector(".cb-ring"), fx = wrap.querySelector(".cb-fx");
       const chick = wrap.querySelector(".cb-ch"), nana = wrap.querySelector(".cb-ba"), fused = wrap.querySelector(".cb-fused"), opts = wrap.querySelector(".cb-opts");
       const pips = wrap.querySelector(".cb-pips").children;
+      if (coop) [chick, nana].forEach((d, i) => d.insertAdjacentHTML("beforeend", `<div class="cb-tag" style="background:${coop.colors[i]}">${coop.who(i)}</div>`));
       card.addEventListener("pointerdown", (e) => { e.preventDefault(); replay(); });
       if (ctx.canSpeak) card.insertAdjacentHTML("beforeend", '<span class="spk">🔊</span>');
 
@@ -175,16 +180,34 @@
         nana.style.left = `${W - gapL - dz}px`;
       }
 
+      let picks = [null, null];
       let mi = 0, C = S[0], good = 0, missN = 0, done = false, picked = null, t0 = 0, buttons = [];
       const cardText = () => (C.listen ? C.target.text : C.cardText);
       function deal() {
         card.firstChild.textContent = cardText();
+        if (coop) { // each player gets their own shuffled set of the same answers
+          buttons = [];
+          coop.pads.forEach((pad, i) => {
+            pad.innerHTML = "";
+            pad.parentElement.classList.remove("wait");
+            ctx.shuffle(C.row.slice()).forEach((o) => {
+              const b = document.createElement("button");
+              b.className = "vt-btn";
+              b.textContent = o.text;
+              if (o.kind === "word") b.style.fontSize = `${Math.min(30, 120 / (o.text.length * 0.6))}px`;
+              b.addEventListener("pointerdown", (e) => { e.preventDefault(); tap(b, o, i); });
+              pad.appendChild(b);
+              buttons.push({ b, o, i });
+            });
+          });
+          return;
+        }
         opts.innerHTML = "";
         buttons = C.row.map((o) => {
           const b = document.createElement("button");
           b.className = "cb-opt";
           b.textContent = o.text;
-          if (o.kind === "word") b.style.fontSize = `${Math.min(28, ((opts.clientWidth - 20) / N - 16) / (o.text.length * 0.6))}px`;
+          if (o.kind === "word") b.style.fontSize = `${Math.min(28, Math.max(12, ((opts.clientWidth || 300) - 20) / N - 16) / (o.text.length * 0.6))}px`;
           b.addEventListener("pointerdown", (e) => { e.preventDefault(); tap(b, o); });
           opts.appendChild(b);
           return { b, o };
@@ -193,7 +216,7 @@
       // ---------- One move: the ring shrinks to the beat; the pose happens when it lands ----------
       function move() {
         if (done) return;
-        picked = null;
+        picked = null; picks = [null, null];
         t0 = performance.now();
         ring.classList.remove("ready");
         ctx.say(C.prompt);
@@ -208,16 +231,18 @@
         if (f >= 1) { land(); return; }
         ctx.raf(shrink);
       }
-      function tap(b, o) {
-        if (done || picked || ctx.ended) return;
+      function tap(b, o, who = 0) {
+        if (done || ctx.ended || (coop ? picks[who] : picked)) return;
         const f = (performance.now() - t0) / RING_MS;
         picked = { o, perfect: f >= 1 - WINDOW, b };
+        if (coop) { picks[who] = picked; coop.pads[who].parentElement.classList.add("wait"); } // (locked in)
         b.classList.add(o.right ? "picked" : "bad");
         tone(o.right ? 990 : 200, 0.06, "triangle", 0.08);
       }
       // The beat lands: the dancers pose (or bump), then the next move.
       function land() {
-        const ok = picked && picked.o.right;
+        const ok = coop ? picks.every((p) => p && p.o.right) : picked && picked.o.right;
+        const perfect = coop ? picks.every((p) => p && p.perfect) : picked && picked.perfect;
         const k = mi % 4;
         word(TEXT.chant[k], false, 0.16);
         if (ok) {
@@ -226,7 +251,7 @@
           close++;
           placeDancers();
           [chick, nana].forEach((d) => { d.className = d.className.replace(/ pose\d| bump/g, "") + ` pose${k}`; });
-          word(picked.perfect ? TEXT.perfect : TEXT.good, false);
+          word(perfect ? TEXT.perfect : TEXT.good, false);
           [523, 659, 784].forEach((f, i) => tone(f, 0.08, "square", 0.07, i * 0.06));
           if (picked.o.kind === "pic") ctx.say(picked.o.spoken);
         } else {
