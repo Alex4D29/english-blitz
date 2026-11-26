@@ -175,9 +175,10 @@
       // They start at the sides and shuffle a step closer with each good move.
       let close = 0;
       function placeDancers() {
-        const gapL = W * 0.06 + close * W * 0.07;
-        chick.style.left = `${gapL}px`;
-        nana.style.left = `${W - gapL - dz}px`;
+        const base = coop ? Math.min(W, 760) : W, off = (W - base) / 2; // (the wide shared stage: keep them near the middle)
+        const gapL = base * 0.06 + close * base * 0.07;
+        chick.style.left = `${off + gapL}px`;
+        nana.style.left = `${off + base - gapL - dz}px`;
       }
 
       let picks = [null, null];
