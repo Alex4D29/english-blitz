@@ -24,9 +24,9 @@
   };
   // Floor plans: "#" a shelf, "." floor. Every aisle loops round, so there's always another way.
   const MAPS = [
-    [".......", ".##.##.", ".......", ".##.##.", ".......", ".##.##.", "......."],
-    [".......", ".#.#.#.", ".#.#.#.", ".......", ".#.#.#.", ".#.#.#.", "......."],
-    [".......", ".##.#..", "....#.#", ".#.....", ".#.##..", "......#", ".##...."],
+    [".....", ".#.#.", ".....", ".#.#.", "....."],
+    [".....", ".###.", ".....", ".###.", "....."],
+    [".....", ".##..", ".....", "..##.", "....."],
   ];
   const SHELF = ["#ff8a8a", "#8fd3ff", "#ffe066", "#a8e6a1", "#d2b3ff"];
 
@@ -53,13 +53,13 @@
     background-size:100% 40%; background-repeat:no-repeat; background-position:0 20%; box-shadow:inset 0 calc(var(--t) * -.16) 0 rgba(0,0,0,.15); }
   /* An item on the floor (a tag with the answer) */
   .shs-item { position:absolute; width:var(--t); height:var(--t); display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:2; }
-  .shs-item b { padding:1px 5px; background:#fff; border:3px solid #111; border-radius:9px; box-shadow:0 3px 0 #111; font-size:calc(var(--t) * .42); line-height:1.1; white-space:nowrap; color:#111; }
+  .shs-item b { padding:1px 5px; background:#fff; border:3px solid #111; border-radius:9px; box-shadow:0 3px 0 #111; font-size:calc(var(--t) * .56); line-height:1.1; white-space:nowrap; color:#111; }
   .shs-item.right b { box-shadow:0 0 0 4px #fff, 0 0 0 8px #00b86b; }
   .shs-goal { position:absolute; width:var(--t); height:var(--t); border-radius:50%; border:4px solid #ff4fa0; box-sizing:border-box; pointer-events:none; z-index:1; animation:shs-ping .6s ease-in-out infinite alternate; }
   /* Your trolley (--t): a wire basket on wheels, you riding in it */
   .shs-me { position:absolute; left:0; top:0; width:var(--t); height:var(--t); z-index:4; pointer-events:none; }
   .shs-in { position:absolute; inset:0; transform-origin:50% 90%; }   /* (spins and tips go on this inner layer: .shs-me is placed with a transform) */
-  .shs-me .ms { position:absolute; left:16%; top:-30%; }
+  .shs-me .ms { position:absolute; left:6%; top:-28%; }
   .shs-cart { position:absolute; left:6%; right:6%; top:38%; height:44%; border:3px solid #111; border-radius:3px 3px 10px 10px; z-index:2;
     background:repeating-linear-gradient(90deg, rgba(150,160,175,.9) 0 3px, transparent 3px 9px), repeating-linear-gradient(0deg, rgba(150,160,175,.9) 0 3px, transparent 3px 9px), rgba(255,255,255,.35); }
   .shs-cart::before { content:""; position:absolute; right:-18%; top:-16%; width:22%; height:12%; background:#e8173c; border:2px solid #111; border-radius:99px; }   /* handle */
@@ -176,7 +176,7 @@
       const spots = ctx.shuffle(floor.filter((t) => dist(meStart, t) >= 2 && dist(botStart, t) >= 3));
       const items = [];
       for (const o of goods) {
-        const t = spots.find((s) => !items.some((it) => Math.abs(it.c - s[0]) + Math.abs(it.r - s[1]) < 2));
+        const t = spots.find((s) => !items.some((it) => Math.abs(it.c - s[0]) + Math.abs(it.r - s[1]) < 2)) || spots[0];
         if (!t) break;
         spots.splice(spots.indexOf(t), 1);
         const el = document.createElement("div");
@@ -191,7 +191,7 @@
 
       const me = document.createElement("div");
       me.className = "shs-me";
-      const fig = window.Mascot ? window.Mascot.el("calc(var(--t) * .68)") : document.createElement("div");
+      const fig = window.Mascot ? window.Mascot.el("calc(var(--t) * .86)") : document.createElement("div");
       const meIn = document.createElement("div");
       meIn.className = "shs-in";
       meIn.append(fig);
@@ -214,7 +214,7 @@
         T = (bw - 10) / COLS;
         board.style.setProperty("--bw", `${bw}px`);
         board.style.setProperty("--t", `${T}px`);
-        items.forEach((it) => { if (it.o.kind === "word") it.el.firstChild.style.fontSize = `${Math.min(T * 0.4, (T * 1.25) / ([...it.o.text].length * 0.62))}px`; });
+        items.forEach((it) => { if (it.o.kind === "word") it.el.firstChild.style.fontSize = `${Math.min(T * 0.5, (T * 1.3) / ([...it.o.text].length * 0.62))}px`; });
         draw();
       }
 

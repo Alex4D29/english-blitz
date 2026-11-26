@@ -43,41 +43,11 @@
     cardLabel: "Hear it again",
   };
 
-  // Mazes, 9 × 11 ("#" box, "." floor). Loops everywhere so there's always a way round the scissors.
+  // Mazes, 7 × 9 ("#" box, "." floor; 5 × 7 inside, so everything can be BIG). Loops everywhere so there's always a way round the scissors.
   const MAZES = [
-    ["#########",
-     "#.......#",
-     "#.##.##.#",
-     "#.......#",
-     "#.#.#.#.#",
-     "#...#...#",
-     "#.#.#.#.#",
-     "#.......#",
-     "#.##.##.#",
-     "#.......#",
-     "#########"],
-    ["#########",
-     "#...#...#",
-     "#.#...#.#",
-     "#.#.#.#.#",
-     "#.......#",
-     "###.#.###",
-     "#.......#",
-     "#.#.#.#.#",
-     "#.#...#.#",
-     "#...#...#",
-     "#########"],
-    ["#########",
-     "#.......#",
-     "#.#.#.#.#",
-     "#.#...#.#",
-     "#...#...#",
-     "#.#.#.#.#",
-     "#.......#",
-     "##.###.##",
-     "#...#...#",
-     "#.......#",
-     "#########"],
+    ["#######", "#.....#", "#.#.#.#", "#.....#", "#.#.#.#", "#.....#", "#.#.#.#", "#.....#", "#######"],
+    ["#######", "#.....#", "#.###.#", "#.....#", "#.#.#.#", "#.....#", "#.###.#", "#.....#", "#######"],
+    ["#######", "#.....#", "#.#.#.#", "#.....#", "#..#..#", "#.....#", "#.#.#.#", "#.....#", "#######"],
   ];
   const DIRS = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
   const OPP = { left: "right", right: "left", up: "down", down: "up" };
@@ -103,9 +73,9 @@
     box-shadow:inset 0 -4px 0 rgba(0,0,0,.15); position:relative; }
   .sk-wall i::after { content:""; position:absolute; left:42%; top:-3px; bottom:-3px; width:16%; background:#e9c48f; }
   .sk-item { position:absolute; width:var(--ts); height:var(--ts); display:flex; align-items:center; justify-content:center; }
-  .sk-item b { display:flex; align-items:center; justify-content:center; min-width:80%; height:80%; padding:0 3px; border-radius:999px; background:#fff;
-    border:3px solid #111; color:#111; font-size:calc(var(--ts) * .5); line-height:1; white-space:nowrap; box-shadow:0 3px 0 rgba(0,0,0,.25); font-weight:900; }
-  .sk-item.pic b { font-size:calc(var(--ts) * .5); }
+  .sk-item b { display:flex; align-items:center; justify-content:center; min-width:96%; height:90%; padding:0 4px; border-radius:999px; background:#fff;
+    border:3px solid #111; color:#111; font-size:calc(var(--ts) * .66); line-height:1; white-space:nowrap; box-shadow:0 3px 0 rgba(0,0,0,.25); font-weight:900; }
+  .sk-item.pic b { font-size:calc(var(--ts) * .62); }
   .sk-item.eaten { animation:sk-gulp .25s ease-in forwards; }
   .sk-item.left b { box-shadow:0 0 0 4px #fff, 0 0 0 7px #00b86b; }
   .sk-item.left { animation:sk-wiggle .4s ease-in-out infinite; }
@@ -258,7 +228,7 @@
       const floor = [];
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (open(c, r)) floor.push([c, r]);
       // The sack starts near the bottom middle; the scissors at the farthest tile from it.
-      const start = floor.slice().sort((a, b) => Math.hypot(a[0] - 4, a[1] - 9) - Math.hypot(b[0] - 4, b[1] - 9))[0];
+      const start = floor.slice().sort((a, b) => Math.hypot(a[0] - 3, a[1] - 7) - Math.hypot(b[0] - 3, b[1] - 7))[0];
       const fromStart = bfs(start[0], start[1]);
       const snipStart = floor.slice().sort((a, b) => fromStart[key(b[0], b[1])] - fromStart[key(a[0], a[1])])[0];
       const fromSnip = bfs(snipStart[0], snipStart[1]);
@@ -350,17 +320,17 @@
       fx.className = "sk-fx";
       board.append(sackEl, snipEl, fx);
 
-      // Board size: the inner 7 × 9 tiles fill the stage.
+      // Board size: the inner 5 × 7 tiles fill the stage.
       let TS = 40;
       function measure() {
         const r = stage.getBoundingClientRect();
-        TS = Math.max(24, Math.floor(Math.min((r.width - 24) / (COLS - 2), (r.height - 16) / (ROWS - 2))));
+        TS = Math.max(24, Math.floor(Math.min((r.width - 16) / (COLS - 2), (r.height - 16) / (ROWS - 2))));
         board.style.setProperty("--ts", `${TS}px`);
         board.style.width = `${TS * (COLS - 2) + 10}px`;
         board.style.height = `${TS * (ROWS - 2) + 10}px`;
         if (kind === "word") {
           const longest = Math.max(...tiles.map((t) => t.text.length));
-          const fs = Math.min(TS * 0.42, (TS * 1.25) / (longest * 0.6));
+          const fs = Math.min(TS * 0.5, (TS * 1.3) / (longest * 0.62));
           tiles.forEach((t) => { t.el.firstChild.style.fontSize = `${fs}px`; });
         }
         render();
