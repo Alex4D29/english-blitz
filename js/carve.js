@@ -99,7 +99,7 @@
     function layout() {
       const W = stage.clientWidth, H = stage.clientHeight;
       api.W = W; api.H = H;
-      api.R = Math.max(42, Math.min(W / (N <= 3 ? N : 2) * 0.36, H * (N <= 3 ? 0.3 : 0.19), 110));
+      api.R = Math.max(42, Math.min(W / (skin.cols || (N <= 3 ? N : 2)) * (skin.rW || 0.36), H * (skin.rH || (N <= 3 ? 0.3 : 0.19)), 110));
       stage.style.setProperty("--pr", `${api.R}px`);
       const sp = spots(N, W, H);
       api.pieces.forEach((p, i) => { p.x = sp[i].x; p.y = sp[i].y; p.el.style.left = `${p.x}px`; p.el.style.top = `${p.y}px`; sizeLbl(p); });
