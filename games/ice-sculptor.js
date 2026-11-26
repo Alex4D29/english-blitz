@@ -1,7 +1,7 @@
 // ICE SCULPTOR — a carve-it-out game (the teacher's idea: "more uses of tracing"; the shared engine is js/carve.js).
 // Reworked at the teacher's request (the frozen animals were small and didn't react, and it didn't make sense):
-// a BIG block of ice stands at the top, empty. Below are chunks of ice, each with an answer. Saw round the chunk
-// that matches the card: it flies up to the block and the block is carved a bit more. Three right answers turn
+// a BIG block of ice fills most of the screen, empty. Frosty patches sit in a vertical line down it, each with an answer. Saw round the chunk
+// that matches the card: it chips off and the block is carved a bit more. Three right answers turn
 // the block into a cute ice cat (block → rough cat → smooth cat → face, whiskers and sparkles). A wrong
 // chunk just cracks apart, the block shakes and the carving doesn't move on.
 (function () {
@@ -63,9 +63,8 @@
   </svg>`;
 
   const CSS = `
-  .ics-stage { background:linear-gradient(180deg, #e3f7ff 0 44%, #7a5a3c 44% 46%, #b88a5a 46%); }
-  .ics-stage::before { content:""; position:absolute; left:0; right:0; top:0; height:44%; background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.95) 0 25%, rgba(255,255,255,0) 70%); }
-  .ics-sc { position:absolute; left:50%; top:2%; height:41%; aspect-ratio:1; transform:translateX(-50%); z-index:1; pointer-events:none; }
+  .ics-stage { background:radial-gradient(circle at 50% 45%, #ffffff 0 30%, #d9f2ff 75%); }
+  .ics-sc { position:absolute; left:50%; top:1.5%; height:97%; aspect-ratio:1; max-width:99%; transform:translateX(-50%); z-index:1; pointer-events:none; }
   .ics-svg { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 6px 0 rgba(30,70,110,.25)); }
   .ics-sc.bump .ics-svg { animation:ics-bump .6s cubic-bezier(.2,1.6,.4,1); }
   .ics-sc.shake .ics-svg { animation:ics-shake .4s linear; }
@@ -76,8 +75,9 @@
   .ics-sc[data-s="2"] .smooth, .ics-sc[data-s="3"] .smooth { opacity:1; }
   .ics-sc[data-s="3"] .face, .ics-sc[data-s="3"] .spark { opacity:1; }
   .ics-sc[data-s="3"] .spark text { animation:ics-twinkle .5s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
-  .ics-ice { position:absolute; inset:0; border-radius:42% 58% 50% 50% / 54% 46% 54% 46%; border:4px solid #2a6a9a;
-    background:linear-gradient(135deg, rgba(255,255,255,.95) 0 14%, transparent 14% 24%, rgba(255,255,255,.5) 24% 28%, transparent 28%), radial-gradient(circle at 40% 35%, #e6f8ff, #a6dcf7 60%, #6fb8e6); }
+  .ics-ice { position:absolute; inset:0; border-radius:50%; border:3px solid rgba(42,106,154,.75);
+    background:radial-gradient(circle at 38% 32%, rgba(255,255,255,.85) 0 14%, rgba(255,255,255,.35) 45%, rgba(190,232,255,.55)); box-shadow:inset 0 0 0 6px rgba(255,255,255,.35); }
+  .ics-piece .co-lbl { background:rgba(255,255,255,.95); }
   .ics-crack { position:absolute; inset:6%; opacity:0; background:linear-gradient(60deg, transparent 47%, #1d4a72 48% 52%, transparent 53%), linear-gradient(-30deg, transparent 47%, #1d4a72 48% 52%, transparent 53%); }
   .ics-piece.dud .ics-crack { opacity:1; }
   @keyframes ics-bump { 0% { scale:.9; } 50% { scale:1.1; } }
@@ -106,25 +106,23 @@
       const retrigger = (cls) => { sc.classList.remove(cls); void sc.offsetWidth; sc.classList.add(cls); };
       const api = window.CarveOut.start(ctx, {
         cls: "ics", tool: "🪚", sound: "saw", text: TEXT,
-        cols: N, rW: 0.44, rH: 0.27,
+        cols: 1, rW: 0.3, rH: N === 4 ? 0.115 : 0.15,   // (a vertical line of chunks, on the block)
         scene: (st) => { st.insertAdjacentHTML("beforeend", `<div class="ics-sc" data-s="0">${SCULPTURE}</div>`); sc = st.querySelector(".ics-sc"); },
-        spots: (n, W, H) => [...Array(n)].map((_, i) => ({ x: W * (i + 0.5) / n, y: H * 0.74 })),
+        spots: (n, W, H) => [...Array(n)].map((_, i) => ({ x: W / 2, y: H * (i + 0.5) / n })),
         piece: () => `<div class="ics-ice"></div><div class="ics-crack"></div>`,
         onRight: (p, api) => {
           const last = stage === 2;
-          // The chunk flies up into the block and shrinks away; then the block is carved a stage further.
-          const dx = api.W / 2 - p.x, dy = api.H * 0.22 - p.y;
+          // The chunk is chipped off the block (it tumbles away); the block is carved a stage further.
           if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-            p.el.animate([{ transform: "none", opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) scale(.2)`, opacity: 0.2 }], { duration: 550, easing: "cubic-bezier(.5,0,.8,.6)", fill: "forwards" });
+            p.el.animate([{ transform: "none", opacity: 1 }, { transform: `translate(${(p.x < api.W / 2 ? -1 : 1) * 30}px, ${api.R * 1.4}px) rotate(40deg) scale(.5)`, opacity: 0 }], { duration: 600, easing: "cubic-bezier(.4,0,.9,.6)", fill: "forwards" });
+          for (let k = 0; k < 8; k++) api.pop("❄️", p.x, p.y, 24, Math.cos(k * 0.8) * 90, Math.sin(k * 0.8) * 70, 700);
           ctx.later(() => {
             stage++;
             sc.dataset.s = String(stage);
             retrigger("bump");
             noise(0.25, "highpass", 1800, 3000, 0.3);   // chisel crunch
             [1319, 1568, 1976].forEach((f, k) => tone(f, 0.08, "sine", 0.07, k * 0.06));   // tinkle of ice
-            for (let k = 0; k < 10; k++) api.pop("❄️", api.W / 2, api.H * 0.2, 24, Math.cos(k * 0.63) * 110, Math.sin(k * 0.63) * 80, 800);
-            api.pop(["🔨", "🪚", "✨"][stage - 1], api.W / 2 + api.H * 0.12, api.H * 0.12, 40, 0, -30, 700);
-          }, 520);
+          }, 250);
           return last ? 700 : 0;
         },
         onWrong: (p, api) => {
