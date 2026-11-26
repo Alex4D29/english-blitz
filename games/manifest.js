@@ -84,4 +84,5 @@ window.GAME_FILES = [
   "party-cake",
   "egg-catcher",
   "chicken-flap",
+  "dolphin-dive",
 ];
