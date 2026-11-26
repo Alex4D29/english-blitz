@@ -123,6 +123,8 @@
             noise(0.25, "highpass", 1800, 3000, 0.3);   // chisel crunch
             [1319, 1568, 1976].forEach((f, k) => tone(f, 0.08, "sine", 0.07, k * 0.06));   // tinkle of ice
           }, 250);
+          // The last one: the other patches melt away so the finished cat can sparkle on its own.
+          if (last) api.pieces.forEach((q) => { if (q !== p) { q.el.style.transition = "opacity .4s"; q.el.style.opacity = "0"; } });
           return last ? 700 : 0;
         },
         onWrong: (p, api) => {
@@ -131,6 +133,8 @@
           for (let k = 0; k < 6; k++) api.pop("🧊", p.x, p.y, 22, (k - 2.5) * 34, 60 + (k % 2) * 30, 800);
         },
         onWin: (api) => {
+          api.pieces.forEach((q) => { q.el.style.opacity = "0"; });   // (in case any is left)
+          for (let k = 0; k < 10; k++) ctx.later(() => api.pop("✨", api.W * (0.15 + 0.7 * Math.random()), api.H * (0.15 + 0.7 * Math.random()), 34, 0, -30, 900), k * 120);
           tone(784, 0.12, "triangle", 0.1); tone(988, 0.12, "triangle", 0.1, 0.12); tone(1319, 0.3, "triangle", 0.1, 0.24);   // meow-ish chirp
           for (let k = 0; k < 8; k++) ctx.later(() => api.pop("❄️", api.W * Math.random(), -10, 26, 0, api.H, 1600), k * 100);
         },
