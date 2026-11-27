@@ -141,6 +141,86 @@
     }
   }
 
+  // ---------- Dragon Quest battle theme (hand-written; "dragon-quest" game) ----------
+  // A rousing 2-bar trumpet fanfare intro (the dragon lands during it), then an 8-bar A minor loop: a galloping
+  // bass, driving drums and a heroic lead. `loopFrom` keeps the intro from playing again.
+  const QUEST_BPM = 148, QUEST_INTRO = 32;
+  function buildQuest() {
+    const n = (s) => noteMidi(s);
+    const ev = [...Array(QUEST_INTRO + 128)].map(() => []);
+    const add = (s, e) => ev[s].push(e);
+    // ---- intro: ta-ta-TAAA, answer, then a rising run into the downbeat
+    [[0, "E5", 2], [2, "E5", 2], [4, "A5", 6], [10, "G5", 2], [12, "E5", 2], [14, "C5", 2],
+      [16, "F5", 2], [18, "F5", 2], [20, "A5", 4], [24, "G5", 2], [26, "B5", 2], [28, "D6", 4]].forEach(([s, note, len]) => {
+      add(s, { ch: "lead", midi: n(note), len });
+      add(s, { ch: "lead", midi: n(note) - 7, len });
+    });
+    for (let s = 0; s < 32; s += 2) add(s, { ch: "bass", midi: s < 16 ? 45 : s < 24 ? 41 : 43, len: 1 });
+    for (let s = 0; s < 32; s += 4) add(s, { ch: "kick" });
+    add(0, { ch: "crash" });
+    for (let s = 24; s < 32; s++) add(s, { ch: "snare" }); // the roll
+    // ---- loop
+    const LEAD = [
+      "A5 - E5 A5 C6 - B5 A5", "A5 - F5 A5 C6 - A5 F5", "G5 - D5 G5 B5 - A5 G5", "A5 G5 E5 C5 B4 - E5 .",
+      "C6 - A5 - F5 A5 C6 -", "D6 - B5 - G5 B5 D6 -", "E6 - C6 A5 C6 - E6 -", "D6 C6 B5 A5 G5 - E5 .",
+    ];
+    const ROOT = [45, 41, 43, 45, 41, 43, 45, 40];
+    const CHORD = [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 3, 7], [0, 7, 12]];
+    const GALLOP = [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15];
+    for (let b = 0; b < 8; b++) {
+      const base = QUEST_INTRO + b * 16;
+      const toks = LEAD[b].split(/\s+/);
+      toks.forEach((t, i) => {
+        if (t === "-" || t === ".") return;
+        let len = 2; for (let j = i + 1; j < toks.length && toks[j] === "-"; j++) len += 2;
+        add(base + i * 2, { ch: "lead", midi: n(t), len });
+      });
+      GALLOP.forEach((s) => add(base + s, { ch: "bass", midi: ROOT[b] + (s === 7 || s === 15 ? 12 : 0), len: 1 }));
+      for (let s = 0; s < 16; s += 2) add(base + s, { ch: "arp", midi: ROOT[b] + 24 + CHORD[b][(s / 2) % 3], len: 1 });
+      [0, 6, 8, 14].forEach((s) => add(base + s, { ch: "kick" }));
+      [4, 12].forEach((s) => add(base + s, { ch: "snare" }));
+      if (b === 3 || b === 7) [13, 14, 15].forEach((s) => add(base + s, { ch: "snare" })); // fills
+      for (let s = 0; s < 16; s += 2) add(base + s, { ch: "hat" });
+      if (b === 0 || b === 4) add(base, { ch: "crash" });
+    }
+    return { stepDur: 60 / QUEST_BPM / 4, length: ev.length, events: ev, wave: "square", loopFrom: QUEST_INTRO };
+  }
+  const CUSTOM = { "dragon-quest": buildQuest };
+
+  // ---------- Hand-written one-shots: a victory fanfare and a defeat sting ----------
+  // lead/bass entries: [step (16th), semitones above the key, length in steps]; drums: [step, "k"|"s"|"c"].
+  const FANFARE = {
+    bpm: 152, wave: "square", key: 72,
+    lead: [[0, 0, 1], [1, 4, 1], [2, 7, 1], [3, 12, 4], [8, 5, 1], [9, 9, 1], [10, 12, 1], [11, 17, 4],
+      [16, 7, 1], [17, 11, 1], [18, 14, 1], [19, 19, 4], [24, 12, 2], [26, 16, 2], [28, 19, 2], [30, 24, 12]],
+    bass: [[0, 0, 8], [8, 5, 8], [16, 7, 8], [24, 0, 18]],
+    drums: [[0, "k"], [3, "k"], [8, "k"], [11, "k"], [16, "k"], [19, "k"], [24, "k"], [30, "c"], [30, "k"], [4, "s"], [12, "s"], [20, "s"], [26, "s"], [28, "s"]],
+  };
+  const SADTUNE = {
+    bpm: 84, wave: "triangle", key: 62,
+    lead: [[0, 7, 5], [6, 6, 5], [12, 5, 5], [18, 3, 3], [22, 2, 3], [26, 0, 14]],
+    bass: [[0, -12, 12], [12, -14, 12], [24, -12, 16]],
+    drums: [[0, "k"], [12, "k"], [24, "k"]],
+  };
+  function playScore(sc) {
+    if (!ensure() || ac.state !== "running") return;
+    const sd = 60 / sc.bpm / 4, t0 = ac.currentTime + 0.03;
+    const bus = ac.createGain();
+    bus.gain.value = MAX_GAIN * 1.7 * (muted ? 0.3 : Math.max(0.3, volume));
+    bus.connect(ac.destination);
+    for (const [s, semi, len] of sc.lead) {
+      tone(sc.wave, sc.key + semi, t0 + s * sd, len * sd * 0.95, 0.34, bus);
+      tone(sc.wave, sc.key + semi - 12, t0 + s * sd, len * sd * 0.95, 0.12, bus);
+    }
+    for (const [s, semi, len] of sc.bass) tone("triangle", sc.key + semi - 24, t0 + s * sd, len * sd * 0.95, 0.5, bus);
+    for (const [s, d] of sc.drums) {
+      const t = t0 + s * sd;
+      if (d === "k") kick(t, bus);
+      else if (d === "s") noise(t, 0.12, "bandpass", 1800, 0.4, bus);
+      else noise(t, 0.9, "highpass", 5000, 0.3, bus);
+    }
+  }
+
   // ---------- Playing ----------
   let ac = null, out = null, noiseBuf = null;
   let song = null, current = null, wanted = null, step = 0, nextTime = 0;
@@ -192,12 +272,13 @@
       else if (e.ch === "kick") kick(t);
       else if (e.ch === "snare") noise(t, 0.12, "bandpass", 1800, 0.35);
       else if (e.ch === "hat") noise(t, 0.035, "highpass", 7000, 0.18);
+      else if (e.ch === "crash") noise(t, 0.6, "highpass", 4500, 0.4);
     }
   }
   function startWanted() {
     if (!wanted || !ensure()) return;
     current = wanted;
-    song = wanted === "menu" ? buildMenu() : buildGame(wanted);
+    song = wanted === "menu" ? buildMenu() : CUSTOM[wanted] ? CUSTOM[wanted]() : buildGame(wanted);
     step = 0;
     nextTime = ac.currentTime + 0.06;
   }
@@ -211,7 +292,7 @@
     while (nextTime < ac.currentTime + LOOKAHEAD) {
       playStep(song.events[step], nextTime, song.stepDur, song.wave);
       nextTime += song.stepDur;
-      step = (step + 1) % song.length;
+      step = step + 1 >= song.length ? (song.loopFrom || 0) : step + 1;
     }
   }
   setInterval(tick, 30);
@@ -255,6 +336,9 @@
     },
     // The quick "get ready" jingle between rounds (n: the round number, to vary it).
     jingle,
+    // Dragon Quest: a victory fanfare and a defeat sting (they play over silence: call play(null) first).
+    fanfare() { playScore(FANFARE); },
+    defeat() { playScore(SADTUNE); },
     setVolume(v) { volume = Math.max(0, Math.min(1, v)); C.storage.set(VOL_KEY, volume); },
     setMuted(m) { muted = !!m; C.storage.set(MUTE_KEY, muted); },
     get volume() { return volume; },
