@@ -119,6 +119,7 @@
       room.append(knife, fx);
       wrap.appendChild(room);
       ctx.root.appendChild(wrap);
+      if (window.DrawHint) window.DrawHint.zigzag(ctx, room); // 👆 how to draw
       const hitPips = wrap.querySelector(".hits").children, missPips = wrap.querySelector(".miss").children;
 
       let W = 0, H = 0, cr = 100, cx = 0, cy = 0, mz = 100, mx = 0, my = 0;

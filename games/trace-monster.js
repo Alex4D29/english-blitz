@@ -175,6 +175,7 @@
       pips.innerHTML = "<span></span>".repeat(picks.length);
       wrap.append(fx, pips);
       ctx.root.appendChild(wrap);
+      if (window.DrawHint) window.DrawHint.zigzag(ctx, wrap); // 👆 how to draw
       let cur = null;
 
       // One monster: built, traced, popped; then the next one comes (a beat between: the clock stops).

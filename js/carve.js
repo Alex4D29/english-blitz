@@ -25,12 +25,6 @@
     line-height:1.05; cursor:pointer; touch-action:manipulation; display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .co-card .spk { font-size:.45em; }
   .co-card.next { animation:co-next .35s cubic-bezier(.2,1.8,.4,1); }
-  /* A helper at the start: a finger draws a circle in the top corner (out of the way of the pieces) for a few seconds */
-  .co-help { position:relative; flex:none; width:54px; height:54px; border:4px dashed #111; border-radius:50%; background:rgba(255,255,255,.85); pointer-events:none; transition:opacity .4s; }
-  .co-help.out { opacity:0; }
-  .co-help i { position:absolute; inset:-4px; animation:co-help-spin 1.2s linear infinite; }
-  .co-help i b { position:absolute; left:50%; top:0; font-style:normal; font-size:1.7rem; line-height:1; transform:translate(-30%, -10%) rotate(-20deg); }
-  @keyframes co-help-spin { to { transform:rotate(360deg); } }
   .co-pips { display:flex; flex-direction:column; gap:4px; }
   .co-row { display:flex; gap:4px; }
   .co-pip { width:22px; height:22px; border:3px solid #111; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1; }
@@ -84,12 +78,6 @@
     pips.className = "co-pips";
     pips.innerHTML = `<div class="co-row hits">${'<span class="co-pip"></span>'.repeat(GOAL)}</div><div class="co-row">${'<span class="co-pip x"></span>'.repeat(MISSES)}</div>`;
     top.append(card, pips);
-    const help = document.createElement("div");
-    help.className = "co-help"; help.setAttribute("aria-hidden", "true");
-    help.innerHTML = "<i><b>👆</b></i>";
-    top.append(help);
-    ctx.later(() => help.classList.add("out"), 3600);
-    ctx.later(() => help.remove(), 4100);
     const stage = document.createElement("div");
     stage.className = `co-stage ${skin.cls}-stage`;
     const fx = document.createElement("div");
@@ -248,6 +236,11 @@
     const ro = new ResizeObserver(layout);
     ro.observe(stage);
     ctx.say(st.prompt);
+    // The helper: a finger circles a ring right beside the first piece (above it, or below if there's no room)
+    if (!ctx.demo && api.pieces[0] && window.DrawHint) {
+      const p = api.pieces[0], above = p.y - api.R - 38 > 6;
+      window.DrawHint.circle(ctx, stage, Math.max(34, Math.min(api.W - 34, p.x + (above ? 0 : api.R * 0.9))), above ? p.y - api.R - 34 : Math.min(api.H - 34, p.y + api.R + 34));
+    }
     const rev = ctx.reveal(card);
     ctx.later(() => { busy = false; }, (rev || 0) + 100);
 

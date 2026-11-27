@@ -112,6 +112,7 @@
       night.append(pump, tool, fx);
       wrap.appendChild(night);
       ctx.root.appendChild(wrap);
+      if (window.DrawHint) window.DrawHint.zigzag(ctx, wrap); // 👆 how to draw
       const pips = wrap.querySelector(".pmk-pips").children;
 
       function sample(stroke) {
