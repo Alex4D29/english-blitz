@@ -105,7 +105,7 @@
       let sc = null, stage = 0;
       const retrigger = (cls) => { sc.classList.remove(cls); void sc.offsetWidth; sc.classList.add(cls); };
       const api = window.CarveOut.start(ctx, {
-        cls: "ics", tool: "🪚", sound: "saw", text: TEXT,
+        hint: "side", cls: "ics", tool: "🪚", sound: "saw", text: TEXT,
         cols: 1, rW: 0.3, rH: N === 4 ? 0.115 : 0.15,   // (a vertical line of chunks, on the block)
         scene: (st) => { st.insertAdjacentHTML("beforeend", `<div class="ics-sc" data-s="0">${SCULPTURE}</div>`); sc = st.querySelector(".ics-sc"); },
         spots: (n, W, H) => [...Array(n)].map((_, i) => ({ x: W / 2, y: H * (i + 0.5) / n })),

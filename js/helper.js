@@ -9,7 +9,7 @@
   .dh.out { opacity:0; }
   .dh-ring { border:4px dashed #111; border-radius:50%; background:rgba(255,255,255,.85); box-sizing:border-box; }
   .dh-ring i { position:absolute; inset:-4px; animation:dh-spin 1.2s linear infinite; }
-  .dh-ring b, .dh-zz b { position:absolute; font-style:normal; font-size:1.8rem; line-height:1; }
+  .dh-ring b, .dh-zz b { position:absolute; font-style:normal; font-size:2.4rem; line-height:1; }
   .dh-ring b { left:50%; top:0; transform:translate(-30%, -10%) rotate(-20deg); }
   .dh-zz { left:18%; right:18%; bottom:2%; height:15%; min-height:56px; border-radius:16px; background:rgba(255,255,255,.7); }
   .dh-zz svg { position:absolute; inset:0; width:100%; height:100%; }
@@ -20,7 +20,7 @@
   function css() { if (document.getElementById("dh-css")) return; const s = document.createElement("style"); s.id = "dh-css"; s.textContent = CSS; document.head.appendChild(s); }
   function life(ctx, el, ms) { ctx.later(() => el.classList.add("out"), ms); ctx.later(() => el.remove(), ms + 500); }
 
-  function circle(ctx, parent, x, y, size = 56) {
+  function circle(ctx, parent, x, y, size = 80) {
     if (ctx.demo) return null; // (the tutorial's ghost finger does the showing)
     css();
     const el = document.createElement("div");

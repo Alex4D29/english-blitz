@@ -236,10 +236,12 @@
     const ro = new ResizeObserver(layout);
     ro.observe(stage);
     ctx.say(st.prompt);
-    // The helper: a finger circles a ring right beside the first piece (above it, or below if there's no room)
-    if (!ctx.demo && api.pieces[0] && window.DrawHint) {
-      const p = api.pieces[0], above = p.y - api.R - 38 > 6;
-      window.DrawHint.circle(ctx, stage, Math.max(34, Math.min(api.W - 34, p.x + (above ? 0 : api.R * 0.9))), above ? p.y - api.R - 34 : Math.min(api.H - 34, p.y + api.R + 34));
+    // The helper: a finger circles a ring at the top centre of the stage (skin.hint "side": on the left, for a column of pieces)
+    if (!ctx.demo && window.DrawHint) {
+      const size = Math.max(72, Math.min(96, api.W * 0.18)), m = size / 2 + 6;
+      window.DrawHint.circle(ctx, stage,
+        skin.hint === "side" ? Math.max(m, Math.min(api.W / 2 - api.R - m, api.W * 0.2)) : api.W / 2,
+        skin.hint === "side" ? Math.min(api.H * 0.22, api.H - m) : m, size);
     }
     const rev = ctx.reveal(card);
     ctx.later(() => { busy = false; }, (rev || 0) + 100);
