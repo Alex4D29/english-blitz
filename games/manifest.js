@@ -88,4 +88,5 @@ window.GAME_FILES = [
   "cowboy-shoot",
   "dragon-quest",
   "go-kart",
+  "space-blitz",
 ];
