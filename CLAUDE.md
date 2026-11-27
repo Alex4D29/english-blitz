@@ -318,3 +318,5 @@ There's no test setup yet. Check changes by opening `index.html` in a desktop br
 Speech only works after a real tap. If a script clicks the start button, you'll see `speech: not-allowed` errors, and that's expected.
 
 Browser automation tabs are often throttled to about 2 animation frames a second when the window is covered, so games that step by frame time (Claw Catch) barely move. For scripted tests, run `window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16)` in the page before starting.
+
+- **Boss time and cutting helper** (the teacher: bosses too hard, kids didn't get the circle): boss showdown and battle rounds get 1.5× the time (`bossEase` in `startGame`, js/frame.js). The Carve It Out games (js/carve.js) show a small dashed ring with a 👆 circling it in the top bar, beside the card, for about 3.6 s at the start.

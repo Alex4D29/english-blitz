@@ -1089,7 +1089,8 @@
     // A boss version of a game can have its own time limit (`bossDuration`: Wire Cut's robot finale needs 3 cuts).
     // (and a showdown game can have its own too: `showdownDuration`, e.g. Archery: kids wait for the power bar)
     const bossDur = !demo && bossFight() && ((state.boss.phase === "battle" && game.bossDuration) || (state.boss.phase === "showdown" && game.showdownDuration));
-    const paceMs = Math.round((bossDur || game.duration || BASE_MS) / speed);
+    const bossEase = !demo && bossFight() ? 1.5 : 1; // boss rounds get 50% more time (the 5-year-olds found them too hard)
+    const paceMs = Math.round((bossDur || game.duration || BASE_MS) * bossEase / speed);
     let timeLimit = demo ? Math.max(paceMs, 20000) : Math.max(paceMs, warmupMsFor(state.round));
     // 🧸 FUN play style (the teacher's toddler mode): about 3× the time, never under 30 s (speed-ups still shorten it a
     // little in Endless, with the 30 s floor); a retry after a wrong answer gets the time that was left (`timeLeft`).
