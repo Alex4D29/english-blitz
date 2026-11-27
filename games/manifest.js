@@ -87,4 +87,5 @@ window.GAME_FILES = [
   "dolphin-dive",
   "cowboy-shoot",
   "dragon-quest",
+  "go-kart",
 ];
