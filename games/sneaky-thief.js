@@ -135,8 +135,9 @@
   .thf-th .ar { top:44%; width:17%; height:34%; background:#2a2a38; border:3px solid #111; border-radius:40%; transform-origin:50% 12%; z-index:3; }
   .thf-th .ar::after { content:""; position:absolute; left:8%; right:8%; bottom:-14%; aspect-ratio:1; background:#6bcf5a; border:3px solid #111; border-radius:50%; }
   .thf-th .ar.l { left:1%; } .thf-th .ar.r { right:1%; }
-  .thf-th.up .ar.r, .thf-th.up.walk .ar.r { rotate:158deg; translate:-6% 0; animation:none; }
-  .thf-th.reach .ar.l { rotate:-28deg; } .thf-th.reach .ar.r { rotate:28deg; }
+  .thf-th .ar { transition:rotate .3s; }
+  .thf-th.up .ar.r, .thf-th.up.walk .ar.r { rotate:-155deg; animation:none; }
+  .thf-th.reach .ar.r { rotate:-85deg; }
   .thf-th .sk { left:52%; width:48%; top:36%; height:42%; background:#b98a54; border:3px solid #111; border-radius:40% 40% 30% 30%; z-index:3; display:flex; align-items:center; justify-content:center; font-size:calc(var(--u) * .3); color:#4a2f10; }
   .thf-th:not(.back) .sk { display:none; }
   .thf-th .hd { left:8%; width:84%; top:2%; height:46%; background:radial-gradient(ellipse at 36% 28%, #a9ec96, #6bcf5a 55%, #4cae45); border:4px solid #111; border-radius:50% 50% 44% 44%; z-index:4; }
@@ -150,7 +151,7 @@
   .thf-th .mo { left:26%; width:48%; bottom:7%; height:20%; background:#6a1a2a; border:3px solid #111; border-radius:20% 20% 60% 60%; z-index:2; }
   .thf-th.grin .mo { height:26%; background:#fff; }
   .thf-th .bs { left:0; right:0; top:36%; height:10%; background:#16141c; z-index:1; }
-  .thf-th .cn { left:78%; top:-16%; width:calc(var(--u) * .38); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 36% 30%, #fff8c8 0 14%, #ffd23f 42%, #d69a0a); border:3px solid #111; box-shadow:0 0 12px 3px rgba(255,220,80,.8); display:none; z-index:7; animation:thf-glint .7s ease-in-out infinite alternate; }
+  .thf-th .ar .cn { position:absolute; left:50%; top:100%; width:calc(var(--u) * .38); aspect-ratio:1; margin:calc(var(--u) * -.19) 0 0 calc(var(--u) * -.19); border-radius:50%; background:radial-gradient(circle at 36% 30%, #fff8c8 0 14%, #ffd23f 42%, #d69a0a); border:3px solid #111; box-shadow:0 0 12px 3px rgba(255,220,80,.8); display:none; z-index:7; animation:thf-glint .7s ease-in-out infinite alternate; }
   .thf-th.has .cn { display:block; }
   .thf-th .trs { display:none; }
   .thf-th.sad .trs, .thf-g.cry .trs { display:block; }
@@ -404,9 +405,9 @@
         world.appendChild(el);
         return { el, kind, x: 0, y: 0, sc: 1, w: kind === "g" ? u * 1.3 : u * 1.2, h: kind === "g" ? u * 1.95 : u * 1.5 };
       };
-      const THIEF = '<div class="in"><i class="lg a"></i><i class="lg b"></i><i class="ar l"></i><i class="ar r"></i><i class="bd"></i><i class="sk bk">$</i>' +
+      const THIEF = '<div class="in"><i class="lg a"></i><i class="lg b"></i><i class="ar l"></i><i class="ar r"><i class="cn"></i></i><i class="bd"></i><i class="sk bk">$</i>' +
         '<div class="hd"><i class="cp"></i><i class="pp"></i><i class="bs bk"></i><div class="fc"><i class="mk"></i><div class="ey a"><i></i></div><div class="ey b"><i></i></div><i class="mo"></i></div>' +
-        '<span class="trs"><b class="a"></b><b class="b"></b></span></div><i class="cn"></i></div>';
+        '<span class="trs"><b class="a"></b><b class="b"></b></span></div></div>';
       const GUARD = '<div class="in"><i class="lg a"></i><i class="lg b"></i><i class="ar l"></i><i class="ar r"></i><i class="bd"></i><i class="blt"></i><i class="bn a"></i><i class="bn b"></i><i class="bgd"></i>' +
         '<i class="fl"><i class="bm"></i></i><div class="hd"><i class="hr bk"></i><i class="cp"></i><i class="cb"></i><i class="vz"></i>' +
         '<div class="fc"><div class="ey a"><i></i></div><div class="ey b"><i></i></div><i class="br a"></i><i class="br b"></i><i class="ns"></i><i class="mu a"></i><i class="mu b"></i><i class="mo"></i></div>' +
@@ -523,46 +524,46 @@
       }
       function replay() { if (!done || phase === "final") ctx.say(st.prompt); }
 
-      // ---------- Intro: the thief takes the coin and walks away down the hall ----------
+      // ---------- Intro: the thief creeps in from the side, takes the coin and walks away up the hall holding it ----------
       function intro(delay) {
         phase = "intro";
-        const t0 = thiefHome(0);
-        put(thief, W / 2, H * 0.955, 0.97);
-        thief.zFix = Math.round(H * 0.955 * 10) - 20;   // behind the pedestal
-        put(thief, W / 2, H * 0.955, 0.97);
-        tc("look");
+        const t0 = thiefHome(0), py = H * 0.955, sx = W / 2 - 1.1 * u;
+        put(thief, -u * 1.2, py, 0.97);
         ctx.later(() => {
           if (done) return;
-          tc("reach");
-          ctx.later(() => {
-            if (done) return;
-            // the coin flies into the thief's hand
-            const sc = thief.sc, hx = thief.x - 0.6 * u * sc + 1.15 * u * sc, hy = thief.y - 1.5 * u * sc - 0.05 * u * sc;
-            const cx = W / 2, cy = H * 0.995 - u * 1.13;
-            const c = document.createElement("div");
-            c.className = "thf-coin"; c.style.cssText = `left:0;top:0;margin:-${u * 0.2}px 0 0 -${u * 0.2}px;`;
-            fx.appendChild(c); pedCoin.classList.add("gone");
-            tc("up");
-            if (!reduce) c.animate([{ transform: `translate(${cx}px, ${cy}px)` }, { transform: `translate(${(cx + hx) / 2}px, ${Math.min(cy, hy) - u * 0.5}px)`, offset: 0.5 }, { transform: `translate(${hx}px, ${hy}px)` }], { duration: 380, easing: "ease-out", fill: "forwards" });
-            else c.style.transform = `translate(${hx}px, ${hy}px)`;
-            tone(1568, 0.1, "square", 0.09); sweep(400, 1600, 0.3, "triangle", 0.08);
-            ctx.later(() => { c.remove(); tc("has"); tc("grin"); tc("look", false); tone(2093, 0.18, "triangle", 0.1); burst(hx, hy, ["#ffe14d", "#fff", "#ffd23f"], 10, u * 0.7, u * 0.08, 500); word(TEXT.mine, false, W / 2, H * 0.5, true); ctx.say(st.prompt); }, 400);
-          }, 450 / pace);
+          tc("walk"); steps(5, 300, false);
+          glide(thief, sx, py, 0.97, 1500 / pace, () => {
+            tc("walk", false); tc("look");
+            ctx.later(() => {
+              if (done) return;
+              tc("look", false); tc("reach"); tone(500, 0.2, "triangle", 0.07);
+              ctx.later(grabbed, 450 / pace);
+            }, 800 / pace);
+          }, "ease-out");
         }, delay / pace);
-        // turn round (squash through the middle) and walk off up the carpet
-        ctx.later(() => {
+        function grabbed() {
           if (done) return;
-          const inn = thief.el.querySelector(".in");
-          if (!reduce) inn.animate([{ scale: "1 1" }, { scale: "0.05 1" }, { scale: "1 1" }], { duration: 380 });
-          ctx.later(() => { tc("back"); tc("grin", false); }, 190);
+          const cx = W / 2, cy = H * 0.995 - u * 1.13;
+          pedCoin.classList.add("gone"); tc("has"); tc("grin");
+          tone(1568, 0.1, "square", 0.09); sweep(400, 1600, 0.3, "triangle", 0.08); tone(2093, 0.18, "triangle", 0.1, 0.1);
+          burst(cx, cy, ["#ffe14d", "#fff", "#ffd23f"], 10, u * 0.7, u * 0.08, 500);
+          word(TEXT.mine, false, W / 2, H * 0.5, true); ctx.say(st.prompt);
+          // the coin is in his hand now: he lifts it up, turns round (a squash through the middle) and walks off up the carpet
+          ctx.later(() => { tc("reach", false); tc("up"); }, 500 / pace);
           ctx.later(() => {
             if (done) return;
-            thief.zFix = null; tc("walk");
+            const inn = thief.el.querySelector(".in");
+            if (!reduce) inn.animate([{ scale: "1 1" }, { scale: "0.05 1" }, { scale: "1 1" }], { duration: 380 });
+            ctx.later(() => { tc("back"); tc("grin", false); }, 190);
+          }, 1500 / pace);
+          ctx.later(() => {
+            if (done) return;
+            tc("walk");
             ped.style.transition = "opacity .8s"; ctx.later(() => { ped.style.opacity = "0"; }, 700);
             steps(8, 300, false);
             glide(thief, t0.x, t0.y, t0.sc, 2400 / pace, () => { tc("walk", false); tc("wait"); offer(); }, "ease-in-out");
-          }, 440 / pace);
-        }, (delay + 2900) / pace);
+          }, 2000 / pace);
+        }
       }
 
       // ---------- Round: the choices pop up and time slows ----------
@@ -611,10 +612,11 @@
         const A = mkGuard("walk"), B = mkGuard("walk");
         const gap = u * 1.55 * gsc;
         const stopX = Math.max(it.x - 0.95 * it.s, gap + u * 0.9 * gsc);
-        const startX = -u * 1.2;
-        put(A, startX, gy, gsc); put(B, startX - gap, gy, gsc);
+        const wallL = hallL(it.k + 0.07), startX = wallL - u * 0.1;
         A.zo = 1; B.zo = 0; put(A, startX, gy, gsc); put(B, startX - gap, gy, gsc);
         const spd = (u * 2.5) / 1000 * pace;   // px per ms
+        // they step out from between the columns on the left wall
+        [A, B].forEach((g) => { g.el.style.transition = "opacity .3s"; g.el.style.opacity = "0"; ctx.later(() => { g.el.style.opacity = "1"; }, Math.max(20, (wallL - g.x) / spd)); });
         const dur = Math.max(300, (stopX - startX) / spd);
         steps(Math.round(dur / 340), 340, true);
         glide(A, stopX, gy, gsc, dur, null);
@@ -631,7 +633,8 @@
         ctx.later(() => { A.el.classList.remove("hmm"); A.el.classList.add("shrug"); B.el.classList.add("hmm"); tone(200, 0.4, "sawtooth", 0.06); }, 1000 / pace);
         ctx.later(() => {
           A.el.classList.remove("shrug"); B.el.classList.remove("hmm"); A.el.classList.add("walk"); B.el.classList.add("walk");
-          const endA = W + u * 1.6, dur = Math.max(300, (endA - A.x) / spd);
+          const wallR = W - hallL(chosen.k + 0.07), endA = wallR + u * 1.2 * gsc, dur = Math.max(300, (endA - A.x) / spd);
+          [A, B].forEach((g) => ctx.later(() => { g.el.style.opacity = "0"; }, Math.max(0, (wallR - g.x) / spd)));
           steps(Math.round(dur / 340), 340, true);
           glide(A, endA, gy, gsc, dur, null);
           glide(B, endA - (A.x - B.x), gy, gsc, dur, () => { delGuards(); relief(); });

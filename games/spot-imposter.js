@@ -50,17 +50,23 @@
   .sp { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; gap:6px; overflow:hidden; }
   .sp-top { flex:none; display:flex; align-items:flex-end; justify-content:center; gap:10px; padding-top:4px; cursor:pointer; touch-action:manipulation; }
   .sp-cop { --C:clamp(68px, 20vw, 96px); position:relative; width:var(--C); height:calc(var(--C) * 1.12); font-size:var(--C); }
-  .sp-cop-body { position:absolute; left:.08em; right:.08em; top:.3em; bottom:0; background:#2457d6; border:.045em solid #111; border-radius:46% 46% 30% 30%; }
-  .sp-cop-face { position:absolute; left:.16em; right:.16em; top:.26em; height:.5em; background:#ffd2a8; border:.04em solid #111; border-radius:50%; }
-  .sp-cop-hat { position:absolute; left:.1em; right:.1em; top:.02em; height:.3em; background:#1b2b6b; border:.045em solid #111; border-radius:50% 50% 12% 12%; }
-  .sp-cop-hat::after { content:"⭐"; position:absolute; left:50%; top:46%; transform:translate(-50%, -50%); font-size:.16em; }
-  .sp-cop-brim { position:absolute; left:.06em; right:.06em; top:.27em; height:.08em; background:#111; border-radius:99px; }
-  .sp-cop-eye { position:absolute; top:.42em; width:.09em; height:.11em; background:#111; border-radius:50%; }
-  .sp-cop-eye.l { left:.34em; } .sp-cop-eye.r { right:.34em; }
-  .sp-cop-stache { position:absolute; left:50%; top:.58em; width:.3em; height:.08em; margin-left:-.15em; background:#5b3a1a; border-radius:99px 99px 40% 40%; }
-  .sp-cop.angry .sp-cop-eye { height:.06em; }
+  .sp-cop-body { position:absolute; left:.1em; right:.1em; top:.55em; bottom:0; background:linear-gradient(90deg, #26346b, #3a4c9a 45%, #26346b); border:.04em solid #111; border-radius:40% 40% 22% 22%; }
+  .sp-cop-body::before { content:""; position:absolute; left:58%; top:30%; width:.07em; aspect-ratio:1; background:#ffd23f; border:.015em solid #111; border-radius:50%; box-shadow:0 .1em 0 #ffd23f; }
+  .sp-cop-body::after { content:""; position:absolute; left:14%; top:20%; width:.15em; aspect-ratio:1; background:#ffd23f; clip-path:polygon(50% 0,62% 36%,100% 38%,70% 60%,80% 100%,50% 76%,20% 100%,30% 60%,0 38%,38% 36%); }
+  .sp-cop-face { position:absolute; left:.14em; right:.14em; top:.2em; height:.5em; background:radial-gradient(ellipse at 36% 28%, #ffe0bc, #f0c08f 60%, #d9a06c); border:.04em solid #111; border-radius:50% 50% 46% 46%; }
+  .sp-cop-hat { position:absolute; left:.08em; right:.08em; top:-.02em; height:.3em; background:linear-gradient(180deg, #3a4c9a, #26346b); border:.04em solid #111; border-bottom:.05em solid #ffd23f; border-radius:44% 44% 8% 8%; }
+  .sp-cop-hat::after { content:"⭐"; position:absolute; left:50%; top:46%; transform:translate(-50%, -50%); font-size:.15em; }
+  .sp-cop-brim { position:absolute; left:.04em; right:.04em; top:.28em; height:.07em; background:#111; border-radius:50%; }
+  .sp-cop-eye { position:absolute; top:.36em; width:.17em; aspect-ratio:1; background:#fff; border:.025em solid #111; border-radius:50%; overflow:hidden; box-sizing:border-box; }
+  .sp-cop-eye::after { content:""; position:absolute; left:30%; top:26%; width:44%; aspect-ratio:1; background:#111; border-radius:50%; transition:all .2s; }
+  .sp-cop-eye.l { left:.27em; } .sp-cop-eye.r { right:.27em; top:.39em; width:.14em; }
+  .sp-cop-nose { position:absolute; left:50%; top:.47em; width:.1em; aspect-ratio:1; margin-left:-.05em; background:#f08a8a; border:.025em solid #111; border-radius:50%; box-sizing:border-box; }
+  .sp-cop-stache { position:absolute; left:50%; top:.55em; width:.4em; height:.11em; margin-left:-.2em; background:radial-gradient(ellipse at 25% 50%, #8a5a2a 0 58%, transparent 60%), radial-gradient(ellipse at 75% 50%, #8a5a2a 0 58%, transparent 60%);
+    filter:drop-shadow(.02em 0 0 #111) drop-shadow(-.02em 0 0 #111) drop-shadow(0 .02em 0 #111) drop-shadow(0 -.02em 0 #111); }
+  .sp-cop.angry .sp-cop-eye::after { top:36%; }
   .sp-cop.happy { animation:sp-jump .45s cubic-bezier(.2,1.6,.4,1) 2; }
-  .sp-cop.sad .sp-cop-eye { height:.05em; top:.45em; }
+  .sp-cop.sad .sp-cop-eye::after { top:56%; scale:.7; }
+  .sp-cop.happy .sp-cop-eye::after { top:12%; }
   .sp-sign { position:relative; min-width:clamp(80px, 24vw, 108px); height:clamp(70px, 20vw, 92px); padding:0 12px; background:#fff; color:#111; border:5px solid #111;
     border-radius:14px; box-shadow:0 6px 0 #111; display:flex; align-items:center; justify-content:center; gap:4px; transform:rotate(3deg);
     font-size:clamp(2.6rem, 13vw, 3.6rem); line-height:1; white-space:nowrap; margin-bottom:10px; }
@@ -249,7 +255,7 @@
       // Just the policeman and a WANTED poster of the imposter. (A green "allowed" sign was tried and
       // confused players, so it's gone.)
       top.innerHTML = '<div class="sp-cop"><div class="sp-cop-body"></div><div class="sp-cop-face"></div><div class="sp-cop-hat"></div>' +
-        '<div class="sp-cop-brim"></div><div class="sp-cop-eye l"></div><div class="sp-cop-eye r"></div><div class="sp-cop-stache"></div>' +
+        '<div class="sp-cop-brim"></div><div class="sp-cop-eye l"></div><div class="sp-cop-eye r"></div><div class="sp-cop-nose"></div><div class="sp-cop-stache"></div>' +
         '<div class="sp-bubble"></div></div>' +
         `<div class="sp-sign bad"><span class="sp-wanted">${TEXT.wanted}</span><span class="sp-st"></span><span class="sp-x">✕</span></div>`;
       const cop = top.querySelector(".sp-cop");
