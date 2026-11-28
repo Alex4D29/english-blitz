@@ -90,4 +90,5 @@ window.GAME_FILES = [
   "go-kart",
   "space-blitz",
   "beam-knight",
+  "sneaky-thief",
 ];
